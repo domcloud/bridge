@@ -25,7 +25,10 @@ export const checkAuth = function (
     next) {
     if (req.headers.authorization === tokenSecret) {
         if (!allowIps || allowIps[req.ip])
-            next();
+            return next();
+    }
+    if (process.env.NODE_ENV === 'development') {
+        return next();
     }
     res.sendStatus(403);
 }
@@ -76,12 +79,14 @@ export const spawnSudoUtil = function (
     /** @type {string} */
     mode,
     /** @type {string[]} */
-    args,
+    args = [],
     /** @type {(stdout: any, stderr: any, code: number) => void} */
-    callback) {
+    callback = null) {
     // must by bypassable using visudo
     return new Promise((resolve, reject) => {
-        var child = spawn("sudo", ["node", sudoutil, mode, ...args], {});
+        var child = process.env.NODE_ENV === 'development' ?
+            spawn("node", [sudoutil, mode, ...args], {}) :
+            spawn("sudo", ["node", sudoutil, mode, ...args], {});
         let stdout = '',
             stderr = '';
         if (callback) {
@@ -96,7 +101,8 @@ export const spawnSudoUtil = function (
             });
         }
         child.on('close', code => {
-            callback(null, null, code);
+            if (callback)
+                callback(null, null, code);
             (code === 0 ? resolve : reject)({
                 code,
                 stdout,
@@ -111,7 +117,7 @@ export const executeLock = function (
     file,
     /** @type {(err?: Error) => Promise<any>} */
     callback) {
-    const realfile = path.join(process.cwd(), 'tmp', file + '.lock');
+    const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
     return new Promise((resolve, reject) => {
         lock(realfile, (err) => {
             resolve(callback(err)

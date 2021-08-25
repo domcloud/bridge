@@ -1,18 +1,21 @@
-import shell, {
-    cat,
-    cd,
-    exec,
-    exit,
-} from 'shelljs'
+import shelljs from 'shelljs'
 import cli from 'cli'
 import dotenv from 'dotenv'
 import path from 'path';
 import { error } from 'console';
 
-dotenv.config();
+dotenv.config({debug:true});
+const __dirname = path.resolve();
+const {
+    cat,
+    cd,
+    exec,
+    exit,
+} = shelljs;
 
 const env = Object.assign({}, {
     NGINX_PATH: '/etc/nginx/nginx.conf',
+    NGINX_OUT: '/etc/nginx/nginx.conf',
     NGINX_BIN: 'nginx',
     NGINX_TMP: path.join(__dirname, '.tmp/nginx'),
     IPTABLES_SAVE: 'iptables-save',
@@ -22,6 +25,7 @@ const env = Object.assign({}, {
     IPTABLES_TMP: path.join(__dirname, '.tmp/iptables'),
     IP6TABLES_TMP: path.join(__dirname, '.tmp/ip6tables'),
     NAMED_HOSTS: '/var/named/$.hosts',
+    NAMED_OUT: '/var/named/$.hosts',
     NAMED_CHECK: 'named-checkzone',
     NAMED_RELOAD: 'rndc reload $',
     NAMED_RESYNC: 'rndc retransfer $',
@@ -37,7 +41,7 @@ switch (cli.args.shift()) {
     case 'NGINX_SET':
         if (exec(`${env.NGINX_BIN} -t -c '${env.NGINX_TMP}'`).code !== 0)
             exit(1);
-        cat(env.NGINX_TMP).to(env.NGINX_PATH);
+        cat(env.NGINX_TMP).to(env.NGINX_OUT);
         exec(`${env.NGINX_BIN} -s reload`);
         exit(0);
     case 'IPTABLES_GET':
@@ -58,7 +62,7 @@ switch (cli.args.shift()) {
         arg = cli.args.shift();
         if (exec(`${env.NAMED_CHECK} ${arg} ${env.NAMED_TMP}`).code !== 0)
             exit(1);
-        cat(env.NAMED_TMP).to(env.NAMED_HOSTS.replace('$', arg));
+        cat(env.NAMED_TMP).to(env.NAMED_OUT.replace('$', arg));
         exit(exec(env.NAMED_RELOAD.replace('$', arg)).code);
     case 'NAMED_SYNC':
         arg = cli.args.shift();
