@@ -15,5 +15,6 @@ app.use('/named', named());
 app.use('/nginx', nginx());
 app.use('/iptables', iptables());
 
-app.listen(3000);
-console.log('Listening in http://localhost:3000');
+const port = process.argv.length > 2 ? parseInt(process.argv[2]) : 3000;
+app.listen(port);
+console.log(`Listening in http://localhost:${port}`);
