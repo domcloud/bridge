@@ -1,7 +1,9 @@
 import express from 'express';
 import {
+    appendIfNotExist,
     checkAuth,
     checkGet,
+    deleteIfNotExist,
     executeLock,
     spawnSudoUtil
 } from '../util.js';
@@ -11,7 +13,6 @@ import {
 } from '../parsers/named.js';
 import shelljs from 'shelljs';
 import path from 'path';
-import _ from 'underscore';
 
 const {
     cat,
@@ -20,24 +21,6 @@ const {
 
 const tmpFile = path.join(process.cwd(), '/.tmp/named')
 
-const deleteIfNotExist = (arr, record) => {
-    const idx = arr.findIndex((x) => _.isMatch(x, record));
-    if (idx === -1) {
-        return false;
-    } else {
-        arr.splice(idx, 1);
-        return true;
-    }
-}
-const appendIfNotExist = (arr, record) => {
-    const idx = arr.findIndex((x) => _.isMatch(x, record));
-    if (idx === -1) {
-        arr.push(record);
-        return true;
-    } else {
-        return false;
-    }
-}
 const arrayKey = {
     A: 'a',
     AAAA: 'aaaa',
@@ -122,6 +105,7 @@ export default function () {
             }
             file.soa.serial++;
             ShellString(generate(file)).to(tmpFile);
+            await spawnSudoUtil('NAMED_SET', ["" + req.query.domain]);
             return "Done updated";
         });
         res.json(r);
@@ -137,6 +121,7 @@ export default function () {
             }
             file.soa.serial++;
             ShellString(generate(file)).to(tmpFile);
+            await spawnSudoUtil('NAMED_SET', ["" + req.query.domain]);
             return "Done updated";
         });
         res.json(r);

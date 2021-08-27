@@ -12,7 +12,6 @@ import shelljs from 'shelljs';
 import parser, {
     NginxConfFile
 } from 'nginx-conf';
-import e from 'express';
 const tmpFile = path.join(process.cwd(), '/.tmp/nginx')
 const {
     cat,
@@ -32,6 +31,85 @@ const locationKeys = [
     "root", "alias", "rewrite", "try_files", "return"
 ];
 const sslNames = ["", "off", "enforce", "on"];
+/** @param {import('nginx-conf/dist/src/conf').NginxConfItem} node */
+const applyInfo = (node, info) => {
+    /** @param {import('nginx-conf/dist/src/conf').NginxConfItem} node */
+    function expandLocation(node, info) {
+        for (const key of locationKeys) {
+            if (info[key]) {
+                node._add(key, key === "root" || key === "alias" ?
+                path.join(`/home/${info.user}`,info[key]) : info[key]);
+            }
+        }
+        if (info.passenger) {
+            for (const key of passengerKeys) {
+                if (info.passenger[key]) {
+                    node._add("passenger_" + key, key === "document_root" || key === "app_root" ?
+                    path.join(`/home/${info.user}`,info.passenger[key]) : info.passenger[key]);
+                }
+            }
+        }
+        if (info.locations?.length > 0) {
+            for (const loc of info.locations) {
+                if (loc.match) {
+                    var n = node._add("location", loc.match);
+                    expandLocation(n, loc);
+                }
+            }
+        }
+        if (info.fastcgi) {
+            switch (info.fastcgi) {
+                case "on":
+                    var n = node._add("location", "~ \\.php(/|$)");
+                    n._add("try_files", '$uri =404');
+                    n._add("fastcgi_pass", info.fcgi);
+                    break;
+                case "off":
+                    var n = node._add("location", "= .actuallydisabledphpexecution");
+                    n._add("return", '404');
+                    n._add("fastcgi_pass", info.fcgi);
+                    break;
+                case "cached":
+                    n._add("try_files", '$uri =404');
+                    n._add("fastcgi_pass", info.fcgi);
+                    n._add("fastcgi_cache", "phpcache");
+                    break;
+                case "wpcached":
+                    n._add("try_files", '$uri =404');
+                    n._add("fastcgi_pass", info.fcgi);
+                    n._add("fastcgi_cache", "phpcache");
+                    break;
+            }
+        }
+    }
+    Object.getOwnPropertyNames(node).forEach(function (prop) {
+        delete node[prop];
+    });
+    node._add('server_name', info.dom);
+    if (info.config.ssl !== "enforce") {
+        node._add('listen', info.ip);
+        node._add('listen', info.ip6);
+    }
+    if (info.config.ssl !== "off") {
+        node._add('listen', info.ip + ":443 ssl http2");
+        node._add('listen', info.ip6 + ":443 ssl http2");
+    } {
+        node._add('root', info.root);
+        node._add('access_log', info.access_log);
+        node._add('error_log', info.error_log);
+        node._add('ssl_certificate', info.ssl_certificate);
+        node._add('ssl_certificate_key', info.ssl_certificate_key);
+    }
+    if (info.config.error_pages?.length > 0) {
+        for (const error_page of info.config.error_pages) {
+            node._add('error_page', error_page);
+        }
+    }
+    info.config.fastcgi = info.config.fastcgi || "off";
+    delete info.config.root;
+    delete info.config.alias;
+    expandLocation(node, info.config);
+}
 const extractInfo = (node, domain) => {
     const extractLocations = (node, basepath) => {
         const r = {};
@@ -71,7 +149,7 @@ const extractInfo = (node, domain) => {
         if (l.fastcgi_pass) return l.fastcgi_pass[0]._value;
         // else if (l._comments && l._comments.length > 0 && l._comments[0].trim().match(/^fastcgi_pass localhost:\[\d{4,5}\]$/)) {
         //     return l._comments[0].trim().split(' ')[1];
-        // }
+        // } // read in comments
         else if (l.location) {
             for (const ll of l.location) {
                 var r = findFastCgi(ll);
@@ -91,6 +169,8 @@ const extractInfo = (node, domain) => {
         fcgi: null,
         access_log: null,
         error_log: null,
+        ssl_certificate: null,
+        ssl_certificate_key: null,
         config: {},
     };
     data.dom = domain;
@@ -105,6 +185,8 @@ const extractInfo = (node, domain) => {
     data.user = data.root.split('/')[2];
     data.access_log = node.access_log[0]._value;
     data.error_log = node.error_log[0]._value;
+    data.ssl_certificate = node.ssl_certificate[0]._value;
+    data.ssl_certificate_key = node.ssl_certificate_key[0]._value;
 
     data.fcgi = findFastCgi(node);
     data.config = extractLocations(node, `/home/${data.user}/`);
@@ -149,18 +231,27 @@ export default function () {
         }
     });
     router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
-        await executeLock('nginx', async () => {
-            await spawnSudoUtil('NGINX_GET');
-            NginxConfFile.create(tmpFile, (err, conf) => {
-                if (err)
-                    return next(err);
-                let node = findServ(conf.nginx.http[0].server, req.query.domain);
-                conf.nginx.http[0]._comments
-                res.contentType('text/plain');
-                res.send(node.toString());
-            });
-        })
-
+        try {
+            await executeLock('nginx', async () => {
+                await spawnSudoUtil('NGINX_GET');
+                NginxConfFile.create(tmpFile, async (err, conf) => {
+                    if (err)
+                        return next(err);
+                    const node = findServ(conf.nginx.http[0].server, req.query.domain);
+                    const info = extractInfo(node, req.query.domain);
+                    info.config = req.body || {};
+                    applyInfo(node, info);
+                    conf.write(async (e) => {
+                        if (e)
+                        return next(err);
+                        await spawnSudoUtil('NGINX_SET');
+                        return res.json("Done updated");
+                    });
+                });
+            })
+        } catch (error) {
+            next(error);
+        }
     });
     return router;
 }

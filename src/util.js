@@ -6,6 +6,7 @@ import {
     lock,
     unlock
 } from 'lockfile';
+import _ from 'underscore';
 
 const tokenSecret = `Bearer ${process.env.SECRET}`;
 const allowIps = process.env.ALLOW_IP && process.env.ALLOW_IP.split(',').reduce((a, b) => {
@@ -127,4 +128,23 @@ export const executeLock = function (
                 }));
         });
     });
+}
+
+export const deleteIfNotExist = (/** @type {any[]} */ arr, /** @type {any} */ record) => {
+    const idx = arr.findIndex((x) => _.isMatch(x, record));
+    if (idx === -1) {
+        return false;
+    } else {
+        arr.splice(idx, 1);
+        return true;
+    }
+}
+export const appendIfNotExist = (/** @type {any[]} */ arr, /** @type {{}} */ record) => {
+    const idx = arr.findIndex((x) => _.isMatch(x, record));
+    if (idx === -1) {
+        arr.push(record);
+        return true;
+    } else {
+        return false;
+    }
 }
