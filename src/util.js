@@ -8,14 +8,17 @@ import {
 } from 'lockfile';
 import _ from 'underscore';
 
-const tokenSecret = `Bearer ${process.env.SECRET}`;
-const allowIps = process.env.ALLOW_IP && process.env.ALLOW_IP.split(',').reduce((a, b) => {
-    a[b] = true;
-    return a;
-}, {})
 
-const sudoutil = path.join(process.cwd(), '/sudoutil.js');
+let tokenSecret, allowIps, sudoutil;
 
+export const initUtils = () => {
+    tokenSecret = `Bearer ${process.env.SECRET}`;
+    allowIps = process.env.ALLOW_IP ? process.env.ALLOW_IP.split(',').reduce((a, b) => {
+        a[b] = true;
+        return a;
+    }, {}) : null
+    sudoutil = path.join(process.cwd(), '/sudoutil.js');
+}
 
 export const checkAuth = function (
     /** @type {import('express').Request} */
@@ -130,7 +133,7 @@ export const executeLock = function (
     });
 }
 
-export const deleteIfNotExist = (/** @type {any[]} */ arr, /** @type {any} */ record) => {
+export const deleteIfNotExist = ( /** @type {any[]} */ arr, /** @type {any} */ record) => {
     const idx = arr.findIndex((x) => _.isMatch(x, record));
     if (idx === -1) {
         return false;
@@ -139,7 +142,7 @@ export const deleteIfNotExist = (/** @type {any[]} */ arr, /** @type {any} */ re
         return true;
     }
 }
-export const appendIfNotExist = (/** @type {any[]} */ arr, /** @type {{}} */ record) => {
+export const appendIfNotExist = ( /** @type {any[]} */ arr, /** @type {{}} */ record) => {
     const idx = arr.findIndex((x) => _.isMatch(x, record));
     if (idx === -1) {
         arr.push(record);

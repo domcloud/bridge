@@ -4,8 +4,11 @@ import expressWs from 'express-ws';
 import named from './named/index.js';
 import nginx from './nginx/index.js';
 import iptables from './iptables/index.js';
+import { initUtils } from './util.js';
 
 dotenv.config();
+initUtils();
+
 const app = express();
 const eWs = expressWs(app);
 
@@ -15,6 +18,6 @@ app.use('/named', named());
 app.use('/nginx', nginx());
 app.use('/iptables', iptables());
 
-const port = process.argv.length > 2 ? parseInt(process.argv[2]) : 3000;
+const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 app.listen(port);
 console.log(`Listening in http://localhost:${port}`);
