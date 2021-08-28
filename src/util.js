@@ -83,36 +83,41 @@ export const spawnSudoUtil = function (
     /** @type {string} */
     mode,
     /** @type {string[]} */
-    args = [],
-    /** @type {(stdout: any, stderr: any, code: number) => void} */
-    callback = null) {
+    args = []) {
     // must by bypassable using visudo
     return new Promise((resolve, reject) => {
-        var child = process.env.NODE_ENV === 'development' ?
-            spawn("node", [sudoutil, mode, ...args], {}) :
-            spawn("sudo", ["node", sudoutil, mode, ...args], {});
-        let stdout = '',
-            stderr = '';
-        if (callback) {
-            child.stdout.on('data', data => callback(data, null, null));
-            child.stderr.on('data', data => callback(null, data, null));
-        } else {
-            child.stdout.on('data', data => {
-                stdout += data
+        try {
+            var child = process.env.NODE_ENV === 'development' ?
+                spawn("node", [sudoutil, mode, ...args], {}) :
+                spawn("sudo", ["node", sudoutil, mode, ...args], {});
+            let stdout = '',
+                stderr = '';
+            {
+                child.stdout.on('data', data => {
+                    stdout += data
+                });
+                child.stderr.on('data', data => {
+                    stderr += data
+                });
+            }
+            child.on('error', function (err) {
+                stderr += err.message + "\n";
             });
-            child.stderr.on('data', data => {
-                stderr += data
+            child.on('close', code => {
+                console.log(stderr);
+                (code === 0 ? resolve : reject)({
+                    code,
+                    stdout,
+                    stderr
+                });
+            });
+        } catch (e) {
+            reject({
+                code: -1,
+                stdout: '',
+                stderr: e.message,
             });
         }
-        child.on('close', code => {
-            if (callback)
-                callback(null, null, code);
-            (code === 0 ? resolve : reject)({
-                code,
-                stdout,
-                stderr
-            });
-        });
     });
 }
 
@@ -124,11 +129,13 @@ export const executeLock = function (
     const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
     return new Promise((resolve, reject) => {
         lock(realfile, (err) => {
-            resolve(callback(err)
+            callback(err)
+                .then(resolve)
+                .catch(reject)
                 .finally(x => {
                     unlock(realfile, () => {});
                     return x;
-                }));
+                })
         });
     });
 }

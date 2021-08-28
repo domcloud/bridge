@@ -17,7 +17,9 @@ app.use(express.static('public'));
 app.use('/named', named());
 app.use('/nginx', nginx());
 app.use('/iptables', iptables());
-
+app.use(function (err, req, res, next) {
+    res.json(err);
+});
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 app.listen(port);
 console.log(`Listening in http://localhost:${port}`);

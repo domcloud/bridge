@@ -227,6 +227,7 @@ export default function () {
                 }
             });
         } catch (error) {
+            console.log(error);
             next(error);
         }
     });
