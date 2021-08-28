@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import shelljs from 'shelljs'
 import cli from 'cli'
 import dotenv from 'dotenv'

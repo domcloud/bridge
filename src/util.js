@@ -89,7 +89,7 @@ export const spawnSudoUtil = function (
         try {
             var child = process.env.NODE_ENV === 'development' ?
                 spawn("node", [sudoutil, mode, ...args], {}) :
-                spawn("sudo", ["node", sudoutil, mode, ...args], {});
+                spawn("sudo", [sudoutil, mode, ...args], {});
             let stdout = '',
                 stderr = '';
             {
