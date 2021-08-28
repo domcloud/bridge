@@ -6,7 +6,8 @@ import dotenv from 'dotenv'
 import path from 'path';
 import { error } from 'console';
 
-dotenv.config({debug:true});
+dotenv.config();
+
 const __dirname = path.resolve();
 const {
     cat,
@@ -36,6 +37,7 @@ const env = Object.assign({}, {
 }, process.env);
 
 cd(__dirname); // making sure because we're in sudo
+let arg;
 switch (cli.args.shift()) {
     case 'NGINX_GET':
         cat(env.NGINX_PATH).to('.tmp/nginx');
@@ -57,7 +59,7 @@ switch (cli.args.shift()) {
             exit(1);
         exit(0);
     case 'NAMED_GET':
-        let arg = cli.args.shift();
+        arg = cli.args.shift();
         cat(env.NAMED_HOSTS.replace('$', arg)).to(env.NAMED_TMP);
         exit(0);
     case 'NAMED_SET':

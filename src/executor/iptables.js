@@ -1,7 +1,5 @@
-import express from 'express';
 import {
     appendIfNotExist,
-    checkPost,
     deleteIfNotExist,
     executeLock,
     spawnSudoUtil
@@ -19,26 +17,23 @@ const {
     cat,
     ShellString
 } = shelljs;
-export default function () {
-    var router = express.Router();
-    router.get('/show', async function (req, res, next) {
+
+class IptablesExecutor {
+    getRaw(parsed) {
+        return encodeIPTables(parsed);
+    }
+    getByUsers(parsed, users) {
+        return users.map(u => (
+            parsed.filter.rules.find(x => x["--uid-owner"] === u)
+        ))
+    }
+    async getParsed() {
         await executeLock('iptables', async () => {
             await spawnSudoUtil('IPTABLES_GET');
         });
-        var p = parseIptablesDoc(cat(tmpFile));
-        if (req.query.view === 'raw')
-            res.send(encodeIPTables(p));
-        else {
-            if (req.query.user) {
-                res.json(("" + req.query.user).split(',').map(u => (
-                    p.filter.rules.find(x => x["--uid-owner"] === u)
-                )));
-            } else {
-                res.json((p));
-            }
-        }
-    });
-    router.post('/add', checkPost(['user']), async function (req, res, next) {
+        return parseIptablesDoc(cat(tmpFile));
+    }
+    async setAddUser(user) {
         const v4 = await executeLock('iptables', async () => {
             await spawnSudoUtil('IPTABLES_GET');
             var p = parseIptablesDoc(cat(tmpFile));
@@ -46,7 +41,7 @@ export default function () {
             if (!appendIfNotExist(rules, {
                     "-A": "OUTPUT",
                     "-m": "owner",
-                    "--uid-owner": req.body.user,
+                    "--uid-owner": user,
                     "-j": "REJECT"
                 })) {
                 return "Done unchanged for iptables";
@@ -61,7 +56,7 @@ export default function () {
             if (!appendIfNotExist(rules, {
                     "-A": "OUTPUT",
                     "-m": "owner",
-                    "--uid-owner": req.body.user,
+                    "--uid-owner": user,
                     "-j": "REJECT"
                 })) {
                 return "Done unchanged for ip6tables";
@@ -69,9 +64,9 @@ export default function () {
             ShellString(encodeIPTables(p)).to(tmpFile6);
             return "Updated for ip6tables";
         });
-        res.json([v4, v6].join(", "));
-    });
-    router.post('/del', checkPost(['user']), async function (req, res, next) {
+        return [v4, v6].join(", ");
+    }
+    async setDelUser(user) {
         const v4 = await executeLock('iptables', async () => {
             await spawnSudoUtil('IPTABLES_GET');
             var p = parseIptablesDoc(cat(tmpFile));
@@ -79,7 +74,7 @@ export default function () {
             if (!deleteIfNotExist(rules, {
                     "-A": "OUTPUT",
                     "-m": "owner",
-                    "--uid-owner": req.body.user,
+                    "--uid-owner": user,
                     "-j": "REJECT"
                 })) {
                 return "Done unchanged for iptables";
@@ -94,7 +89,7 @@ export default function () {
             if (!deleteIfNotExist(rules, {
                     "-A": "OUTPUT",
                     "-m": "owner",
-                    "--uid-owner": req.body.user,
+                    "--uid-owner": user,
                     "-j": "REJECT"
                 })) {
                 return "Done unchanged for ip6tables";
@@ -102,7 +97,8 @@ export default function () {
             ShellString(encodeIPTables(p)).to(tmpFile6);
             return "Updated for ip6tables";
         });
-        res.json([v4, v6].join(", "));
-    });
-    return router;
+        return [v4, v6].join(", ");
+    }
 }
+
+export const iptablesExec = new IptablesExecutor();

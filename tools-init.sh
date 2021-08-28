@@ -16,18 +16,19 @@ if [ ! -d "./phppgadmin" ]; then
     sed -i "s/['host'] = ''/['host'] = 'localhost'/g" conf/config.inc.php
     cd ..
 fi
-if [ ! -d "./webssh" ]; then
-    git clone https://github.com/huashengdun/webssh.git webssh --depth 1
-    cd ./webssh
-    pip install --user -r requirements.txt
-    cd ..
-fi
 if [ ! -d "./webssh2" ]; then
     git clone https://github.com/billchurch/webssh2.git webssh2 --depth 1
     cd ./webssh2/app
     npm install --production
     cp config.json.sample config.json
+    hash=`node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"`
     sed -i "s/\"host\": null/\"host\": \"localhost\"/g" config.json
-    cat "require('.');" > app.js
+    sed -i "s/\"allowreauth\": false/\"allowreauth\": true/g" config.json
+    sed -i "s/\"secret\": \"mysecret\"/\"secret\": \"$hash\"/g" config.json
+    sed -i "s/config.listen.port/process.env.PORT/g" index.js
+    echo "require('.');" > app.js
     cd ../..
 fi
+npm ci
+echo You need to add sudoutil.js to sudoers
+echo "echo '`whoami` ALL = (root) NOPASSWD: `echo $PWD`/sudoutil.js' | sudo EDITOR='tee' visudo /etc/sudoers.d/`whoami`"

@@ -1,8 +1,8 @@
-import express from 'express';
 import {
     appendIfNotExist,
     checkAuth,
     checkGet,
+    checkPost,
     deleteIfNotExist,
     executeLock,
     spawnSudoUtil
@@ -78,53 +78,46 @@ const getArrayOf = (file, type) => {
     return file[arrayKey[type]] || (file[arrayKey[type]] = []);
 }
 
-export default function () {
-    var router = express.Router();
-    router.post('/resync', checkAuth, checkGet(['domain']), async function (req, res) {
-        await spawnSudoUtil('NAMED_SYNC', ["" + req.query.domain]);
-        res.json("OK");
-    });
-    router.get('/show', checkAuth, checkGet(['domain']), async function (req, res, next) {
-        try {
-            await executeLock('named', () => {
-                return spawnSudoUtil('NAMED_GET', ["" + req.query.domain]);
-            });
-            res.json(parse(cat(tmpFile)));
-        } catch (error) {
-            next(error);
-        }
-    });
-    router.post('/add', checkAuth, checkGet(['domain', 'type', 'value']), async function (req, res) {
-        const r = await executeLock('named', async () => {
-            await spawnSudoUtil('NAMED_GET', ["" + req.query.domain]);
+class NamedExecutor {
+    async resync(domain) {
+        await spawnSudoUtil('NAMED_SYNC', [domain]);
+    }
+    async show(domain) {
+        return await executeLock('named', async () => {
+            await spawnSudoUtil('NAMED_GET', [domain]);
+            return parse(cat(tmpFile));
+        });
+    }
+    async add(domain, type, value) {
+        return await executeLock('named', async () => {
+            await spawnSudoUtil('NAMED_GET', [domain]);
             var file = parse(cat(tmpFile));
-            var arr = getArrayOf(file, req.query.type);
-            var map = mapKey[req.query.type](("" + req.query.value).split(' '));
+            var arr = getArrayOf(file, type);
+            var map = mapKey[type](("" + value).split(' '));
             if (!appendIfNotExist(arr, map)) {
                 return "Done unchanged";
             }
             file.soa.serial++;
             ShellString(generate(file)).to(tmpFile);
-            await spawnSudoUtil('NAMED_SET', ["" + req.query.domain]);
+            await spawnSudoUtil('NAMED_SET', [domain]);
             return "Done updated";
         });
-        res.json(r);
-    });
-    router.post('/del', checkAuth, checkGet(['domain', 'type', 'value']), async function (req, res) {
-        const r = await executeLock('named', async () => {
-            await spawnSudoUtil('NAMED_GET', ["" + req.query.domain]);
+    }
+    async del(domain, type, value) {
+        await executeLock('named', async () => {
+            await spawnSudoUtil('NAMED_GET', ["" + domain]);
             var file = parse(cat(tmpFile));
-            var arr = getArrayOf(file, req.query.type);
-            var map = mapKey[req.query.type](("" + req.query.value).split(' '));
+            var arr = getArrayOf(file, type);
+            var map = mapKey[type](("" + value).split(' '));
             if (!deleteIfNotExist(arr, map)) {
                 return "Done unchanged";
             }
             file.soa.serial++;
             ShellString(generate(file)).to(tmpFile);
-            await spawnSudoUtil('NAMED_SET', ["" + req.query.domain]);
+            await spawnSudoUtil('NAMED_SET', ["" + domain]);
             return "Done updated";
         });
-        res.json(r);
-    });
-    return router;
+    }
 }
+
+export const namedExec = new NamedExecutor();

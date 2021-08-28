@@ -9,8 +9,8 @@ import {
 import _ from 'underscore';
 
 
-let tokenSecret, allowIps, sudoutil;
-
+let tokenSecret, allowIps, sudoutil, metadata;
+import fs from 'fs';
 export const initUtils = () => {
     tokenSecret = `Bearer ${process.env.SECRET}`;
     allowIps = process.env.ALLOW_IP ? process.env.ALLOW_IP.split(',').reduce((a, b) => {
@@ -18,6 +18,11 @@ export const initUtils = () => {
         return a;
     }, {}) : null
     sudoutil = path.join(process.cwd(), '/sudoutil.js');
+    metadata = JSON.parse(fs.readFileSync(path.join(process.cwd(), '/package.json')).toString('utf-8'));
+}
+
+export const getVersion = () => {
+    return metadata.version;
 }
 
 export const checkAuth = function (
@@ -104,7 +109,6 @@ export const spawnSudoUtil = function (
                 stderr += err.message + "\n";
             });
             child.on('close', code => {
-                console.log(stderr);
                 (code === 0 ? resolve : reject)({
                     code,
                     stdout,
@@ -139,7 +143,6 @@ export const executeLock = function (
         });
     });
 }
-
 export const deleteIfNotExist = ( /** @type {any[]} */ arr, /** @type {any} */ record) => {
     const idx = arr.findIndex((x) => _.isMatch(x, record));
     if (idx === -1) {
