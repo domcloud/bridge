@@ -13,7 +13,8 @@ if [ ! -d "./phppgadmin" ]; then
     git clone https://github.com/phppgadmin/phppgadmin.git phppgadmin --depth 1
     cd ./phppgadmin
     cp conf/config.inc.php-dist conf/config.inc.php
-    sed -i "s/['host'] = ''/['host'] = 'localhost'/g" conf/config.inc.php
+    sed -i "s/['host'] = ''/['host'] = 'localhost'/" conf/config.inc.php
+    sed -i "s/['owned_only'] = false/['owned_only'] = true/g" conf/config.inc.php
     cd ..
 fi
 if [ ! -d "./webssh2" ]; then
