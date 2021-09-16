@@ -38,10 +38,10 @@ export default function () {
                 await writeAsync(write, s);
             }, false);
         } catch (error) {
-            await writeAsync(write, '$> Error occured');
+            await writeAsync(write, '$> Error occured\n');
             await writeAsync(write, JSON.stringify(error));
         } finally {
-            await writeAsync(write, '$> Execution Finished');
+            await writeAsync(write, '$> Execution Finished\n');
             if (emitter && !emitter.writableEnded) {
                 emitter.end();
             }

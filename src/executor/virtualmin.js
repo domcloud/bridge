@@ -1,5 +1,6 @@
 import shelljs from "shelljs";
 import {
+    escapeShell,
     spawnSudoUtil
 } from "../util.js";
 const {
@@ -37,10 +38,11 @@ class VirtualminExecutor {
         let p = [program];
         Object.entries(Object.assign({}, ...(opts.filter(x => x && typeof x === 'object')))).forEach(([k, v]) => {
             if (v) {
+                k = "--" + k;
                 if (typeof v === 'boolean')
-                    p.push("--" + k);
+                    p.push(escapeShell(k));
                 else
-                    p.push("--" + k, v);
+                    p.push(escapeShell(k), escapeShell(v));
             }
         });
         return await this.exec(...p);
