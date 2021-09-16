@@ -23,8 +23,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_NYC }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_NYC }}
           data: >-
-            {"commands":["git pull","npm ci --production","passenger-config
-            restart-app /"]}
+            {"commands":["git pull","passenger-config restart-app /"]}
       # - name: Invoke deployment hook
       #   uses: distributhor/workflow-webhook@v2
       #   env:

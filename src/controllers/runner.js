@@ -25,21 +25,26 @@ export default function () {
     router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
         /** @type {import('stream').Duplex} */
         let emitter = null;
+        /** @type {import('stream').Writable} */
+        let write = res;
         try {
             let callback = req.header('x-callback');
             await runConfig(req.body || {}, req.query.domain + "", async (s) => {
                 if (callback && !emitter) {
                     emitter = got.stream.post(callback);
                     res.json('OK');
+                    write = emitter;
                 }
-                await writeAsync(emitter || res, s);
+                await writeAsync(write, s);
             }, false);
         } catch (error) {
-            var r = emitter || res;
-            await writeAsync(r, error.message);
-            await writeAsync(r, error.stack);
+            await writeAsync(write, '$> Error occured');
+            await writeAsync(write, JSON.stringify(error));
         } finally {
-            (emitter || res).end();
+            await writeAsync(write, '$> Execution Finished');
+            if (emitter && !emitter.writableEnded) {
+                emitter.end();
+            }
             if (!res.writableEnded) {
                 res.end();
             }
