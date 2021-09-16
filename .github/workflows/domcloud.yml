@@ -4,8 +4,7 @@ name: Sync on DOM Cloud
     branches:
       - main
 jobs:
-  push_sga:
-    if: ${{ secrets.WEBHOOK_SECRET_SGA }}
+  push:
     runs-on: ubuntu-latest
     steps:
       - name: Invoke deployment hook
@@ -17,10 +16,6 @@ jobs:
           data: >-
             {"commands":["git pull","npm ci --production","passenger-config
             restart-app /"]}
-  push_nyc:
-    if: ${{ secrets.WEBHOOK_SECRET_NYC }}
-    runs-on: ubuntu-latest
-    steps:
       - name: Invoke deployment hook
         uses: distributhor/workflow-webhook@v2
         env:
@@ -30,10 +25,6 @@ jobs:
           data: >-
             {"commands":["git pull","npm ci --production","passenger-config
             restart-app /"]}
-  push_sga:
-    if: ${{ secrets.WEBHOOK_SECRET_JPN }}
-    runs-on: ubuntu-latest
-    steps:
       - name: Invoke deployment hook
         uses: distributhor/workflow-webhook@v2
         env:
