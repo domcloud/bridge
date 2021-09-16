@@ -161,3 +161,19 @@ export const appendIfNotExist = ( /** @type {any[]} */ arr, /** @type {{}} */ re
         return false;
     }
 }
+// Adapted from ruby shellwords
+export const escapeShell = function(str) {
+    // An empty argument will be skipped, so return empty quotes.
+    if (str === "" || str === null) return "''"
+    var command = str;
+
+    // Treat multibyte characters as is.  It is caller's responsibility
+    // to encode the string in the right encoding for the shell
+    // environment.
+    command = command.replace(/([^A-Za-z0-9_\-.,:\/@\n])/, "\\\\\\$1")
+
+    // A LF cannot be escaped with a backslash because a backslash + LF
+    // combo is regarded as line continuation and simply ignored.
+    command = command.replace(/\n/, "'\n'")
+    return command
+  };
