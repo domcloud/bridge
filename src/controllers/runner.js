@@ -4,27 +4,28 @@ import {
 } from '../util.js';
 import express from 'express';
 import runConfig from '../executor/runner.js';
-import axios from 'axios';
+import got from 'got';
 export default function () {
     var router = express.Router();
     router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
         try {
-            let stream = '';
+            /** @type {import('stream').Duplex} */
+            let emitter = null;
+            let callback = req.header('x-callback');
             await runConfig(req.body || {}, req.query.domain + "", (s) => {
-                res.write(s)
-                stream += s;
-            }, false);
-            if (req.header('x-callback'))
-            axios.post(req.header('x-callback'), stream, {
-                headers: {
-                    'content-type': 'text/plain'
+                if (callback && !emitter) {
+                    emitter = got.stream.post(callback);
+                    res.json('OK');
                 }
-            });
-            res.end();
+                (emitter || res).write(s);
+            }, false);
+            (emitter || res).end();
         } catch (error) {
-            res.write(error.message);
-            res.write(error.stack);
-            res.end();
+            if (!res.writableEnded) {
+                res.write(error.message);
+                res.write(error.stack);
+                res.end();
+            }
         }
     });
     return router;

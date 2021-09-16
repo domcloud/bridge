@@ -1,0 +1,45 @@
+name: Sync on DOM Cloud
+'on':
+  push:
+    branches:
+      - main
+jobs:
+  push_sga:
+    if: ${{ secrets.WEBHOOK_SECRET_SGA }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke deployment hook
+        uses: distributhor/workflow-webhook@v2
+        env:
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGA }}
+          webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGA }}
+          data: >-
+            {"commands":["git pull","npm ci --production","passenger-config
+            restart-app /"]}
+  push_nyc:
+    if: ${{ secrets.WEBHOOK_SECRET_NYC }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke deployment hook
+        uses: distributhor/workflow-webhook@v2
+        env:
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          webhook_secret: ${{ secrets.WEBHOOK_SECRET_NYC }}
+          webhook_auth: ${{ secrets.WEBHOOK_AUTH_NYC }}
+          data: >-
+            {"commands":["git pull","npm ci --production","passenger-config
+            restart-app /"]}
+  push_sga:
+    if: ${{ secrets.WEBHOOK_SECRET_JPN }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke deployment hook
+        uses: distributhor/workflow-webhook@v2
+        env:
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          webhook_secret: ${{ secrets.WEBHOOK_SECRET_JPN }}
+          webhook_auth: ${{ secrets.WEBHOOK_AUTH_JPN }}
+          data: >-
+            {"commands":["git pull","npm ci --production","passenger-config
+            restart-app /"]}
