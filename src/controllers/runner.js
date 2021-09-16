@@ -8,9 +8,9 @@ import got from 'got';
 export default function () {
     var router = express.Router();
     router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
+        /** @type {import('stream').Duplex} */
+        let emitter = null;
         try {
-            /** @type {import('stream').Duplex} */
-            let emitter = null;
             let callback = req.header('x-callback');
             await runConfig(req.body || {}, req.query.domain + "", (s) => {
                 if (callback && !emitter) {
@@ -19,11 +19,13 @@ export default function () {
                 }
                 (emitter || res).write(s);
             }, false);
-            (emitter || res).end();
         } catch (error) {
+            var r = emitter || res;
+            r.write(error.message);
+            r.write(error.stack);
+        } finally {
+            (emitter || res).end();
             if (!res.writableEnded) {
-                res.write(error.message);
-                res.write(error.stack);
                 res.end();
             }
         }
