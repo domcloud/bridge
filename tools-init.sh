@@ -31,5 +31,6 @@ if [ ! -d "./webssh2" ]; then
     cd ../..
 fi
 npm ci
+chmod +x sudoutil.js
 echo You need to add sudoutil.js to sudoers
 echo "echo '`whoami` ALL = (root) NOPASSWD: `echo $PWD`/sudoutil.js' | sudo EDITOR='tee' visudo /etc/sudoers.d/`whoami`"

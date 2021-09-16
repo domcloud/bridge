@@ -96,8 +96,7 @@ export const spawnSudoUtil = function (
                 spawn("node", [sudoutil, mode, ...args], {}) :
                 spawn("sudo", [sudoutil, mode, ...args], {});
             let stdout = '',
-                stderr = '';
-            {
+                stderr = ''; {
                 child.stdout.on('data', data => {
                     stdout += data
                 });
@@ -161,19 +160,19 @@ export const appendIfNotExist = ( /** @type {any[]} */ arr, /** @type {{}} */ re
         return false;
     }
 }
-// Adapted from ruby shellwords
-export const escapeShell = function(str) {
-    // An empty argument will be skipped, so return empty quotes.
-    if (str === "" || str === null) return "''"
-    var command = str;
 
-    // Treat multibyte characters as is.  It is caller's responsibility
-    // to encode the string in the right encoding for the shell
-    // environment.
-    command = command.replace(/([^A-Za-z0-9_\-.,:\/@\n])/, "\\\\\\$1")
+// https://github.com/xxorax/node-shell-escape/blob/master/shell-escape.js
+export const escapeShell = function (a) {
+    var ret = [];
 
-    // A LF cannot be escaped with a backslash because a backslash + LF
-    // combo is regarded as line continuation and simply ignored.
-    command = command.replace(/\n/, "'\n'")
-    return command
-  };
+    a.forEach(function (s) {
+        if (/[^A-Za-z0-9_\/:=-]/.test(s)) {
+            s = "'" + s.replace(/'/g, "'\\''") + "'";
+            s = s.replace(/^(?:'')+/g, '') // unduplicate single-quote at the beginning
+                .replace(/\\'''/g, "\\'"); // remove non-escaped single-quote if there are enclosed between 2 escaped
+        }
+        ret.push(s);
+    });
+
+    return ret.join(' ');
+};
