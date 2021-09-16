@@ -7,15 +7,15 @@ jobs:
   push:
     runs-on: ubuntu-latest
     steps:
-      - name: Invoke deployment hook
-        uses: distributhor/workflow-webhook@v2
-        env:
-          webhook_url: ${{ secrets.WEBHOOK_URL }}
-          webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGA }}
-          webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGA }}
-          data: >-
-            {"commands":["git pull","npm ci --production","passenger-config
-            restart-app /"]}
+      # - name: Invoke deployment hook
+      #   uses: distributhor/workflow-webhook@v2
+      #   env:
+      #     webhook_url: ${{ secrets.WEBHOOK_URL }}
+      #     webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGA }}
+      #     webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGA }}
+      #     data: >-
+      #       {"commands":["git pull","npm ci --production","passenger-config
+      #       restart-app /"]}
       - name: Invoke deployment hook
         uses: distributhor/workflow-webhook@v2
         env:
@@ -25,12 +25,12 @@ jobs:
           data: >-
             {"commands":["git pull","npm ci --production","passenger-config
             restart-app /"]}
-      - name: Invoke deployment hook
-        uses: distributhor/workflow-webhook@v2
-        env:
-          webhook_url: ${{ secrets.WEBHOOK_URL }}
-          webhook_secret: ${{ secrets.WEBHOOK_SECRET_JPN }}
-          webhook_auth: ${{ secrets.WEBHOOK_AUTH_JPN }}
-          data: >-
-            {"commands":["git pull","npm ci --production","passenger-config
-            restart-app /"]}
+      # - name: Invoke deployment hook
+      #   uses: distributhor/workflow-webhook@v2
+      #   env:
+      #     webhook_url: ${{ secrets.WEBHOOK_URL }}
+      #     webhook_secret: ${{ secrets.WEBHOOK_SECRET_JPN }}
+      #     webhook_auth: ${{ secrets.WEBHOOK_AUTH_JPN }}
+      #     data: >-
+      #       {"commands":["git pull","npm ci --production","passenger-config
+      #       restart-app /"]}
