@@ -162,7 +162,7 @@ export const appendIfNotExist = ( /** @type {any[]} */ arr, /** @type {{}} */ re
 }
 
 // https://github.com/xxorax/node-shell-escape/blob/master/shell-escape.js
-export const escapeShell = function (a) {
+export const escapeShell = function (/** @type {string[]} */ ...a) {
     var ret = [];
 
     a.forEach(function (s) {
