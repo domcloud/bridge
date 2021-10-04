@@ -36,12 +36,18 @@ export default function () {
                     write = emitter;
                 }
                 await writeAsync(write, s);
-            }, false);
+            }, !!parseInt(req.query.sandbox + '' || '0'));
         } catch (error) {
-            await writeAsync(write, '$> Error occured\n');
-            await writeAsync(write, JSON.stringify(error));
+            if (error.stdout !== undefined) {
+                await writeAsync(write, `$> Error occured with exit code ${error.code || 'unknown'}\n`);
+                await writeAsync(write, error.stdout + '\n');
+                await writeAsync(write, error.stderr + '\n');
+            } else {
+                await writeAsync(write, '$> Error occured\n');
+                await writeAsync(write, JSON.stringify(error) + '\n');
+            }
         } finally {
-            await writeAsync(write, '$> Execution Finished\n');
+            await writeAsync(write, '\n$> Execution Finished\n');
             if (emitter && !emitter.writableEnded) {
                 emitter.end();
             }

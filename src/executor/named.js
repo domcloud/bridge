@@ -34,87 +34,115 @@ const arrayKey = {
     CAA: 'caa',
 };
 const mapKey = {
-    'a': (ip) => ({
+    'a': (/** @type {string} */ name, /** @type {string} */ ip) => ({
+        name,
         ip
     }),
-    'aaaa': (ip) => ({
+    'aaaa': (/** @type {string} */ name, /** @type {string} */ ip) => ({
+        name,
         ip
     }),
-    'ns': (host) => ({
+    'ns': (/** @type {string} */ name, /** @type {string} */ host) => ({
+        name,
         host
     }),
-    'cname': (alias) => ({
+    'cname': (/** @type {string} */ name, /** @type {string} */ alias) => ({
+        name,
         alias
     }),
-    'mx': (preference, host) => ({
+    'mx': (/** @type {string} */ name, /** @type {string} */ preference, /** @type {string} */ host) => ({
+        name,
         preference: parseInt(preference, 10),
         host,
     }),
-    'ptr': (host) => ({
+    'ptr': (/** @type {string} */ name, /** @type {string} */ host) => ({
+        name,
         host
     }),
-    'txt': (...txt) => ({
+    'txt': (/** @type {string} */ name, /** @type {string[]} */ ...txt) => ({
+        name,
         txt: txt.join(' '),
     }),
-    'srv': (priority, weight, port, target) => ({
+    'srv': (/** @type {string} */ name, /** @type {string} */ priority, /** @type {string} */ weight, /** @type {string} */ port, /** @type {string} */ target) => ({
+        name,
         priority: parseInt(priority, 10),
         weight: parseInt(weight, 10),
         port: parseInt(port, 10),
         target,
     }),
-    'spf': (s) => ({
+    'spf': (/** @type {string} */ name, /** @type {string} */ s) => ({
+        name,
         data: s
     }),
-    'caa': (flags, tag, value) => ({
+    'caa': (/** @type {string} */ name, /** @type {string} */ flags, /** @type {string} */ tag, /** @type {string} */ value) => ({
+        name,
         flags: parseInt(flags, 10),
         tag,
         value: value.replace(new RegExp('^"(.+?)"$'), "$1"),
     }),
 }
 
-const getArrayOf = (file, type) => {
+const getArrayOf = (/** @type {any} */ file, /** @type {string} */ type) => {
     if (!arrayKey[type])
         throw new Error('Unknown type');
     return file[arrayKey[type]] || (file[arrayKey[type]] = []);
 }
 
 class NamedExecutor {
-    async resync(domain) {
-        await spawnSudoUtil('NAMED_SYNC', [domain]);
+    /**
+     * @param {string} zone
+     */
+    async resync(zone) {
+        await spawnSudoUtil('NAMED_SYNC', [zone]);
     }
-    async show(domain) {
+    /**
+     * @param {string} zone
+     */
+    async show(zone) {
         return await executeLock('named', async () => {
-            await spawnSudoUtil('NAMED_GET', [domain]);
+            await spawnSudoUtil('NAMED_GET', [zone]);
             return parse(cat(tmpFile));
         });
     }
-    async add(domain, type, value) {
+    /**
+     * @param {string} zone
+     * @param {string} domain
+     * @param {string} type
+     * @param {string} value
+     */
+    async add(zone, domain, type, value) {
         return await executeLock('named', async () => {
-            await spawnSudoUtil('NAMED_GET', [domain]);
+            await spawnSudoUtil('NAMED_GET', [zone]);
             var file = parse(cat(tmpFile));
             var arr = getArrayOf(file, type);
-            var map = mapKey[type](("" + value).split(' '));
+            var map = mapKey[type](domain, ...("" + value).split(' '));
             if (!appendIfNotExist(arr, map)) {
                 return "Done unchanged";
             }
             file.soa.serial++;
             ShellString(generate(file)).to(tmpFile);
-            await spawnSudoUtil('NAMED_SET', [domain]);
+            await spawnSudoUtil('NAMED_SET', [zone]);
             return "Done updated";
         });
     }
-    async del(domain, type, value) {
+    /**
+     * @param {string} zone
+     * @param {string} domain
+     * @param {string} type
+     * @param {string} value
+     */
+    async del(zone, domain, type, value) {
         await executeLock('named', async () => {
-            await spawnSudoUtil('NAMED_GET', ["" + domain]);
+            await spawnSudoUtil('NAMED_GET', ["" + zone]);
             var file = parse(cat(tmpFile));
             var arr = getArrayOf(file, type);
-            var map = mapKey[type](("" + value).split(' '));
+            var map = mapKey[type](domain, ...("" + value).split(' '));
             if (!deleteIfNotExist(arr, map)) {
                 return "Done unchanged";
             }
             file.soa.serial++;
             ShellString(generate(file)).to(tmpFile);
-            await spawnSudoUtil('NAMED_SET', ["" + domain]);
+            await spawnSudoUtil('NAMED_SET', ["" + zone]);
             return "Done updated";
         });
     }

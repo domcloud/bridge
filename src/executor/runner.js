@@ -2,6 +2,8 @@ import {
     NodeSSH
 } from "node-ssh";
 import { getVersion } from "../util.js";
+import { iptablesExec } from "./iptables.js";
+import { namedExec } from "./named.js";
 import {
     virtualminExec
 } from "./virtualmin.js";
@@ -109,7 +111,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         for (const feature of config.features) {
             const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
             const value = typeof feature === 'string' ? feature.split(' ', 2)[1] : feature[key];
-            const isFeatureEnabled = (f) => {
+            const isFeatureEnabled = (/** @type {string} */ f) => {
                 return domaindata['Features'].includes(f);
             }
             let enabled;
@@ -201,6 +203,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         } else {
                             await writeLog("Already disabled");
                         }
+                    } else if (value === 'sync') {
+                        await writeLog("$> Syncing Slave DNS");
+                        namedExec.resync(domain);
                     } else if (value) {
                         if (!enabled) {
                             await writeLog("$> Enabling DNS");
@@ -209,9 +214,33 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                 dns: true,
                             }));
                         }
+                        if (Array.isArray(value)) {
+                            for (const obj of value) {
+                                if (obj.add) {
+                                    var o = ('' + obj.add).split(' ', 3);
+                                    if (o.length < 3) continue;
+                                    await writeLog(`$> Adding DNS Record of type ${o[1].toUpperCase()}`);
+                                    await writeExec(await namedExec.add(domain, ...o));
+                                }
+                                if (obj.del) {
+                                    var o = ('' + obj.del).split(' ', 3);
+                                    if (o.length < 3) continue;
+                                    await writeLog(`$> Removing DNS Record of type ${o[1].toUpperCase()}`);
+                                    await writeExec(await namedExec.del(domain, ...o));
+                                }
+                            }
+                        }
                     }
                     break;
                 case 'firewall':
+                    if (value === 'on') {
+                        await writeLog("$> changing firewall protection to " + value);
+                        await writeLog(await iptablesExec.setAddUser(domaindata['Username']));
+                    } else if (value === 'off') {
+                        await writeLog("$> changing firewall protection to " + value);
+                        await writeLog(await iptablesExec.setDelUser(domaindata['Username']));
+                    }
+                    break;
                 case 'php':
                     await writeLog("$> changing PHP engine to " + value);
                     await writeExec(await virtualminExec.execFormatted("modify-web", {
