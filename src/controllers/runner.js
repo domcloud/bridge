@@ -8,6 +8,9 @@ import got from 'got';
 import {
     promisify
 } from 'util';
+import {
+    PassThrough
+} from 'stream';
 
 /**
  * @param {import('stream').Writable} stream
@@ -26,18 +29,41 @@ function writeAsync(stream, content) {
 export default function () {
     var router = express.Router();
     router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
-        /** @type {import('stream').Duplex} */
-        let emitter = null;
         /** @type {import('stream').Writable} */
         let write = res;
         try {
             let callback = req.header('x-callback');
+            let callbackChunked = !!parseInt(req.header('x-callback-chunked') || '0');
             await runConfig(req.body || {}, req.query.domain + "", async (s) => {
-                if (callback && !emitter) {
-                    emitter = got.stream.post(callback);
+                if (callback && !write) {
                     res.json('OK');
-                    write = emitter;
                     console.log('begin emit ' + callback);
+                    if (callbackChunked) {
+                        write = got.stream.post(callback);
+                    } else {
+                        let sss = '';
+                        write = new PassThrough();
+                        write.on('data', (chunk) => {
+                            if (!sss)
+                                // for startup message
+                                got.post(callback, {
+                                    headers: {
+                                        'Content-Type': 'text/plain',
+                                    },
+                                    body: 'Running runner... Please wait...\n' + sss
+                                });
+                            sss += chunk;
+                        });
+                        write.on('end', () => {
+                                // and finish message
+                                got.post(callback, {
+                                headers: {
+                                    'Content-Type': 'text/plain',
+                                },
+                                body: sss
+                            });
+                        });
+                    }
                 }
                 console.log('> ' + s);
                 await writeAsync(write, s);
@@ -53,9 +79,10 @@ export default function () {
                 await writeAsync(write, JSON.stringify(error) + '\n');
             }
         } finally {
+            console.log('!> finish');
             await writeAsync(write, '\n$> Execution Finished\n');
-            if (emitter && !emitter.writableEnded) {
-                await promisify(emitter.end)();
+            if (write && !write.writableEnded) {
+                await promisify(write.end)();
             }
             if (!res.writableEnded) {
                 await promisify(res.end)();
