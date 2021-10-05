@@ -37,6 +37,7 @@ export default function () {
             await runConfig(req.body || {}, req.query.domain + "", async (s) => {
                 if (callback && !write) {
                     res.json('OK');
+                    await promisify(res.end)();
                     console.log('begin emit ' + callback);
                     if (callbackChunked) {
                         write = got.stream.post(callback);
@@ -55,8 +56,8 @@ export default function () {
                             sss += chunk;
                         });
                         write.on('end', () => {
-                                // and finish message
-                                got.post(callback, {
+                            // and finish message
+                            got.post(callback, {
                                 headers: {
                                     'Content-Type': 'text/plain',
                                 },
