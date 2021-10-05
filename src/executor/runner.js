@@ -25,7 +25,6 @@ const maxExecutionTime = 600000;
  * @param {(log: string) => Promise<void>} writer
  */
 export default async function runConfig(config, domain, writer, sandbox = false) {
-    let domaindata = await virtualminExec.getDomainInfo(domain);
     let starttime = Date.now();
     const writeLog = async (s) => {
         await writer(s + "\n");
@@ -43,9 +42,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
     if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {
         // create new domain
         await writeLog("$> virtualmin create-domain");
-        if (domaindata) {
-            await writeLog("Can't create. Domain exist");
-        }
         await writeExec(await virtualminExec.execFormatted("create-domain", config.features[0].create, {
             domain,
             dir: true,
@@ -55,8 +51,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             'virtualmin-nginx': true,
             'virtualmin-nginx-ssl': true,
         }));
-        domaindata = await virtualminExec.getDomainInfo(domain);
     }
+    let domaindata = await virtualminExec.getDomainInfo(domain);
     if (!domaindata) {
         await writeLog("Server is not exist. Finishing execution");
         return;
