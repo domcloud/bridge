@@ -5,6 +5,9 @@ import {
 import express from 'express';
 import runConfig from '../executor/runner.js';
 import got from 'got';
+import {
+    promisify
+} from 'util';
 
 /**
  * @param {import('stream').Writable} stream
@@ -34,10 +37,13 @@ export default function () {
                     emitter = got.stream.post(callback);
                     res.json('OK');
                     write = emitter;
+                    console.log('begin emit ' + callback);
                 }
+                console.log('> ' + s);
                 await writeAsync(write, s);
             }, !!parseInt(req.query.sandbox + '' || '0'));
         } catch (error) {
+            console.log('!> ', error);
             if (error.stdout !== undefined) {
                 await writeAsync(write, `$> Error occured with exit code ${error.code || 'unknown'}\n`);
                 await writeAsync(write, error.stdout + '\n');
@@ -49,10 +55,10 @@ export default function () {
         } finally {
             await writeAsync(write, '\n$> Execution Finished\n');
             if (emitter && !emitter.writableEnded) {
-                emitter.end();
+                await promisify(emitter.end)();
             }
             if (!res.writableEnded) {
-                res.end();
+                await promisify(res.end)();
             }
         }
     });

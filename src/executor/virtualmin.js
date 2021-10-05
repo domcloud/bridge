@@ -53,7 +53,8 @@ class VirtualminExecutor {
     async exec(...command) {
         let str = await spawnSudoUtil('VIRTUALMIN', command);
         // virtualmin often produce extra blank lines
-        str = str.replace(/^\s*\n/gm, '');
+        str.stdout = ('' + str.stdout).replace(/^\s*\n/gm, '');
+        str.stderr = ('' + str.stderr).replace(/^\s*\n/gm, '');
         return str;
     }
 }
