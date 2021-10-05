@@ -1,9 +1,19 @@
 import {
     NodeSSH
 } from "node-ssh";
-import { getVersion } from "../util.js";
-import { iptablesExec } from "./iptables.js";
-import { namedExec } from "./named.js";
+import {
+    escapeShell,
+    getVersion
+} from "../util.js";
+import {
+    iptablesExec
+} from "./iptables.js";
+import {
+    namedExec
+} from "./named.js";
+import {
+    nginxExec
+} from "./nginx.js";
 import {
     virtualminExec
 } from "./virtualmin.js";
@@ -30,58 +40,22 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         await writeLog("Exit status: " + s.code);
     }
     await writeLog(`DOM Cloud runner v${getVersion()} in ${domain} at ${new Date(starttime).toISOString()}`);
-    if (Array.isArray(config.features) && !sandbox) {
-        // root features
-        for (const feature of config.features) {
-            const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
-            const value = typeof feature === 'string' ? feature.split(' ', 2)[1] : feature[key];
-            switch (key) {
-                case 'create':
-                    await writeLog("$> virtualmin create-domain");
-                    if (domaindata) {
-                        await writeLog("Can't create. Domain exist");
-                        break;
-                    }
-                    await writeExec(await virtualminExec.execFormatted("create-domain", value, {
-                        domain,
-                        dir: true,
-                        webmin: true,
-                        unix: true,
-                        'limits-from-plan': true,
-                        'virtualmin-nginx': true,
-                        'virtualmin-nginx-ssl': true,
-                    }));
-                    domaindata = await virtualminExec.getDomainInfo(domain);
-                    break;
-                case 'modify':
-                    await writeLog("$> virtualmin modify-domain");
-                    await writeExec(await virtualminExec.execFormatted("modify-domain", value, {
-                        domain,
-                    }));
-                    break;
-                case 'disable':
-                    await writeLog("$> virtualmin disable-domain");
-                    await writeExec(await virtualminExec.execFormatted("disable-domain", value, {
-                        domain,
-                    }));
-                    break;
-                case 'enable':
-                    await writeLog("$> virtualmin enable-domain");
-                    await writeExec(await virtualminExec.execFormatted("enable-domain", value, {
-                        domain,
-                    }));
-                    break;
-                case 'delete':
-                    await writeLog("$> virtualmin delete-domain");
-                    await writeExec(await virtualminExec.execFormatted("delete-domain", value, {
-                        domain,
-                    }));
-                    // no need to do other stuff
-                    return;
-                default:
-                    break;
-            }
+    if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {
+        // create new domain
+        await writeLog("$> virtualmin create-domain");
+        if (domaindata) {
+            await writeLog("Can't create. Domain exist");
         }
+        await writeExec(await virtualminExec.execFormatted("create-domain", config.features[0].create, {
+            domain,
+            dir: true,
+            webmin: true,
+            unix: true,
+            'limits-from-plan': true,
+            'virtualmin-nginx': true,
+            'virtualmin-nginx-ssl': true,
+        }));
+        domaindata = await virtualminExec.getDomainInfo(domain);
     }
     if (!domaindata) {
         await writeLog("Server is not exist. Finishing execution");
@@ -106,15 +80,53 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         }
     }
     await sshExec("cd " + domaindata['Home directory'] + "/public_html");
-
+    if (config.root) {
+        // moved to config.features
+        config.features = (config.features || []).concat([{
+            root: config.root
+        }]);
+        delete config.root;
+    }
     if (Array.isArray(config.features)) {
         for (const feature of config.features) {
             const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
             const value = typeof feature === 'string' ? feature.split(' ', 2)[1] : feature[key];
-            const isFeatureEnabled = (/** @type {string} */ f) => {
+            const isFeatureEnabled = ( /** @type {string} */ f) => {
                 return domaindata['Features'].includes(f);
             }
             let enabled;
+            if (!sandbox) {
+                switch (key) {
+                    case 'modify':
+                        await writeLog("$> virtualmin modify-domain");
+                        await writeExec(await virtualminExec.execFormatted("modify-domain", value, {
+                            domain,
+                        }));
+                        domaindata = await virtualminExec.getDomainInfo(domain);
+                        break;
+                    case 'disable':
+                        await writeLog("$> virtualmin disable-domain");
+                        await writeExec(await virtualminExec.execFormatted("disable-domain", value, {
+                            domain,
+                        }));
+                        break;
+                    case 'enable':
+                        await writeLog("$> virtualmin enable-domain");
+                        await writeExec(await virtualminExec.execFormatted("enable-domain", value, {
+                            domain,
+                        }));
+                        break;
+                    case 'delete':
+                        await writeLog("$> virtualmin delete-domain");
+                        await writeExec(await virtualminExec.execFormatted("delete-domain", value, {
+                            domain,
+                        }));
+                        // no need to do other stuff
+                        return;
+                    default:
+                        break;
+                }
+            }
             switch (key) {
                 case 'mysql':
                     enabled = isFeatureEnabled('mysql');
@@ -220,12 +232,14 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                     var o = ('' + obj.add).split(' ', 3);
                                     if (o.length < 3) continue;
                                     await writeLog(`$> Adding DNS Record of type ${o[1].toUpperCase()}`);
+                                    // @ts-ignore
                                     await writeExec(await namedExec.add(domain, ...o));
                                 }
                                 if (obj.del) {
                                     var o = ('' + obj.del).split(' ', 3);
                                     if (o.length < 3) continue;
                                     await writeLog(`$> Removing DNS Record of type ${o[1].toUpperCase()}`);
+                                    // @ts-ignore
                                     await writeExec(await namedExec.del(domain, ...o));
                                 }
                             }
@@ -274,20 +288,70 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         'renew': 2,
                         'web': true,
                     }));
+                    break;
+                case 'root':
+                    await writeLog("$> changing root folder");
+                    await writeExec(await virtualminExec.execFormatted("modify-web", {
+                        domain,
+                        'document-dir': config.root,
+                    }));
+                    break;
                 default:
                     break;
             }
         }
     }
-    if (config.root) {
-        await writeLog("$> changing root folder");
-        await writeExec(await virtualminExec.execFormatted("modify-web", {
-            domain,
-            'document-dir': config.root,
-        }));
-    }
     if (config.source) {
-        // snip
+        if (typeof config.source === 'string') {
+            config.source = {
+                url: config.source,
+            };
+        }
+        const source = config.source;
+        if (!source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
+            throw new Error("Invalid source URL");
+        }
+        if (config.directory && !source.directory) {
+            source.directory = config.directory;
+            delete config.directory;
+        }
+        var url = new URL(source.url);
+        if (url.pathname.endsWith('.git')) {
+            source.clone = true;
+        }
+        let executedCMD = '';
+        let firewallStatus = !!iptablesExec.getByUsers (await iptablesExec.getParsed(), domaindata['Username'])[0];
+
+        if (source.clone) {
+            if (!source.branch && source.directory) {
+                source.branch = source.directory;
+            } else if (!source.branch && url.hash) {
+                source.branch = url.hash.substr(1);
+                url.hash = '';
+            }
+            if (source.shallow !== false) {
+                source.shallow = true;
+            }
+            executedCMD = `git clone ${escapeShell(url.toString())}` +
+                `${source.branch ? ` -b ${escapeShell(source.branch)}`  : ''}` +
+                `${source.shallow ? ` --depth 1`  : ''}`;
+        } else {
+            executedCMD = `wget -q -O _.zip ` + escapeShell(url.toString());
+            executedCMD += ` ; "unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*"`;
+            if (source.directory) {
+                executedCMD += ` ; mv ${escapeShell(source.directory + '/{.,}*')} . 2>/dev/null`;
+                executedCMD += ` ; rm -rf ${escapeShell(source.directory)}`;
+            }
+        }
+        if (firewallStatus) {
+            await iptablesExec.setDelUser(domaindata['Username']);
+        }
+        await writeLog("$> Downloading source");
+        await writeLog(await sshExec(`rm -rf * .* 2>/dev/null`));
+        await writeLog(await sshExec(executedCMD));
+        if (firewallStatus) {
+            await iptablesExec.setAddUser(domaindata['Username']);
+        }
     }
     if (config.commands) {
         await sshExec('unset HISTFILE'); // https://stackoverflow.com/a/9039154/3908409
@@ -295,6 +359,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         for (const cmd of config.commands) {
             await sshExec(cmd);
         }
+    }
+    if (config.nginx) {
+        await writeLog("$> Applying nginx config");
+        await writeLog(await nginxExec.set(domain, config.nginx));
     }
     if (config.subdomains) {
         for (const sub of config.subdomains) {

@@ -224,11 +224,19 @@ class NginxExecutor {
             });
         })
     }
+    /**
+     * @param {string} domain
+     * @param {any} config
+     */
     async set(domain, config) {
         return await executeLock('nginx', () => {
             return new Promise((resolve, reject) => {
-                spawnSudoUtil('NGINX_GET').then(() => {
-                    NginxConfFile.create(tmpFile, async (err, conf) => {
+                spawnSudoUtil('NGINX_GET')
+                .then(() => {
+                    var src = cat(tmpFile).toString();
+                    // https://github.com/virtualmin/virtualmin-nginx/issues/18
+                    src = src.replace(/ default_server/g, '');
+                    NginxConfFile.createFromSource(src, async (err, conf) => {
                         if (err)
                             return reject(err);
                         const node = findServ(conf.nginx.http[0].server, domain);

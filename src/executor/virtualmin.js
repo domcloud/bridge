@@ -51,7 +51,10 @@ class VirtualminExecutor {
      * @param {string[]} command
      */
     async exec(...command) {
-        return await spawnSudoUtil('VIRTUALMIN', command);
+        let str = await spawnSudoUtil('VIRTUALMIN', command);
+        // virtualmin often produce extra blank lines
+        str = str.replace(/^\s*\n/gm, '');
+        return str;
     }
 }
 
