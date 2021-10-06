@@ -1,4 +1,4 @@
-import { runConfigInBackground } from "./src/controllers/runner";
+import { runConfigInBackground } from "./src/controllers/runner.js";
 
 process.on('message', (msg) => {
     // @ts-ignore
