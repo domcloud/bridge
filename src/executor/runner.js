@@ -316,7 +316,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             source.clone = true;
         }
         let executedCMD = '';
-        let firewallStatus = !!iptablesExec.getByUsers (await iptablesExec.getParsed(), domaindata['Username'])[0];
+        let firewallStatus = !!iptablesExec.getByUsers (await iptablesExec.getParsed(), [domaindata['Username']])[0];
 
         if (source.clone) {
             if (!source.branch && source.directory) {
