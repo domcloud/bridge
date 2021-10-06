@@ -75,7 +75,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             await writeExec(res);
         }
     }
-    await sshExec("cd " + domaindata['Home directory'] + "/public_html");
     if (config.root) {
         // moved to config.features
         config.features = (config.features || []).concat([{
@@ -289,7 +288,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     await writeLog("$> changing root folder");
                     await writeExec(await virtualminExec.execFormatted("modify-web", {
                         domain,
-                        'document-dir': config.root,
+                        'document-dir': value,
                     }));
                     break;
                 default:
@@ -297,6 +296,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
         }
     }
+    await sshExec("cd " + domaindata['Home directory'] + "/public_html");
     if (config.source) {
         if (typeof config.source === 'string') {
             config.source = {

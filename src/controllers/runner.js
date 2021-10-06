@@ -39,25 +39,33 @@ function writeAsync(stream, content) {
 }
 
 export async function runConfigInBackground(body, domain, sandbox, callback) {
-    let sss = '';
+    let fullLogData = '';
+    let chunkedLogData = '';
+    let timeForNextChunk = Date.now();
     const write = new PassThrough();
     const headers = {
         'Content-Type': 'text/plain',
     };
+    let aborted = false;
     write.on('data', (chunk) => {
-        if (!sss)
+        chunkedLogData += chunk;
+        if (!fullLogData || timeForNextChunk < Date.now())
+        {
             // for startup message
             got.post(callback, {
                 headers,
-                body: 'Running runner... Please wait...\n' + chunk,
+                body: (fullLogData ? '[Chunked data...]\n' : 'Running runner... Please wait...\n') + chunkedLogData,
             });
-        sss += chunk;
+            timeForNextChunk = Date.now() + 5000;
+            chunkedLogData = '';
+        }
+        fullLogData += chunk;
     });
     write.on('end', () => {
-        // and finish message
+        // and finish message with full log
         got.post(callback, {
             headers,
-            body: sss
+            body: fullLogData
         });
     });
     try {
@@ -66,6 +74,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             await writeAsync(write, s);
         }, sandbox);
     } catch (error) {
+        aborted = true;
         console.log('!> ', error);
         if (error.stdout !== undefined) {
             await writeAsync(write, `$> Error occured with exit code ${error.code || 'unknown'}\n`);
@@ -77,7 +86,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         }
     } finally {
         console.log('!> finish');
-        await writeAsync(write, '\n$> Execution Finished\n');
+        await writeAsync(write, `\n$> Execution ${aborted ? 'Aborted' : 'Finished'}\n`);
         if (write && !write.writableEnded) {
             write.end();
         }
