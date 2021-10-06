@@ -3,7 +3,9 @@ import { runConfigInBackground } from "./src/controllers/runner.js";
 process.on('message', (msg) => {
     // @ts-ignore
     const { body, domain, sandbox, callback } = msg;
-    runConfigInBackground(body, domain, sandbox, callback);
+    runConfigInBackground(body, domain, sandbox, callback).catch(err => {
+        console.error(err);
+    });
 });
 
 console.log(`Starting runner node ${process.pid}`);

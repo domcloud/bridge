@@ -16,8 +16,12 @@ import {
 } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import {
+    fileURLToPath
+} from 'url';
+import {
+    dirname
+} from 'path';
 
 /**
  * @param {import('stream').Writable} stream
@@ -84,9 +88,12 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
  */
 let singletonRunning;
 
-const __filename = fileURLToPath(import.meta.url);
+const __filename = fileURLToPath(
+    import.meta.url);
 const __dirname = dirname(__filename);
-const childLogger = fs.createWriteStream(path.join(__dirname, `../../logs/${new Date().toISOString().substr(0, 10)}.log`));
+const childLogger = fs.createWriteStream(path.join(__dirname, `../../logs/${new Date().toISOString().substr(0, 10)}.log`), {
+    'flags': 'a',
+});
 export async function runConfigInBackgroundSingleton(payload) {
     if (!singletonRunning || singletonRunning.connected === false) {
         singletonRunning = fork(path.join(__dirname, '../../runner.js'), [], {
