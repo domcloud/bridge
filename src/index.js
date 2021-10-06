@@ -3,7 +3,9 @@ import dotenv from 'dotenv'
 import named from './controllers/named.js';
 import nginx from './controllers/nginx.js';
 import iptables from './controllers/iptables.js';
-import { initUtils } from './util.js';
+import {
+    initUtils
+} from './util.js';
 import runner from './controllers/runner.js';
 
 dotenv.config();
@@ -22,4 +24,8 @@ app.use(function (err, req, res, next) {
 });
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 app.listen(port);
-console.log(`Listening in http://localhost:${port}`);
+
+console.log(`Starting main node on ${port}`);
+process.on('exit', (code) => {
+    console.log(`Exiting main node ${port} with code ${code}`);
+});

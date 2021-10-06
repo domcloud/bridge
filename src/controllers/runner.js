@@ -11,6 +11,10 @@ import {
 import {
     PassThrough
 } from 'stream';
+import {
+    fork
+} from 'child_process';
+import path from 'path';
 
 /**
  * @param {import('stream').Writable} stream
@@ -27,7 +31,7 @@ function writeAsync(stream, content) {
     });
 }
 
-async function runConfigInBackground(body, domain, sandbox, callback) {
+export async function runConfigInBackground(body, domain, sandbox, callback) {
     let sss = '';
     const write = new PassThrough();
     const headers = {
@@ -72,14 +76,29 @@ async function runConfigInBackground(body, domain, sandbox, callback) {
         }
     }
 }
+/**
+ * @type {import('child_process').ChildProcess}
+ */
+let singletonRunning;
+export async function runConfigInBackgroundSingleton(payload) {
+    if (!singletonRunning || singletonRunning.connected === false) {
+        singletonRunning = fork(path.join(__dirname, '../../runner.js'), [], {
+            stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+        });
+
+    }
+    singletonRunning.send(payload);
+}
+
 export default function () {
     var router = express.Router();
     router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
-        setTimeout(function () {
-            runConfigInBackground(req.body, req.query.domain + "",
-                !!parseInt(req.query.sandbox + '' || '0'), req.header('x-callback')
-            );
-        }, 1000)
+        runConfigInBackgroundSingleton({
+            body: req.body,
+            domain: req.query.domain + "",
+            sandbox: !!parseInt(req.query.sandbox + '' || '0'),
+            callback: req.header('x-callback'),
+        });
         res.json('OK');
     });
     return router;
