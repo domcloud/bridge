@@ -22,6 +22,10 @@ process.on('message', (msg) => {
 });
 
 console.log(`Starting runner node ${process.pid}`);
-process.on('exit', (code) => {
+
+const cleanUpServer = (code) => {
     console.log(`Exiting runner node ${process.pid} with code ${code}`);
-});
+};
+[`exit`, `SIGINT`, `SIGUSR1`, `SIGUSR2`, `uncaughtException`, `SIGTERM`].forEach((eventType) => {
+    process.on(eventType, cleanUpServer.bind(null, eventType));
+})

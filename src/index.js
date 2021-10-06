@@ -26,6 +26,10 @@ const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 app.listen(port);
 
 console.log(`Starting main node on ${port}`);
-process.on('exit', (code) => {
+
+const cleanUpServer = (code) => {
     console.log(`Exiting main node ${port} with code ${code}`);
-});
+};
+[`exit`, `SIGINT`, `SIGUSR1`, `SIGUSR2`, `uncaughtException`, `SIGTERM`].forEach((eventType) => {
+    process.on(eventType, cleanUpServer.bind(null, eventType));
+})
