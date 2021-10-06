@@ -102,7 +102,9 @@ export async function runConfigInBackgroundSingleton(payload) {
         singletonRunning.stderr.pipe(childLogger);
         singletonRunning.stdout.pipe(childLogger);
     }
-    singletonRunning.send(payload);
+    singletonRunning.send(payload, (err) => {
+        console.log('!> ', err);
+    });
 }
 
 export default function () {
