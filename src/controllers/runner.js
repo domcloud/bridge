@@ -15,6 +15,7 @@ import {
     fork
 } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 
 /**
  * @param {import('stream').Writable} stream
@@ -80,12 +81,14 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
  * @type {import('child_process').ChildProcess}
  */
 let singletonRunning;
+const childLogger = fs.createWriteStream(path.join(__dirname, `../../logs/${new Date().toISOString().substr(0, 10)}.log`));
 export async function runConfigInBackgroundSingleton(payload) {
     if (!singletonRunning || singletonRunning.connected === false) {
         singletonRunning = fork(path.join(__dirname, '../../runner.js'), [], {
             stdio: ['ignore', 'pipe', 'pipe', 'ipc']
         });
-
+        singletonRunning.stderr.pipe(childLogger);
+        singletonRunning.stdout.pipe(childLogger);
     }
     singletonRunning.send(payload);
 }
