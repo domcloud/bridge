@@ -26,69 +26,61 @@ function writeAsync(stream, content) {
         })
     });
 }
+
+async function runConfigInBackground(body, domain, sandbox, callback) {
+    let sss = '';
+    const write = new PassThrough();
+    const headers = {
+        'Content-Type': 'text/plain',
+    };
+    write.on('data', (chunk) => {
+        if (!sss)
+            // for startup message
+            got.post(callback, {
+                headers,
+                body: 'Running runner... Please wait...\n' + chunk,
+            });
+        sss += chunk;
+    });
+    write.on('end', () => {
+        // and finish message
+        got.post(callback, {
+            headers,
+            body: sss
+        });
+    });
+    try {
+        await runConfig(body || {}, domain + "", async (s) => {
+            console.log('> ' + s);
+            await writeAsync(write, s);
+        }, sandbox);
+    } catch (error) {
+        console.log('!> ', error);
+        if (error.stdout !== undefined) {
+            await writeAsync(write, `$> Error occured with exit code ${error.code || 'unknown'}\n`);
+            await writeAsync(write, error.stdout + '\n');
+            await writeAsync(write, error.stderr + '\n');
+        } else {
+            await writeAsync(write, '$> Error occured\n');
+            await writeAsync(write, JSON.stringify(error) + '\n');
+        }
+    } finally {
+        console.log('!> finish');
+        await writeAsync(write, '\n$> Execution Finished\n');
+        if (write && !write.writableEnded) {
+            write.end();
+        }
+    }
+}
 export default function () {
     var router = express.Router();
     router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
-        /** @type {import('stream').Writable} */
-        let write = res;
-        try {
-            let callback = req.header('x-callback');
-            let callbackChunked = !!parseInt(req.header('x-callback-chunked') || '0');
-            await runConfig(req.body || {}, req.query.domain + "", async (s) => {
-                if (callback && !write) {
-                    res.json('OK');
-                    await promisify(res.end)();
-                    console.log('begin emit ' + callback);
-                    if (callbackChunked) {
-                        write = got.stream.post(callback);
-                    } else {
-                        let sss = '';
-                        write = new PassThrough();
-                        write.on('data', (chunk) => {
-                            if (!sss)
-                                // for startup message
-                                got.post(callback, {
-                                    headers: {
-                                        'Content-Type': 'text/plain',
-                                    },
-                                    body: 'Running runner... Please wait...\n' + sss
-                                });
-                            sss += chunk;
-                        });
-                        write.on('end', () => {
-                            // and finish message
-                            got.post(callback, {
-                                headers: {
-                                    'Content-Type': 'text/plain',
-                                },
-                                body: sss
-                            });
-                        });
-                    }
-                }
-                console.log('> ' + s);
-                await writeAsync(write, s);
-            }, !!parseInt(req.query.sandbox + '' || '0'));
-        } catch (error) {
-            console.log('!> ', error);
-            if (error.stdout !== undefined) {
-                await writeAsync(write, `$> Error occured with exit code ${error.code || 'unknown'}\n`);
-                await writeAsync(write, error.stdout + '\n');
-                await writeAsync(write, error.stderr + '\n');
-            } else {
-                await writeAsync(write, '$> Error occured\n');
-                await writeAsync(write, JSON.stringify(error) + '\n');
-            }
-        } finally {
-            console.log('!> finish');
-            await writeAsync(write, '\n$> Execution Finished\n');
-            if (write && !write.writableEnded) {
-                await promisify(write.end)();
-            }
-            if (!res.writableEnded) {
-                await promisify(res.end)();
-            }
-        }
+        setTimeout(function () {
+            runConfigInBackground(req.body, req.query.domain + "",
+                !!parseInt(req.query.sandbox + '' || '0'), req.header('x-callback')
+            );
+        }, 1000)
+        res.json('OK');
     });
     return router;
 }
