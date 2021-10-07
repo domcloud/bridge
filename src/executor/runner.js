@@ -18,7 +18,7 @@ import {
 import {
     virtualminExec
 } from "./virtualmin.js";
-const maxExecutionTime = 600000;
+const maxExecutionTime = 30000;
 
 /**
  * @param {any} config
@@ -110,11 +110,14 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     if (Date.now() > starttime + maxExecutionTime)
                         return reject("Execution has timed out");
                     let res = '';
-                    cb = (chunk) => {
+                    cb = (/** @type {string} */ chunk) => {
                         res += chunk;
-                        if (res.match(/\[.+?\@.+? .+?\]\$/)) {
+                        if (chunk.match(/\[.+?\@.+? .+?\]\$/)) {
                             cb = null;
                             resolve(res);
+                            console.log('chunk matched ', chunk);
+                        } else {
+                            console.log('chunk not match ', chunk);
                         }
                     };
                     sshStream.write(cmd + "\n");
