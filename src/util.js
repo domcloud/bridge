@@ -107,9 +107,9 @@ export const spawnSudoUtil = function (
             child.on('error', function (err) {
                 stderr += err.message + "\n";
             });
-            child.on('close', code => {
-                (code === 0 ? resolve : reject)({
-                    code,
+            child.on('close', (code, signal) => {
+                (code == 0 ? resolve : reject)({
+                    code: typeof code === 'number' ? code : signal,
                     stdout,
                     stderr
                 });
