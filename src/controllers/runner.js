@@ -103,7 +103,7 @@ const __dirname = dirname(__filename);
 const childLogger = fs.createWriteStream(path.join(__dirname, `../../logs/${new Date().toISOString().substr(0, 10)}.log`), {
     'flags': 'a',
 });
-export async function runConfigInBackgroundSingleton(payload) {
+export function runConfigInBackgroundSingleton(payload) {
     if (!singletonRunning || singletonRunning.connected === false) {
         singletonRunning = fork(path.join(__dirname, '../../runner.js'), [], {
             stdio: ['ignore', 'pipe', 'pipe', 'ipc']
@@ -111,9 +111,12 @@ export async function runConfigInBackgroundSingleton(payload) {
         singletonRunning.stderr.pipe(childLogger);
         singletonRunning.stdout.pipe(childLogger);
     }
-    singletonRunning.send(payload, (err) => {
-        console.log('!> ', err);
-    });
+    // it seems that we need to wait for the child process to be ready
+    setTimeout(() => {
+        singletonRunning.send(payload, (err) => {
+            console.log('!> ', err);
+        });
+    }, 500);
 }
 
 export default function () {

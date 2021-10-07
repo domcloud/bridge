@@ -16,9 +16,13 @@ process.on('message', (msg) => {
         sandbox,
         callback
     } = msg;
-    runConfigInBackground(body, domain, sandbox, callback).catch(err => {
-        console.error(err);
-    });
+    try {
+        runConfigInBackground(body, domain, sandbox, callback).catch(err => {
+            console.error(err);
+        });
+    } catch (error) {
+        console.error(error);
+    }
 });
 
 console.log(`Starting runner node ${process.pid}`);

@@ -15,7 +15,7 @@ export default function () {
                 res.send(executor.getRaw(p));
             else {
                 if (req.query.user) {
-                    res.json(executor.getByUsers(p, ("" + req.query.user).split(',')));
+                    res.json(executor.getByUsers(p, ...("" + req.query.user).split(',')));
                 } else {
                     res.json((p));
                 }
