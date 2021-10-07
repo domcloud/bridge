@@ -110,20 +110,20 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     if (Date.now() > starttime + maxExecutionTime)
                         return reject("Execution has timed out");
                     let res = '';
-                    cb = (/** @type {string} */ chunk) => {
+                    cb = ( /** @type {string} */ chunk) => {
                         res += chunk;
                         if (chunk.match(/\[.+?\@.+? .+?\]\$/)) {
                             cb = null;
+                            res = res.replace(/\[.+?\@.+? .+?\]\$/, '');
                             resolve(res);
-                            console.log('chunk matched ', chunk);
-                        } else {
-                            console.log('chunk not match ', chunk);
                         }
                     };
-                    sshStream.write(cmd + "\n");
+                    if (cmd)
+                        sshStream.write(cmd + "\n");
                 })
             ]);
         }
+        await sshExec(''); // drop initial message
     }
     try {
         if (config.root) {
