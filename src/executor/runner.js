@@ -29,7 +29,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
     let starttime = Date.now();
     const writeLog = async (s) => {
         await writer(s + "\n");
-        if (Date.now() - starttime > maxExecutionTime)
+        if (Date.now() > starttime + maxExecutionTime)
             throw new Error("Execution has timed out");
     }
     const writeExec = async (s) => {
@@ -99,16 +99,15 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             if (cb)
                 cb(chunk.toString());
         })
-        let executionTimeout = Date.now() + 60000;
-        sshExec = (/** @type {string} */ cmd) => {
+        sshExec = ( /** @type {string} */ cmd) => {
             // SSH prone to wait indefinitely, so we need to set a timeout
             return Promise.race([
                 new Promise((resolve, reject) => {
-                    setTimeout(reject, Math.max(0, Date.now() - executionTimeout),
+                    setTimeout(reject, Math.max(0, maxExecutionTime - (Date.now() - starttime)),
                         "Execution has timed out");
                 }),
                 new Promise((resolve, reject) => {
-                    if (executionTimeout < Date.now())
+                    if (Date.now() > starttime + maxExecutionTime)
                         return reject("Execution has timed out");
                     let res = '';
                     cb = (chunk) => {
