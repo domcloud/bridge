@@ -347,6 +347,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 }
             }
         }
+        await sshExec('unset HISTFILE'); // https://stackoverflow.com/a/9039154/3908409
         await sshExec("cd " + domaindata['Home directory'] + "/public_html");
         if (config.source) {
             if (typeof config.source === 'string') {
@@ -384,7 +385,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     `${source.shallow ? ` --depth 1`  : ''}`;
             } else {
                 executedCMD = `wget -q -O _.zip ` + escapeShell(url.toString());
-                executedCMD += ` ; "unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*"`;
+                executedCMD += ` ; unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*`;
                 if (source.directory) {
                     executedCMD += ` ; mv ${escapeShell(source.directory + '/{.,}*')} . 2>/dev/null`;
                     executedCMD += ` ; rm -rf ${escapeShell(source.directory)}`;
@@ -404,10 +405,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog);
         } else {
             if (config.commands) {
-                await sshExec('unset HISTFILE'); // https://stackoverflow.com/a/9039154/3908409
                 await sshExec(`DATABASE='${domaindata['Username']}_db' ; DOMAIN='${domain}' ; USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`);
                 for (const cmd of config.commands) {
-                    await sshExec(cmd);
+                    await writeLog("$> " + cmd + "\n");
+                    await writeLog(await sshExec(cmd));
                 }
             }
             if (config.nginx) {
@@ -433,7 +434,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     await sshExec(`cd ${domaindata['Home directory']}/domains/${subdomain}/public_html/`);
     if (config.commands) {
         for (const cmd of config.commands) {
-            await sshExec(cmd);
+            await writeLog(await sshExec(cmd));
         }
     }
     if (config.nginx) {
