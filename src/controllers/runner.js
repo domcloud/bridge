@@ -47,13 +47,23 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         'Content-Type': 'text/plain',
     };
     let aborted = false;
+    /**
+     * @type {got.GotPromise<string>}
+     */
+    let latestSend = null;
     write.on('data', (chunk) => {
         chunkedLogData += chunk;
-        if (!fullLogData || timeForNextChunk < Date.now()) {
+        if ((!fullLogData || timeForNextChunk < Date.now()) && latestSend === null) {
             // for startup message
-            got.post(callback, {
+            latestSend = got.post(callback, {
                 headers,
                 body: (fullLogData ? '[Chunked data...]\n' : 'Running runner... Please wait...\n') + chunkedLogData,
+
+            });
+            latestSend.then(function () {
+                latestSend = null;
+            }).catch(function (err) {
+                latestSend = null;
             });
             timeForNextChunk = Date.now() + 5000;
             chunkedLogData = '';
@@ -61,6 +71,8 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         fullLogData += chunk;
     });
     write.on('end', () => {
+        if (latestSend) // avoid race condition
+            latestSend.cancel();
         // and finish message with full log
         got.post(callback, {
             headers,

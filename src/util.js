@@ -93,12 +93,8 @@ export const spawnSudoUtil = function (
     return new Promise((resolve, reject) => {
         try {
             var child = process.env.NODE_ENV === 'development' ?
-                spawn("node", [sudoutil, mode, ...args], {
-                    stdio: 'inherit'
-                }) :
-                spawn("sudo", [sudoutil, mode, ...args], {
-                    stdio: 'inherit'
-                });
+                spawn("node", [sudoutil, mode, ...args], {}) :
+                spawn("sudo", [sudoutil, mode, ...args], {});
             let stdout = '',
                 stderr = ''; {
                 child.stdout.on('data', data => {
