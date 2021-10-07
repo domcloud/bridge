@@ -18,7 +18,7 @@ import {
 import {
     virtualminExec
 } from "./virtualmin.js";
-const maxExecutionTime = 30000;
+const maxExecutionTime = 300000;
 
 /**
  * @param {any} config
@@ -53,6 +53,26 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             'virtualmin-nginx': true,
             'virtualmin-nginx-ssl': true,
         }));
+        // sometimes we need to wait for the domain to be created
+        await new Promise((resolve, reject) => {
+            let tries = 0;
+            const check = () => {
+                virtualminExec.execFormatted("list-domains", {
+                    domain
+                }).then(async (s) => {
+                    if (s.stdout.includes(domain)) {
+                        resolve();
+                    } else {
+                        if (++tries < 10) {
+                            setTimeout(check, 3000);
+                        } else {
+                            reject("Domain not found after 10 tries");
+                        }
+                    }
+                }).catch(reject);
+            }
+            check();
+        });
     }
     let domaindata = await virtualminExec.getDomainInfo(domain);
     if (!domaindata) {
@@ -348,8 +368,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
         }
         await sshExec('unset HISTFILE'); // https://stackoverflow.com/a/9039154/3908409
-        console.log('domain dataaaa', domaindata);
-        await writeLog(await sshExec("cd " + (domaindata['Home directory'] || '/' + domaindata['Username']) + "/public_html"));
+        await writeLog(await sshExec(`mkdir -p ${domaindata['Home directory']}/public_html && cd "$_"`));
         if (config.source) {
             if (typeof config.source === 'string') {
                 config.source = {
@@ -431,7 +450,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
 }
 
 export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog) {
-    await sshExec(`cd ${domaindata['Home directory']}/domains/${subdomain}/public_html/`);
+    await sshExec(`mkdir -p ${domaindata['Home directory']}/domains/${subdomain}/public_html && cd "$_"`);
     if (config.commands) {
         for (const cmd of config.commands) {
             await writeLog(await sshExec(cmd));
