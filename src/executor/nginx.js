@@ -189,8 +189,8 @@ class NginxExecutor {
         data.user = data.root.split('/')[2];
         data.access_log = node.access_log[0]._value;
         data.error_log = node.error_log[0]._value;
-        data.ssl_certificate = node.ssl_certificate[0]._value;
-        data.ssl_certificate_key = node.ssl_certificate_key[0]._value;
+        data.ssl_certificate = node.ssl_certificate ? node.ssl_certificate[0]._value : `/home/${data.user}/ssl.cert`;
+        data.ssl_certificate_key = node.ssl_certificate_key ? node.ssl_certificate_key[0]._value : `/home/${data.user}/ssl.key`;
 
         data.fcgi = findFastCgi(node);
         data.config = extractLocations(node, `/home/${data.user}/`);
