@@ -24,7 +24,7 @@ export default function () {
     });
     router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
         try {
-            return res.json(await executor.set(req.query.domain, req.body || {}));
+            return res.json(await executor.set("" + req.query.domain, req.body || {}));
         } catch (error) {
             next(error);
         }

@@ -82,7 +82,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             await writeAsync(write, error.stderr + '\n');
         } else {
             await writeAsync(write, '$> Error occured\n');
-            await writeAsync(write, JSON.stringify(error, Object.getOwnPropertyNames(err)) + '\n');
+            await writeAsync(write, JSON.stringify(error, Object.getOwnPropertyNames(error)) + '\n');
         }
     } finally {
         console.log('!> finish');

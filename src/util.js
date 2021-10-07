@@ -132,7 +132,9 @@ export const executeLock = function (
     const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
     return new Promise((resolve, reject) => {
         lock(realfile, (err) => {
-            callback(err)
+            if (err)
+                return reject(err);
+            callback()
                 .then(resolve)
                 .catch(reject)
                 .finally(x => {

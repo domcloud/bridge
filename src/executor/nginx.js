@@ -85,7 +85,9 @@ class NginxExecutor {
             }
         }
         Object.getOwnPropertyNames(node).forEach(function (prop) {
-            delete node[prop];
+            while (node[prop] && node[prop].length > 0) {
+                node._remove(prop);
+            }
         });
         node._add('server_name', info.dom);
         if (info.config.ssl !== "enforce") {
@@ -229,28 +231,29 @@ class NginxExecutor {
      * @param {any} config
      */
     async set(domain, config) {
-        return await executeLock('nginx', () => {
-            return new Promise((resolve, reject) => {
-                spawnSudoUtil('NGINX_GET')
-                .then(() => {
-                    var src = cat(tmpFile).toString();
-                    // https://github.com/virtualmin/virtualmin-nginx/issues/18
-                    src = src.replace(/ default_server/g, '');
-                    NginxConfFile.createFromSource(src, async (err, conf) => {
+        return await executeLock('nginx', async () => {
+            await spawnSudoUtil('NGINX_GET');
+            return await new Promise((resolve, reject) => {
+                var src = cat(tmpFile).toString();
+                // https://github.com/virtualmin/virtualmin-nginx/issues/18
+                src = src.replace(/ default_server/g, '');
+                NginxConfFile.createFromSource(src, (err, conf) => {
+                    if (err)
+                        return reject(err);
+                    const node = findServ(conf.nginx.http[0].server, domain);
+                    const info = this.extractInfo(node, domain);
+                    info.config = config;
+                    this.applyInfo(node, info);
+                    conf.write((/** @type {Error[]} */ err) => {
                         if (err)
                             return reject(err);
-                        const node = findServ(conf.nginx.http[0].server, domain);
-                        const info = this.extractInfo(node, domain);
-                        info.config = config;
-                        this.applyInfo(node, info);
-                        conf.write(async (e) => {
-                            if (e)
-                                return reject(err);
-                            await spawnSudoUtil('NGINX_SET');
-                            return resolve("Done updated");
-                        });
+                        spawnSudoUtil('NGINX_SET').then(() => {
+                            resolve("Done updated");
+                        }).catch((err) => {
+                            reject(err);
+                        })
                     });
-                }).catch(reject);
+                });
             });
         })
     }

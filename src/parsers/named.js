@@ -244,6 +244,7 @@ let flatten = function (text) {
   let re = /\([\s\S]*?\)/gim;
   let match = re.exec(text);
   while (match !== null) {
+    // @ts-ignore
     match.replacement = match[0].replace(/\s+/gm, ' ');
     captured.push(match);
     // captured Text, index, input
@@ -251,6 +252,7 @@ let flatten = function (text) {
   }
   let arrText = text.split('');
   for (match of captured) {
+    // @ts-ignore
     arrText.splice(match.index, match[0].length, match.replacement);
   }
   return arrText.join('').replace(/\(|\)/gim, ' ');
