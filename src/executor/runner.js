@@ -384,7 +384,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 delete config.directory;
             }
             var url = new URL(source.url);
-            if (url.pathname.endsWith('.git')) {
+            if (url.pathname.endsWith('.git') || url.pathname.match(/^(https?:\/\/)?(github|gitlab).com/)) {
                 source.clone = true;
             }
             let executedCMD = '';
