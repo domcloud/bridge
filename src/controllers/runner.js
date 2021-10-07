@@ -49,8 +49,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     let aborted = false;
     write.on('data', (chunk) => {
         chunkedLogData += chunk;
-        if (!fullLogData || timeForNextChunk < Date.now())
-        {
+        if (!fullLogData || timeForNextChunk < Date.now()) {
             // for startup message
             got.post(callback, {
                 headers,
@@ -80,6 +79,9 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             await writeAsync(write, `$> Error occured with exit code ${error.code || 'unknown'}\n`);
             await writeAsync(write, error.stdout + '\n');
             await writeAsync(write, error.stderr + '\n');
+        } else if (error.message) {
+            await writeAsync(write, `$> Error occured: ${error.message}\n`);
+            await writeAsync(write, ('' + error.stack).split('\n').map(x => `$>   ${x}`).join('\n') + '\n');
         } else {
             await writeAsync(write, '$> Error occured\n');
             await writeAsync(write, JSON.stringify(error, Object.getOwnPropertyNames(error)) + '\n');

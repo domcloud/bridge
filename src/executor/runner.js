@@ -36,7 +36,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         if (s.stderr) {
             await writeLog(s.stderr.split('\n').map(x => '! ' + x).join('\n'));
         }
-        await writeLog("Exit status: " + s.code);
+        if (s.code !== null)
+            await writeLog("Exit status: " + s.code);
     }
     await writeLog(`DOM Cloud runner v${getVersion()} in ${domain} at ${new Date(starttime).toISOString()}`);
     if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {
