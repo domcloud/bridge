@@ -133,6 +133,7 @@ export const executeLock = function (
     return new Promise((resolve, reject) => {
         lock(realfile, {
             retries: 10,
+            realpath: false,
         }).then((release) => {
             callback()
             .then(resolve)
