@@ -60,7 +60,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 virtualminExec.execFormatted("list-domains", {
                     domain
                 }).then(async (s) => {
-                    console.log('bababa', s);
                     if (s.code === 0) {
                         resolve();
                     } else {
@@ -136,6 +135,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         if (chunk.match(/\[.+?\@.+? .+?\]\$/)) {
                             cb = null;
                             res = res.replace(/\[.+?\@.+? .+?\]\$/, '');
+                            res = res.replace(/\0/g, '');
                             resolve('$> ' + res.trim() + "\n");
                         }
                     };

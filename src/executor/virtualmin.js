@@ -20,7 +20,7 @@ class VirtualminExecutor {
                     stdout: cat('./test/info'),
                     stderr: '',
                 }
-            if (r.code !== 0)
+            if (r.code === 255)
                 throw r;
             return r.stdout.split('\n')
                 .filter(l => l.startsWith('    '))
@@ -31,6 +31,7 @@ class VirtualminExecutor {
                     return c;
                 }, {});
         } catch (error) {
+            console.log(error);
             return null;
         }
     }

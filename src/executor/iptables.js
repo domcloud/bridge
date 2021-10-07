@@ -27,7 +27,6 @@ class IptablesExecutor {
      * @param {string[]} users
      */
     getByUsers(parsed, ...users) {
-        console.log(parsed);
         return users.map(u => (
             parsed.filter?.rules.find(x => x["--uid-owner"] === u)
         ))
