@@ -115,7 +115,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         if (chunk.match(/\[.+?\@.+? .+?\]\$/)) {
                             cb = null;
                             res = res.replace(/\[.+?\@.+? .+?\]\$/, '');
-                            resolve(res);
+                            resolve('$> ' + res.trim() + "\n");
                         }
                     };
                     if (cmd)
@@ -348,7 +348,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
         }
         await sshExec('unset HISTFILE'); // https://stackoverflow.com/a/9039154/3908409
-        await sshExec("cd " + domaindata['Home directory'] + "/public_html");
+        console.log('domain dataaaa', domaindata);
+        await writeLog(await sshExec("cd " + (domaindata['Home directory'] || '/' + domaindata['Username']) + "/public_html"));
         if (config.source) {
             if (typeof config.source === 'string') {
                 config.source = {
@@ -407,7 +408,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             if (config.commands) {
                 await sshExec(`DATABASE='${domaindata['Username']}_db' ; DOMAIN='${domain}' ; USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`);
                 for (const cmd of config.commands) {
-                    await writeLog("$> " + cmd + "\n");
                     await writeLog(await sshExec(cmd));
                 }
             }
