@@ -60,7 +60,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 virtualminExec.execFormatted("list-domains", {
                     domain
                 }).then(async (s) => {
-                    if (s.stdout.includes(domain)) {
+                    console.log('bababa', s);
+                    if (s.code === 0) {
                         resolve();
                     } else {
                         if (++tries < 10) {
