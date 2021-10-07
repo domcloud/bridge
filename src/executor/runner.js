@@ -402,7 +402,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 }
                 executedCMD = `git clone ${escapeShell(url.toString())}` +
                     `${source.branch ? ` -b ${escapeShell(source.branch)}`  : ''}` +
-                    `${source.shallow ? ` --depth 1`  : ''}`;
+                    `${source.shallow ? ` --depth 1`  : ''}` + ' .';
             } else {
                 executedCMD = `wget -q -O _.zip ` + escapeShell(url.toString());
                 executedCMD += ` ; unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*`;

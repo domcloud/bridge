@@ -5,7 +5,7 @@ import {
 import {
     lock,
     unlock
-} from 'lockfile';
+} from 'proper-lockfile';
 import _ from 'underscore';
 
 
@@ -131,16 +131,17 @@ export const executeLock = function (
     callback) {
     const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
     return new Promise((resolve, reject) => {
-        lock(realfile, (err) => {
-            if (err)
-                return reject(err);
+        lock(realfile, {
+            retries: 10,
+        }).then((release) => {
             callback()
-                .then(resolve)
-                .catch(reject)
-                .finally(x => {
-                    unlock(realfile, () => {});
-                    return x;
-                })
+            .then(resolve)
+            .catch(reject)
+            .finally(x => {
+                return release();
+            })
+        }).catch(err => {
+            reject(err);
         });
     });
 }
