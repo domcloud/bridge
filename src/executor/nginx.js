@@ -6,8 +6,6 @@ import {
     spawnSudoUtil
 } from '../util.js';
 import path from 'path';
-import _ from 'underscore';
-// import Parser from '../parsers/nginx.js';
 import shelljs from 'shelljs';
 import parser, {
     NginxConfFile

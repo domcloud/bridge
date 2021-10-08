@@ -7,8 +7,6 @@ import {
     unlock,
     check
 } from 'proper-lockfile';
-import _ from 'underscore';
-
 
 let tokenSecret, allowIps, sudoutil, metadata;
 import fs from 'fs';
@@ -125,7 +123,7 @@ export const spawnSudoUtil = function (
     });
 }
 
-export const checkTheLock = function (/** @type {string} */ file)  {
+export const checkTheLock = function ( /** @type {string} */ file) {
     const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
     return check(realfile, {
         realpath: false,
@@ -144,18 +142,31 @@ export const executeLock = function (
             realpath: false,
         }).then((release) => {
             callback()
-            .then(resolve)
-            .catch(reject)
-            .finally(x => {
-                return release();
-            })
+                .then(resolve)
+                .catch(reject)
+                .finally(x => {
+                    return release();
+                })
         }).catch(err => {
             reject(err);
         });
     });
 }
+// Returns whether an object has a given set of `key:value` pairs.
+export function isMatch(object, attrs) {
+    var _keys = Object.keys(attrs),
+        length = _keys.length;
+    if (object == null) return !length;
+    var obj = Object(object);
+    for (var i = 0; i < length; i++) {
+        var key = _keys[i];
+        if (attrs[key] !== obj[key] || !(key in obj)) return false;
+    }
+    return true;
+}
+
 export const deleteIfNotExist = ( /** @type {any[]} */ arr, /** @type {any} */ record) => {
-    const idx = arr.findIndex((x) => _.isMatch(x, record));
+    const idx = arr.findIndex((x) => isMatch(x, record));
     if (idx === -1) {
         return false;
     } else {
@@ -164,7 +175,7 @@ export const deleteIfNotExist = ( /** @type {any[]} */ arr, /** @type {any} */ r
     }
 }
 export const appendIfNotExist = ( /** @type {any[]} */ arr, /** @type {{}} */ record) => {
-    const idx = arr.findIndex((x) => _.isMatch(x, record));
+    const idx = arr.findIndex((x) => isMatch(x, record));
     if (idx === -1) {
         arr.push(record);
         return true;
@@ -174,7 +185,7 @@ export const appendIfNotExist = ( /** @type {any[]} */ arr, /** @type {{}} */ re
 }
 
 // https://github.com/xxorax/node-shell-escape/blob/master/shell-escape.js
-export const escapeShell = function (/** @type {string[]} */ ...a) {
+export const escapeShell = function ( /** @type {string[]} */ ...a) {
     var ret = [];
 
     a.forEach(function (s) {
