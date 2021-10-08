@@ -30,6 +30,3 @@ console.log(`Starting main node on ${port}`);
 const cleanUpServer = (code) => {
     console.log(`Exiting main node ${port} with code ${code}`);
 };
-[`exit`, `SIGINT`, `SIGUSR1`, `SIGUSR2`, `uncaughtException`, `SIGTERM`].forEach((eventType) => {
-    process.on(eventType, cleanUpServer.bind(null, eventType));
-})

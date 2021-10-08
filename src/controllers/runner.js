@@ -50,6 +50,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
      */
     let latestSend = null;
     write.on('data', (chunk) => {
+        if (!callback) return;
         chunkedLogData += chunk;
         if ((!fullLogData || timeForNextChunk < Date.now()) && latestSend === null) {
             // for startup message
@@ -72,10 +73,11 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         if (latestSend) // avoid race condition
             latestSend.cancel();
         // and finish message with full log
-        got.post(callback, {
-            headers,
-            body: fullLogData
-        });
+        if (callback)
+            got.post(callback, {
+                headers,
+                body: fullLogData
+            });
     });
     try {
         await runConfig(body || {}, domain + "", async (s) => {
@@ -113,7 +115,6 @@ export async function runConfigInBackgroundSingleton(payload) {
     spawn('node', [path.join(process.cwd(), '/runner.js'), JSON.stringify(payload)], {
         stdio: ['ignore', childLogger, childLogger],
         detached: true,
-        killSignal : 'SIGINT',
     }).unref();
 }
 

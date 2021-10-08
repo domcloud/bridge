@@ -83,6 +83,7 @@ class NginxExecutor {
             }
         }
         Object.getOwnPropertyNames(node).forEach(function (prop) {
+            if (prop.startsWith("_")) return;
             while (node[prop] && node[prop].length > 0) {
                 node._remove(prop);
             }
@@ -230,10 +231,8 @@ class NginxExecutor {
      */
     async set(domain, config) {
         return await executeLock('nginx', async () => {
-            console.log('reading nginx')
             await spawnSudoUtil('NGINX_GET');
             return await new Promise((resolve, reject) => {
-                console.log('readed nginx')
                 var src = cat(tmpFile).toString();
                 // https://github.com/virtualmin/virtualmin-nginx/issues/18
                 src = src.replace(/ default_server/g, '');
@@ -241,10 +240,12 @@ class NginxExecutor {
                     if (err)
                         return reject(err);
                     const node = findServ(conf.nginx.http[0].server, domain);
+                    if (!node) {
+                        return reject(new Error(`Cannot find domain ${domain}`));
+                    }
                     const info = this.extractInfo(node, domain);
                     info.config = config;
                     this.applyInfo(node, info);
-                    console.log('done logging nginx ', conf.toString())
                     ShellString(conf.toString()).to(tmpFile);
                     spawnSudoUtil('NGINX_SET').then(() => {
                         resolve("Done updated");
