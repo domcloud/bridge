@@ -120,8 +120,10 @@ const childLogger = fs.createWriteStream(path.join(__dirname, `../../logs/${new 
 export function runConfigInBackgroundSingleton(payload) {
     if (!singletonRunning || singletonRunning.connected === false) {
         singletonRunning = fork(path.join(__dirname, '../../runner.js'), [], {
-            stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+            stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+            detached: true,
         });
+        singletonRunning.unref();
         singletonRunning.stderr.pipe(childLogger);
         singletonRunning.stdout.pipe(childLogger);
     }
