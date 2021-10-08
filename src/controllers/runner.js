@@ -2,6 +2,7 @@ import {
     checkAuth,
     checkGet,
     checkTheLock,
+    normalizeShellOutput,
 } from '../util.js';
 import express from 'express';
 import runConfig from '../executor/runner.js';
@@ -56,7 +57,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             // for startup message
             latestSend = got.post(callback, {
                 headers,
-                body: (fullLogData ? '[Chunked data...]\n' : 'Running runner... Please wait...\n') + chunkedLogData,
+                body: (fullLogData ? '[Chunked data...]\n' : 'Running runner... Please wait...\n') + normalizeShellOutput(chunkedLogData),
 
             });
             latestSend.then(function () {
@@ -76,7 +77,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         if (callback)
             got.post(callback, {
                 headers,
-                body: fullLogData
+                body: normalizeShellOutput(fullLogData)
             });
     });
     try {

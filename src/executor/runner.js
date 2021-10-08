@@ -55,6 +55,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         }));
         // sometimes we need to wait for the domain to be created
         await new Promise((resolve, reject) => {
+            setTimeout(resolve, 5000);
+        });
+        await new Promise((resolve, reject) => {
             let tries = 0;
             const check = () => {
                 virtualminExec.execFormatted("list-domains", {
@@ -157,7 +160,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         if (Array.isArray(config.features)) {
             for (const feature of config.features) {
                 const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
-                const value = typeof feature === 'string' ? feature.split(' ', 2)[1] : feature[key];
+                const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
                 const isFeatureEnabled = ( /** @type {string} */ f) => {
                     return domaindata['Features'].includes(f);
                 }

@@ -200,3 +200,37 @@ export const escapeShell = function ( /** @type {string[]} */ ...a) {
 
     return ret.join(' ');
 };
+
+export const normalizeShellOutput = function ( /** @type {string} */ output) {
+    var text = output;
+    var text2 = '';
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text.length > i + 1 ? text[i + 1] : '';
+        const prev = text.length > i - 1 ? text[i - 1] : '';
+        if (char === '\r') {
+            if (next === '\u001b') {
+                i++;
+                // ANSI navigation controls
+                while (text.substr(i, 1) === '\u001b' && /\[[ABCDK]/.test(text.substr(i + 1, 2))) {
+                    i += 3;
+                }
+            } else if (next === '\n') {
+                text2 += '\n';
+                i++;
+            } else if (next === prev) {
+                i++;
+            } else {
+                // clear last line
+                text2 = text2.substr(0, text2.lastIndexOf('\n') + 1);
+            }
+        } else {
+            text2 += char;
+        }
+    }
+    text = text2;
+    text = text.replace(/\x1b\[A.+?\x1b\[Ke/g, '\n');
+    text = text.replace(/^\$> (.+)/gm, '\u001b[37m$$> $1\u001b[0m');
+    text = text.replace(/^(Exit status: .+)/gim, "\u001b[36m$1\u001b[0m");
+    return text;
+}
