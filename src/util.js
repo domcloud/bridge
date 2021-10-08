@@ -133,23 +133,24 @@ export const checkTheLock = function ( /** @type {string} */ file) {
 export const executeLock = function (
     /** @type {string} */
     file,
-    /** @type {(err?: Error) => Promise<any>} */
+    /** @type {() => Promise<any>} */
     callback) {
     const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
     return new Promise((resolve, reject) => {
+        let release;
         lock(realfile, {
-            retries: 10,
-            realpath: false,
-        }).then((release) => {
-            callback()
-                .then(resolve)
-                .catch(reject)
-                .finally(x => {
-                    return release();
-                })
-        }).catch(err => {
-            reject(err);
-        });
+                retries: 10,
+                realpath: false,
+            }).then((releaseCall) => {
+                release = releaseCall;
+                return callback();
+            }).then(arg => {
+                release();
+                resolve(arg);
+            })
+            .catch(err => {
+                reject(err);
+            });
     });
 }
 // Returns whether an object has a given set of `key:value` pairs.

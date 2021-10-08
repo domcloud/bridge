@@ -230,8 +230,10 @@ class NginxExecutor {
      */
     async set(domain, config) {
         return await executeLock('nginx', async () => {
+            console.log('reading nginx')
             await spawnSudoUtil('NGINX_GET');
             return await new Promise((resolve, reject) => {
+                console.log('readed nginx')
                 var src = cat(tmpFile).toString();
                 // https://github.com/virtualmin/virtualmin-nginx/issues/18
                 src = src.replace(/ default_server/g, '');
