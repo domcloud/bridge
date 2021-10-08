@@ -3,21 +3,26 @@ import {
     runConfigInBackground
 } from "./src/controllers/runner.js";
 import {
+    checkTheLock,
+    executeLock,
     initUtils
 } from './src/util.js';
-import zmq from 'zeromq';
+import {
+    Reply
+} from 'zeromq';
 
 dotenv.config();
 initUtils();
 
 async function main() {
-    const sock = new zmq.Pull();
+    const sock = new Reply();
 
-    await sock.connect('tcp://*:2223');
+    await sock.bind('tcp://*:2223');
 
     for await (const [msg] of sock) {
         const payload = JSON.parse(msg.toString());
         console.log(`Executing`, payload);
+        await sock.send("OK");
         // @ts-ignore
         const {
             body,
@@ -38,9 +43,16 @@ async function main() {
 
 console.log(`Starting runner node ${process.pid}`);
 
-main().catch(err => {
-    console.error(err);
-    process.exit(1);
+checkTheLock('runner').then((lock) => {
+    if (lock) {
+        console.log('Runner is already running');
+        process.exit();
+    } else {
+        executeLock('runner', main).catch(err => {
+            console.error(err);
+            process.exit(1);
+        })
+    }
 });
 
 const cleanUpServer = (code) => {

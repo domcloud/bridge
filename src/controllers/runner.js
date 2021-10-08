@@ -1,6 +1,7 @@
 import {
     checkAuth,
     checkGet,
+    checkTheLock,
 } from '../util.js';
 import express from 'express';
 import runConfig from '../executor/runner.js';
@@ -24,7 +25,7 @@ import {
     dirname
 } from 'path';
 import {
-    Push
+    Request
 } from 'zeromq';
 
 /**
@@ -110,11 +111,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         }
     }
 }
-/**
- * @type {import('child_process').ChildProcess}
- */
-let singletonRunning;
-let pusher = new Push();
+let pusher = new Request();
 
 const __filename = fileURLToPath(
     import.meta.url);
@@ -123,22 +120,24 @@ const childLogger = fs.createWriteStream(path.join(__dirname, `../../logs/${new 
     'flags': 'a',
 });
 export async function runConfigInBackgroundSingleton(payload) {
-    if (!singletonRunning) {
-        singletonRunning = spawn("node", [path.join(__dirname, '../../runner.js')], {
+    var running = await checkTheLock('runner');
+    if (!running) {
+        const singletonRunning = spawn("node", [path.join(__dirname, '../../runner.js')], {
             stdio: ['ignore', 'pipe', 'pipe'],
             detached: true,
         });
         singletonRunning.unref();
         singletonRunning.stderr.pipe(childLogger);
         singletonRunning.stdout.pipe(childLogger);
-        singletonRunning.on('exit', () => {
-            singletonRunning = null;
-        })
-        await pusher.bind("tcp://127.0.0.1:2223");
-        pusher.sendTimeout = 5000;
+        await new Promise((resolve) => {
+            setTimeout(resolve, 2000);
+        });
     }
+    pusher.connect("tcp://127.0.0.1:2223");
+    pusher.sendTimeout = 5000;
     // it seems that we need to wait for the child process to be ready
     await pusher.send(JSON.stringify(payload));
+    await pusher.receive();
 }
 
 export default function () {

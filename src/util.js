@@ -4,7 +4,8 @@ import {
 } from 'child_process';
 import {
     lock,
-    unlock
+    unlock,
+    check
 } from 'proper-lockfile';
 import _ from 'underscore';
 
@@ -122,6 +123,13 @@ export const spawnSudoUtil = function (
             });
         }
     });
+}
+
+export const checkTheLock = function (/** @type {string} */ file)  {
+    const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
+    return check(realfile, {
+        realpath: false,
+    })
 }
 
 export const executeLock = function (
