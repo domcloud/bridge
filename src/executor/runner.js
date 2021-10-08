@@ -136,7 +136,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             cb = null;
                             res = res.replace(/\[.+?\@.+? .+?\]\$/, '');
                             res = res.replace(/\0/g, '');
-                            resolve('$> ' + res.trim() + "\n");
+                            resolve('$> ' + res.trim());
                         }
                     };
                     if (cmd)
@@ -406,11 +406,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     `${source.shallow ? ` --depth 1`  : ''}` + ' .');
             } else {
                 executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
-                executedCMD.push(`unzip -o _.zip`);
-                executedCMD.push(`rm _.zip`);
-                executedCMD.push(`chmod -R 0750 * .*`);
+                executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*`);
                 if (source.directory) {
-                    executedCMD.push(`mv ${escapeShell(source.directory + '/{.,}*')} .`);
+                    executedCMD.push(`mv ${escapeShell(source.directory)}/{.,}* .`);
                     executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
                 }
             }
