@@ -406,11 +406,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     `${source.shallow ? ` --depth 1`  : ''}` + ' .');
             } else {
                 executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
-                executedCMD.push(`unzip -q -o _.zip`);
+                executedCMD.push(`unzip -o _.zip`);
                 executedCMD.push(`rm _.zip`);
                 executedCMD.push(`chmod -R 0750 * .*`);
                 if (source.directory) {
-                    executedCMD.push(`mv ${escapeShell(source.directory + '/{.,}*')} . 2>/dev/null`);
+                    executedCMD.push(`mv ${escapeShell(source.directory + '/{.,}*')} .`);
                     executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
                 }
             }
