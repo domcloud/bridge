@@ -11,9 +11,9 @@ dotenv.config();
 initUtils();
 
 async function main() {
-    const sock = new zmq.Reply();
+    const sock = new zmq.Pull();
 
-    await sock.bind('tcp://*:2223');
+    await sock.connect('tcp://*:2223');
 
     for await (const [msg] of sock) {
         const payload = JSON.parse(msg.toString());

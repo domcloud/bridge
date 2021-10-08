@@ -135,6 +135,7 @@ export async function runConfigInBackgroundSingleton(payload) {
             singletonRunning = null;
         })
         await pusher.bind("tcp://127.0.0.1:2223");
+        pusher.sendTimeout = 5000;
     }
     // it seems that we need to wait for the child process to be ready
     await pusher.send(JSON.stringify(payload));
