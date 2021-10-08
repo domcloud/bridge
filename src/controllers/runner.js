@@ -7,13 +7,9 @@ import express from 'express';
 import runConfig from '../executor/runner.js';
 import got from 'got';
 import {
-    promisify
-} from 'util';
-import {
     PassThrough
 } from 'stream';
 import {
-    fork,
     spawn
 } from 'child_process';
 import path from 'path';
@@ -24,9 +20,6 @@ import {
 import {
     dirname
 } from 'path';
-import {
-    Request
-} from 'zeromq';
 
 /**
  * @param {import('stream').Writable} stream
@@ -111,7 +104,6 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         }
     }
 }
-let pusher = new Request();
 
 const __filename = fileURLToPath(
     import.meta.url);
@@ -120,24 +112,10 @@ const childLogger = fs.createWriteStream(path.join(__dirname, `../../logs/${new 
     'flags': 'a',
 });
 export async function runConfigInBackgroundSingleton(payload) {
-    var running = await checkTheLock('runner');
-    if (!running) {
-        const singletonRunning = spawn("node", [path.join(__dirname, '../../runner.js')], {
-            stdio: ['ignore', 'pipe', 'pipe'],
-            detached: true,
-        });
-        singletonRunning.unref();
-        singletonRunning.stderr.pipe(childLogger);
-        singletonRunning.stdout.pipe(childLogger);
-        await new Promise((resolve) => {
-            setTimeout(resolve, 2000);
-        });
-    }
-    pusher.connect("tcp://127.0.0.1:2223");
-    pusher.sendTimeout = 5000;
-    // it seems that we need to wait for the child process to be ready
-    await pusher.send(JSON.stringify(payload));
-    await pusher.receive();
+    spawn('node', [path.join(process.cwd(), '/runner.js'), JSON.stringify(payload)], {
+        stdio: ['ignore', childLogger, childLogger],
+        detached: true,
+    });
 }
 
 export default function () {
@@ -148,12 +126,8 @@ export default function () {
             domain: req.query.domain + "",
             sandbox: !!parseInt(req.query.sandbox + '' || '0'),
             callback: req.header('x-callback'),
-        }).then(() => {
-            res.json('OK');
-        }).catch((err) => {
-            console.log(err);
-            next(err);
         });
+        res.send('OK');
     });
     return router;
 }
