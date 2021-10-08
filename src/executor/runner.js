@@ -130,18 +130,12 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     if (Date.now() > starttime + maxExecutionTime)
                         return reject("Execution has timed out");
                     let res = '';
-                    let first = true;
                     cb = ( /** @type {string} */ chunk) => {
                         res += chunk;
                         if (chunk.match(/\[.+?\@.+? .+?\]\$/)) {
                             cb = null;
                             res = res.replace(/\[.+?\@.+? .+?\]\$/, '');
                             res = res.replace(/\0/g, '');
-                            if (first) {
-                                // first line is the process arg
-                                first = false;
-                                res = res.replace(/[\r\n]/g, '');
-                            }
                             resolve('$> ' + res.trim() + "\n");
                         }
                     };
