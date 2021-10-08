@@ -242,15 +242,13 @@ class NginxExecutor {
                     const info = this.extractInfo(node, domain);
                     info.config = config;
                     this.applyInfo(node, info);
-                    conf.write((/** @type {Error[]} */ err) => {
-                        if (err)
-                            return reject(err);
-                        spawnSudoUtil('NGINX_SET').then(() => {
-                            resolve("Done updated");
-                        }).catch((err) => {
-                            reject(err);
-                        })
-                    });
+                    console.log('done logging nginx ', conf.toString())
+                    ShellString(conf.toString()).to(tmpFile);
+                    spawnSudoUtil('NGINX_SET').then(() => {
+                        resolve("Done updated");
+                    }).catch((err) => {
+                        reject(err);
+                    })
                 });
             });
         })
