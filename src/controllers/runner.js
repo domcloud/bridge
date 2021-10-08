@@ -12,7 +12,8 @@ import {
     PassThrough
 } from 'stream';
 import {
-    fork
+    fork,
+    spawn
 } from 'child_process';
 import path from 'path';
 import fs from 'fs';
@@ -22,6 +23,9 @@ import {
 import {
     dirname
 } from 'path';
+import {
+    Push
+} from 'zeromq';
 
 /**
  * @param {import('stream').Writable} stream
@@ -110,6 +114,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
  * @type {import('child_process').ChildProcess}
  */
 let singletonRunning;
+let pusher = new Push();
 
 const __filename = fileURLToPath(
     import.meta.url);
@@ -117,22 +122,22 @@ const __dirname = dirname(__filename);
 const childLogger = fs.createWriteStream(path.join(__dirname, `../../logs/${new Date().toISOString().substr(0, 10)}.log`), {
     'flags': 'a',
 });
-export function runConfigInBackgroundSingleton(payload) {
-    if (!singletonRunning || singletonRunning.connected === false) {
-        singletonRunning = fork(path.join(__dirname, '../../runner.js'), [], {
-            stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+export async function runConfigInBackgroundSingleton(payload) {
+    if (!singletonRunning) {
+        singletonRunning = spawn("node", [path.join(__dirname, '../../runner.js')], {
+            stdio: ['ignore', 'pipe', 'pipe'],
             detached: true,
         });
         singletonRunning.unref();
         singletonRunning.stderr.pipe(childLogger);
         singletonRunning.stdout.pipe(childLogger);
+        singletonRunning.on('exit', () => {
+            singletonRunning = null;
+        })
+        await pusher.bind("tcp://127.0.0.1:2223");
     }
     // it seems that we need to wait for the child process to be ready
-    setTimeout(() => {
-        singletonRunning.send(payload, (err) => {
-            console.log('!> ', err);
-        });
-    }, 500);
+    await pusher.send(JSON.stringify(payload));
 }
 
 export default function () {
@@ -143,8 +148,12 @@ export default function () {
             domain: req.query.domain + "",
             sandbox: !!parseInt(req.query.sandbox + '' || '0'),
             callback: req.header('x-callback'),
+        }).then(() => {
+            res.json('OK');
+        }).catch((err) => {
+            console.log(err);
+            next(err);
         });
-        res.json('OK');
     });
     return router;
 }
