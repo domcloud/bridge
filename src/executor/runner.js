@@ -388,7 +388,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             if (url.pathname.endsWith('.git') || url.hostname.match(/^(www\.)?(github|gitlab)\.com$/)) {
                 source.clone = true;
             }
-            let executedCMD = '';
+            let executedCMD = [`rm -rf * .* 2>/dev/null`];
             let firewallStatus = !!iptablesExec.getByUsers(await iptablesExec.getParsed(), domaindata['Username'])[0];
 
             if (source.clone) {
@@ -401,23 +401,26 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 if (source.shallow !== false) {
                     source.shallow = true;
                 }
-                executedCMD = `git clone ${escapeShell(url.toString())}` +
+                executedCMD.push(`git clone ${escapeShell(url.toString())}` +
                     `${source.branch ? ` -b ${escapeShell(source.branch)}`  : ''}` +
-                    `${source.shallow ? ` --depth 1`  : ''}` + ' .';
+                    `${source.shallow ? ` --depth 1`  : ''}` + ' .');
             } else {
-                executedCMD = `wget -q -O _.zip ` + escapeShell(url.toString());
-                executedCMD += ` ; unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*`;
+                executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
+                executedCMD.push(`unzip -q -o _.zip`);
+                executedCMD.push(`rm _.zip`);
+                executedCMD.push(`chmod -R 0750 * .*`);
                 if (source.directory) {
-                    executedCMD += ` ; mv ${escapeShell(source.directory + '/{.,}*')} . 2>/dev/null`;
-                    executedCMD += ` ; rm -rf ${escapeShell(source.directory)}`;
+                    executedCMD.push(`mv ${escapeShell(source.directory + '/{.,}*')} . 2>/dev/null`);
+                    executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
                 }
             }
             if (firewallStatus) {
                 await iptablesExec.setDelUser(domaindata['Username']);
             }
             await writeLog("$> Downloading source");
-            await writeLog(await sshExec(`rm -rf * .* 2>/dev/null`));
-            await writeLog(await sshExec(executedCMD));
+            for (const exec of executedCMD) {
+                await writeLog(await sshExec(exec));
+            }
             if (firewallStatus) {
                 await iptablesExec.setAddUser(domaindata['Username']);
             }
