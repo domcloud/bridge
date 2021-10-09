@@ -58,8 +58,7 @@ function fixOwner(filePath) {
     const {
         uid,
         gid
-    } = statSync(filePath);
-    console.log(uid, gid, filePath);
+    } = statSync(path.join(__dirname, './sudoutil.js'));
     chownSync(filePath, uid, gid);
     chmodSync(filePath, 0o750);
 }
