@@ -4,7 +4,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 ### Create Ipset
 ipset -! create whitelist hash:ip
-ipset-! create whitelist-v6 hash:ip family inet6
+ipset -! create whitelist-v6 hash:ip family inet6
 ### Clear Ipset, not gonna use it because DNS IPs often changing
 # ipset flush whitelist
 # ipset flush whitelist-v6

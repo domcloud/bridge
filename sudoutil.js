@@ -4,7 +4,12 @@ import shelljs from 'shelljs'
 import cli from 'cli'
 import dotenv from 'dotenv'
 import path from 'path';
-import { error } from 'console';
+import {
+    escapeShell
+} from './src/util';
+import {
+    statSync
+} from 'fs';
 
 dotenv.config();
 
@@ -14,6 +19,7 @@ const {
     cd,
     exec,
     exit,
+    error,
 } = shelljs;
 
 const env = Object.assign({}, {
@@ -21,12 +27,15 @@ const env = Object.assign({}, {
     NGINX_OUT: '/etc/nginx/nginx.conf',
     NGINX_BIN: 'nginx',
     NGINX_TMP: path.join(__dirname, '.tmp/nginx'),
+    IPTABLES_PATH: '/etc/sysconfig/iptables',
     IPTABLES_SAVE: 'iptables-save',
     IPTABLES_LOAD: 'iptables-restore',
+    IP6TABLES_PATH: '/etc/sysconfig/ip6tables',
     IP6TABLES_SAVE: 'ip6tables-save',
     IP6TABLES_LOAD: 'ip6tables-restore',
     IPTABLES_TMP: path.join(__dirname, '.tmp/iptables'),
     IP6TABLES_TMP: path.join(__dirname, '.tmp/ip6tables'),
+    IPTABLES_WHITELIST_EXEC: 'sh ' + path.join(__dirname, 'src/whitelist/refresh.sh'),
     NAMED_HOSTS: '/var/named/$.hosts',
     NAMED_OUT: '/var/named/$.hosts',
     NAMED_CHECK: 'named-checkzone',
@@ -34,13 +43,24 @@ const env = Object.assign({}, {
     NAMED_RESYNC: 'rndc retransfer $',
     NAMED_TMP: path.join(__dirname, '.tmp/named'),
     VIRTUALMIN: 'virtualmin',
+    SCRIPT: path.join(__dirname, 'sudoutil.js'),
 }, process.env);
+
+function fixOwner(filePath) {
+    const {
+        uid,
+        gid
+    } = statSync(filePath);
+    exec(`chown ${uid}:${gid} ${escapeShell(filePath)}`);
+    exec(`chmod 0750 ${escapeShell(filePath)}`);
+}
 
 cd(__dirname); // making sure because we're in sudo
 let arg;
 switch (cli.args.shift()) {
     case 'NGINX_GET':
-        cat(env.NGINX_PATH).to('.tmp/nginx');
+        cat(env.NGINX_PATH).to(env.NGINX_TMP);
+        fixOwner(env.NGINX_TMP);
         exit(0);
     case 'NGINX_SET':
         if (exec(`${env.NGINX_BIN} -t -c '${env.NGINX_TMP}'`).code !== 0)
@@ -49,18 +69,25 @@ switch (cli.args.shift()) {
         exec(`${env.NGINX_BIN} -s reload`);
         exit(0);
     case 'IPTABLES_GET':
-        exec(env.IPTABLES_SAVE).to(env.IPTABLES_TMP);
-        exec(env.IP6TABLES_SAVE).to(env.IP6TABLES_TMP);
+        cat(env.IPTABLES_PATH).to(env.IPTABLES_TMP);
+        cat(env.IP6TABLES_PATH).to(env.IP6TABLES_TMP);
+        fixOwner(env.IPTABLES_TMP);
+        fixOwner(env.IP6TABLES_TMP);
         exit(0);
     case 'IPTABLES_SET':
-        if (cat(env.IPTABLES_TMP).exec(env.IPTABLES_LOAD).code !== 0)
+        // making sure whitelist set is exist
+        exec(env.IPTABLES_WHITELIST_EXEC);
+        if (cat(env.IPTABLES_TMP).exec(`${env.IPTABLES_LOAD} -t`).code !== 0)
             exit(1);
-        if (cat(env.IP6TABLES_TMP).exec(env.IP6TABLES_LOAD).code !== 0)
+        if (cat(env.IP6TABLES_TMP).exec(`${env.IP6TABLES_LOAD} -t`).code !== 0)
             exit(1);
+        cat(env.IPTABLES_TMP).to(env.IPTABLES_PATH);
+        cat(env.IP6TABLES_TMP).to(env.IP6TABLES_PATH);
         exit(0);
     case 'NAMED_GET':
         arg = cli.args.shift();
         cat(env.NAMED_HOSTS.replace('$', arg)).to(env.NAMED_TMP);
+        fixOwner(env.NAMED_TMP);
         exit(0);
     case 'NAMED_SET':
         arg = cli.args.shift();
@@ -75,6 +102,6 @@ switch (cli.args.shift()) {
         arg = cli.args.join(' ');
         exit(exec(env.VIRTUALMIN + " " + arg).code);
     default:
-        error(`Unknown Mode`);
+        console.error(`Unknown Mode`);
         exit(1);
 }
