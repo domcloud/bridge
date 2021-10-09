@@ -1,7 +1,7 @@
 node_modules
 .env
 .tmp
-test
+test/*.out
 phpmyadmin
 phppgadmin
 webssh2

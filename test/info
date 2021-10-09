@@ -1,0 +1,57 @@
+suba.example.com
+    ID: 16183677691482684
+    File: /etc/webmin/virtual-server/domains/16183677691482684
+    Type: Sub-server
+    URL: http://suba.example.com/
+    Parent domain: example.com
+    Description:
+    Template ID: 1
+    Template: Settings For Sub-Servers
+    Plan ID: 159145729063211
+    Plan: Pro
+    Username: example
+    User ID: 1255
+    Group name: example
+    Group ID: 1255
+    Mailbox username prefix: api-test
+    Password storage: Plain text
+    Password: abcdefgh
+    Username for mysql: example
+    Password for mysql: abcdefgh
+    Home directory: /home/example/domains/suba.example.com
+    HTML directory: /home/example/domains/suba.example.com/public_html/nodeapi/public
+    CGI directory: /home/example/domains/suba.example.com/cgi-bin
+    Access log: /var/log/virtualmin/suba.example.com_access_log
+    Error log: /var/log/virtualmin/suba.example.com_error_log
+    Contact email: hello@example.com
+    Contact address: hello@example.com
+    Created on: 14/Apr/2021 02:36
+    Created Unix time: 1618367786
+    Created by: example
+    IP address: 1.2.3.4 (Shared)
+    IPv6 address: 1:2:3:4::5:6
+    Features: dir dns mysql
+    Plugins: virtualmin-nginx virtualmin-nginx-ssl
+    PHP execution mode: fpm
+    Possible PHP execution modes: fcgid fpm
+    SuExec for CGIs: disabled
+    PHP fCGId subprocesses: 64
+    PHP max execution time: 30
+    PHP version: 7.4
+    Webmail redirects: No
+    Match all web sub-domains: No
+    Server-side includes: Disabled
+    Default website for IP: No
+    SSL key file: /home/example/domains/suba.example.com/ssl.key
+    SSL cert file: /home/example/domains/suba.example.com/ssl.cert
+    SSL CA file: /home/example/domains/suba.example.com/ssl.ca
+    SSL candidate hostnames: suba.example.com
+    SSL cert expiry: 22/Sep/2021 11:16
+    Lets Encrypt renewal: Enabled
+    Lets Encrypt cert issued: 24/Jun/2021 12:17
+    SSL cert used by: webmin (suba.example.com)
+    Provisioning for dns: Local
+    Provisioning for mysql: Local
+    Provisioning for spam: Local
+    Provisioning for virus: Local
+    Parent DNS virtual server: example.com

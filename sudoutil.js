@@ -33,15 +33,17 @@ const env = Object.assign({}, {
     NGINX_START: 'systemctl start nginx',
     NGINX_TMP: path.join(__dirname, '.tmp/nginx'),
     IPTABLES_PATH: '/etc/sysconfig/iptables',
+    IPTABLES_OUT: '/etc/sysconfig/iptables',
     IPTABLES_SAVE: 'iptables-save',
     IPTABLES_LOAD: 'iptables-restore',
     IP6TABLES_PATH: '/etc/sysconfig/ip6tables',
+    IP6TABLES_OUT: '/etc/sysconfig/ip6tables',
     IP6TABLES_SAVE: 'ip6tables-save',
     IP6TABLES_LOAD: 'ip6tables-restore',
     IPTABLES_TMP: path.join(__dirname, '.tmp/iptables'),
     IP6TABLES_TMP: path.join(__dirname, '.tmp/ip6tables'),
     IPTABLES_WHITELIST_EXEC: 'sh ' + path.join(__dirname, 'src/whitelist/refresh.sh'),
-    NAMED_HOSTS: '/var/named/$.hosts',
+    NAMED_PATHS: '/var/named/$.hosts',
     NAMED_OUT: '/var/named/$.hosts',
     NAMED_CHECK: 'named-checkzone',
     NAMED_RELOAD: 'rndc reload $',
@@ -92,12 +94,12 @@ switch (cli.args.shift()) {
             exit(1);
         if (cat(env.IP6TABLES_TMP).exec(`${env.IP6TABLES_LOAD} -t`).code !== 0)
             exit(1);
-        cat(env.IPTABLES_TMP).to(env.IPTABLES_PATH);
-        cat(env.IP6TABLES_TMP).to(env.IP6TABLES_PATH);
+        cat(env.IPTABLES_TMP).to(env.IPTABLES_OUT);
+        cat(env.IP6TABLES_TMP).to(env.IP6TABLES_OUT);
         exit(0);
     case 'NAMED_GET':
         arg = cli.args.shift();
-        cat(env.NAMED_HOSTS.replace('$', arg)).to(env.NAMED_TMP);
+        cat(env.NAMED_PATHS.replace('$', arg)).to(env.NAMED_TMP);
         fixOwner(env.NAMED_TMP);
         exit(0);
     case 'NAMED_SET':

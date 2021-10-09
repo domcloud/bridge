@@ -1,0 +1,18 @@
+$ttl 3600
+@	IN	SOA	ns.example.com. root.ns.example.com. (
+			626870628
+			3600
+			600
+			1209600
+			3600 )
+@	IN	NS	ns.example.com.
+@	IN	NS	ns2.example.com.
+example.com.	IN	A	1.2.3.4
+ns.example.com.	IN	A	1.2.3.4
+ns2.example.com.  IN A 1.2.3.5
+ns.example.com.	IN	AAAA	1:2:3:4::5:6
+example.com.	IN	TXT	text-1-2-3-4
+suba.example.com.	IN	A	1.2.3.4
+subb.example.com.	IN	A	1.2.3.4
+suba.example.com.	IN	AAAA	1:2:3:4::5:6
+subb.example.com.	IN	AAAA	1:2:3:4::5:6
