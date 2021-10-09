@@ -112,15 +112,11 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
 const __filename = fileURLToPath(
     import.meta.url);
 const __dirname = dirname(__filename);
-const childLogger = fs.openSync(path.join(__dirname, `../../logs/${new Date().toISOString().substr(0, 10)}.log`), 'a');
+const childLogger = path.join(__dirname, `../../logs/${new Date().toISOString().substr(0, 10)}.log`);
 export async function runConfigInBackgroundSingleton(payload) {
-    spawn('node', [path.join(process.cwd(), '/runner.js'), JSON.stringify(payload)], {
-        stdio: ['ignore', childLogger, childLogger],
+    spawn('setsid', ['-f', 'node', path.join(process.cwd(), '/runner.js'), JSON.stringify(payload), '>>', childLogger, '2>&1'], {
         detached: true,
     }).unref();
-    setTimeout(() => {
-        console.log('childnodes is ', execSync('pgrep -p ' + process.pid).toString());
-    }, 1000);
 }
 
 export default function () {
