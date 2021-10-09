@@ -6,7 +6,7 @@ import dotenv from 'dotenv'
 import path from 'path';
 import {
     escapeShell
-} from './src/util';
+} from './src/util.js';
 import {
     statSync
 } from 'fs';
