@@ -34,38 +34,40 @@ class NginxExecutor {
     /** @param {import('nginx-conf/dist/src/conf').NginxConfItem} node */
     applyInfo(node, info) {
         /** @param {import('nginx-conf/dist/src/conf').NginxConfItem} node */
-        function expandLocation(node, info) {
+        function expandLocation(node, config) {
             for (const key of locationKeys) {
-                if (info[key]) {
+                if (config[key]) {
                     node._add(key, key === "root" || key === "alias" ?
-                        path.join(`/home/${info.user}`, info[key]) : info[key]);
+                        path.join(`/home/${config.user}`, config[key]) : config[key]);
                 }
             }
-            if (info.passenger) {
+            if (config.passenger) {
                 for (const key of passengerKeys) {
-                    if (info.passenger[key]) {
+                    if (config.passenger[key]) {
                         node._add("passenger_" + key, key === "document_root" || key === "app_root" ?
-                            path.join(`/home/${info.user}`, info.passenger[key]) : info.passenger[key]);
+                            path.join(`/home/${info.user}`, config.passenger[key]) : config.passenger[key]);
                     }
                 }
             }
-            if (info.locations && info.locations.length > 0) {
-                for (const loc of info.locations) {
+            if (config.locations && config.locations.length > 0) {
+                for (const loc of config.locations) {
                     if (loc.match) {
-                        var n = node._add("location", loc.match);
-                        expandLocation(n, loc);
+                        node._add("location", loc.match);
+                        expandLocation(node.location[node.location.length - 1], loc);
                     }
                 }
             }
-            if (info.fastcgi) {
-                switch (info.fastcgi) {
+            if (config.fastcgi) {
+                switch (config.fastcgi) {
                     case "on":
-                        var n = node._add("location", "~ \\.php(/|$)");
+                        node._add("location", "~ \\.php(/|$)");
+                        var n = node.location[node.location.length - 1];
                         n._add("try_files", '$uri =404');
                         n._add("fastcgi_pass", info.fcgi);
                         break;
                     case "off":
-                        var n = node._add("location", "= .actuallydisabledphpexecution");
+                        node._add("location", "= .actuallydisabledphpexecution");
+                        var n = node.location[node.location.length - 1];
                         n._add("return", '404');
                         n._add("fastcgi_pass", info.fcgi);
                         break;
