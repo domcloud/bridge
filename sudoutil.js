@@ -19,13 +19,13 @@ const {
     cd,
     exec,
     exit,
-    error,
 } = shelljs;
 
 const env = Object.assign({}, {
     NGINX_PATH: '/etc/nginx/nginx.conf',
     NGINX_OUT: '/etc/nginx/nginx.conf',
     NGINX_BIN: 'nginx',
+    NGINX_START: 'systemctl start nginx',
     NGINX_TMP: path.join(__dirname, '.tmp/nginx'),
     IPTABLES_PATH: '/etc/sysconfig/iptables',
     IPTABLES_SAVE: 'iptables-save',
@@ -67,6 +67,9 @@ switch (cli.args.shift()) {
             exit(1);
         cat(env.NGINX_TMP).to(env.NGINX_OUT);
         exec(`${env.NGINX_BIN} -s reload`);
+        exit(0);
+    case 'NGINX_START':
+        exec(env.NGINX_START);
         exit(0);
     case 'IPTABLES_GET':
         cat(env.IPTABLES_PATH).to(env.IPTABLES_TMP);

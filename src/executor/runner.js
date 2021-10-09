@@ -4,7 +4,8 @@ import {
 
 import {
     escapeShell,
-    getVersion
+    getVersion,
+    spawnSudoUtil
 } from "../util.js";
 import {
     iptablesExec
@@ -76,6 +77,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
             check();
         });
+        // FOR SOME REASON IN MY SERVER, NGINX SUDDENLY STOPPED WORKING
+        console.log('start emerg nginx ', await spawnSudoUtil('NGINX_START'));
     }
     let domaindata = await virtualminExec.getDomainInfo(domain);
     if (!domaindata) {
