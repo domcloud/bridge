@@ -22,7 +22,7 @@ app.use('/runner', runner());
 app.use(function (err, req, res, next) {
     res.json(err);
 });
-const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+const port = process.env.PORT ? parseInt(process.env.PORT) : 2223;
 app.listen(port);
 
 console.log(`Starting main node on ${port}`);
