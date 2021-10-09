@@ -11,6 +11,7 @@ import {
     PassThrough
 } from 'stream';
 import {
+    execSync,
     spawn
 } from 'child_process';
 import path from 'path';
@@ -117,6 +118,9 @@ export async function runConfigInBackgroundSingleton(payload) {
         stdio: ['ignore', childLogger, childLogger],
         detached: true,
     }).unref();
+    setTimeout(() => {
+        console.log('childnodes is ', execSync('pgrep -p ' + process.pid).toString());
+    }, 1000);
 }
 
 export default function () {
