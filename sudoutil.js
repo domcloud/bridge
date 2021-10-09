@@ -8,6 +8,8 @@ import {
     escapeShell
 } from './src/util.js';
 import {
+    chmodSync,
+    chownSync,
     statSync
 } from 'fs';
 
@@ -46,13 +48,16 @@ const env = Object.assign({}, {
     SCRIPT: path.join(__dirname, 'sudoutil.js'),
 }, process.env);
 
+/**
+ * @param {import("fs").PathLike} filePath
+ */
 function fixOwner(filePath) {
     const {
         uid,
         gid
     } = statSync(filePath);
-    exec(`chown ${uid}:${gid} ${escapeShell(filePath)}`);
-    exec(`chmod 0750 ${escapeShell(filePath)}`);
+    chownSync(filePath, uid, gid);
+    chmodSync(filePath, 0o750);
 }
 
 cd(__dirname); // making sure because we're in sudo
