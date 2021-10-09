@@ -213,7 +213,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             } else {
                                 await writeLog("Already disabled");
                             }
-                        } else if (value) {
+                        } else {
                             let dbname = null;
                             if (!enabled) {
                                 await writeLog("$> Enabling MySQL");
@@ -251,7 +251,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             } else {
                                 await writeLog("Already disabled");
                             }
-                        } else if (value) {
+                        } else {
                             let dbname = null;
                             if (!enabled) {
                                 await writeLog("$> Enabling PostgreSQL");
@@ -291,7 +291,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         } else if (value === 'sync') {
                             await writeLog("$> Syncing Slave DNS");
                             namedExec.resync(domain);
-                        } else if (value) {
+                        } else {
                             if (!enabled) {
                                 await writeLog("$> Enabling DNS");
                                 await writeExec(await virtualminExec.execFormatted("enable-feature", value, {
@@ -320,7 +320,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         break;
                     case 'firewall':
-                        if (value === 'on') {
+                        if (value === '' || value === 'on') {
                             await writeLog("$> changing firewall protection to " + value);
                             await writeLog(await iptablesExec.setAddUser(domaindata['Username']));
                         } else if (value === 'off') {
