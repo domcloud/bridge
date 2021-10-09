@@ -46,7 +46,11 @@ class VirtualminExecutor {
                     p.push(escapeShell(k), escapeShell(v));
             }
         });
-        return await this.exec(...p);
+        try {
+            return await this.exec(...p);
+        } catch (error) {
+            return error;
+        }
     }
     /**
      * @param {string[]} command
