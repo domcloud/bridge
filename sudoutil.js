@@ -5,17 +5,20 @@ import cli from 'cli'
 import dotenv from 'dotenv'
 import path from 'path';
 import {
-    escapeShell
-} from './src/util.js';
-import {
     chmodSync,
     chownSync,
     statSync
 } from 'fs';
+import {
+    fileURLToPath
+} from 'url';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(
+    import.meta.url));
+dotenv.config({
+    path: path.join(__dirname, './.env')
+});
 
-const __dirname = path.resolve();
 const {
     cat,
     cd,
@@ -56,6 +59,7 @@ function fixOwner(filePath) {
         uid,
         gid
     } = statSync(filePath);
+    console.log(uid, gid, filePath);
     chownSync(filePath, uid, gid);
     chmodSync(filePath, 0o750);
 }
