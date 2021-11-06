@@ -16,7 +16,7 @@ export default function () {
                 res.contentType('text/plain');
                 res.send(node.toString());
             } else {
-                res.json(executor.extractInfo(node, req.query.domain));
+                res.json({...executor.extractInfo(node, req.query.domain), raw: node.toString()});
             }
         } catch (error) {
             next(error);
@@ -24,7 +24,8 @@ export default function () {
     });
     router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
         try {
-            return res.json(await executor.set("" + req.query.domain, req.body || {}));
+            res.contentType('text/plain');
+            return res.send(await executor.set("" + req.query.domain, req.body || {}));
         } catch (error) {
             next(error);
         }

@@ -44,8 +44,22 @@ class NginxExecutor {
             if (config.passenger) {
                 for (const key of passengerKeys) {
                     if (config.passenger[key]) {
-                        node._add("passenger_" + key, key === "document_root" || key === "app_root" ?
-                            path.join(`/home/${info.user}`, config.passenger[key]) : config.passenger[key]);
+                        let vall;
+                        switch (key) {
+                            case "document_root":
+                            case "app_root":
+                                // expand home path
+                                vall = path.join(`/home/${config.user}`, config.passenger[key]);
+                                break;
+                            case "app_start_command":
+                                // add quote strings
+                                vall = JSON.stringify(config.passenger[key]);
+                                break;
+                            default:
+                                vall = config.passenger[key];
+                                break;
+                        }
+                        node._add("passenger_" + key, vall);
                     }
                 }
             }
@@ -138,6 +152,8 @@ class NginxExecutor {
                     r.passenger[ke] = node[k][0]._value;
                     if (ke === "document_root" || ke === "app_root") {
                         r.passenger[ke] = r.passenger[ke].slice(basepath.length);
+                    } else if (ke === "app_start_command") {
+                        r.passenger[ke] = r.passenger[ke].startsWith('"') ? JSON.parse(r.passenger[ke]) : r.passenger[ke];
                     }
                 }
                 if (locationKeys.includes(k)) {
@@ -251,7 +267,7 @@ class NginxExecutor {
                     this.applyInfo(node, info);
                     ShellString(conf.toString()).to(tmpFile);
                     spawnSudoUtil('NGINX_SET').then(() => {
-                        resolve("Done updated");
+                        resolve("Done updated\n" + node.toString());
                     }).catch((err) => {
                         reject(err);
                     })
