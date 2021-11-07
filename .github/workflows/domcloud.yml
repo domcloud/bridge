@@ -14,7 +14,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGA }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGA }}
           data: >-
-            {"commands":["git pull","passenger-config restart-app /"]}
+            {"commands":["git pull","npx pm2 restart all"]}
       - name: Invoke deployment hook
         uses: distributhor/workflow-webhook@v2
         env:
@@ -22,7 +22,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_NYC }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_NYC }}
           data: >-
-            {"commands":["git pull","passenger-config restart-app /"]}
+            {"commands":["git pull","npx pm2 restart all"]}
       - name: Invoke deployment hook
         uses: distributhor/workflow-webhook@v2
         env:
@@ -30,4 +30,4 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_JPN }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_JPN }}
           data: >-
-            {"commands":["git pull","passenger-config restart-app /"]}
+            {"commands":["git pull","npx pm2 restart all"]}
