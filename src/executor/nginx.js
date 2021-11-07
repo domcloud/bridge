@@ -38,7 +38,7 @@ class NginxExecutor {
             for (const key of locationKeys) {
                 if (config[key]) {
                     node._add(key, key === "root" || key === "alias" ?
-                        path.join(`/home/${config.user}`, config[key]) : config[key]);
+                        path.join(`/home/${info.user}`, config[key]) : config[key]);
                 }
             }
             if (config.passenger) {
