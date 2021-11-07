@@ -34,47 +34,47 @@ const arrayKey = {
     CAA: 'caa',
 };
 const mapKey = {
-    'a': (/** @type {string} */ name, /** @type {string} */ ip) => ({
+    'a': ( /** @type {string} */ name, /** @type {string} */ ip) => ({
         name,
         ip
     }),
-    'aaaa': (/** @type {string} */ name, /** @type {string} */ ip) => ({
+    'aaaa': ( /** @type {string} */ name, /** @type {string} */ ip) => ({
         name,
         ip
     }),
-    'ns': (/** @type {string} */ name, /** @type {string} */ host) => ({
+    'ns': ( /** @type {string} */ name, /** @type {string} */ host) => ({
         name,
         host
     }),
-    'cname': (/** @type {string} */ name, /** @type {string} */ alias) => ({
+    'cname': ( /** @type {string} */ name, /** @type {string} */ alias) => ({
         name,
         alias
     }),
-    'mx': (/** @type {string} */ name, /** @type {string} */ preference, /** @type {string} */ host) => ({
+    'mx': ( /** @type {string} */ name, /** @type {string} */ preference, /** @type {string} */ host) => ({
         name,
         preference: parseInt(preference, 10),
         host,
     }),
-    'ptr': (/** @type {string} */ name, /** @type {string} */ host) => ({
+    'ptr': ( /** @type {string} */ name, /** @type {string} */ host) => ({
         name,
         host
     }),
-    'txt': (/** @type {string} */ name, /** @type {string[]} */ ...txt) => ({
+    'txt': ( /** @type {string} */ name, /** @type {string[]} */ ...txt) => ({
         name,
         txt: txt.join(' '),
     }),
-    'srv': (/** @type {string} */ name, /** @type {string} */ priority, /** @type {string} */ weight, /** @type {string} */ port, /** @type {string} */ target) => ({
+    'srv': ( /** @type {string} */ name, /** @type {string} */ priority, /** @type {string} */ weight, /** @type {string} */ port, /** @type {string} */ target) => ({
         name,
         priority: parseInt(priority, 10),
         weight: parseInt(weight, 10),
         port: parseInt(port, 10),
         target,
     }),
-    'spf': (/** @type {string} */ name, /** @type {string} */ s) => ({
+    'spf': ( /** @type {string} */ name, /** @type {string} */ s) => ({
         name,
         data: s
     }),
-    'caa': (/** @type {string} */ name, /** @type {string} */ flags, /** @type {string} */ tag, /** @type {string} */ value) => ({
+    'caa': ( /** @type {string} */ name, /** @type {string} */ flags, /** @type {string} */ tag, /** @type {string} */ value) => ({
         name,
         flags: parseInt(flags, 10),
         tag,
@@ -82,7 +82,7 @@ const mapKey = {
     }),
 }
 
-const getArrayOf = (/** @type {any} */ file, /** @type {string} */ type) => {
+const getArrayOf = ( /** @type {any} */ file, /** @type {string} */ type) => {
     if (!arrayKey[type])
         throw new Error('Unknown type');
     return file[arrayKey[type]] || (file[arrayKey[type]] = []);

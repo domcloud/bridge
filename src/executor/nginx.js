@@ -224,6 +224,9 @@ class NginxExecutor {
         }
         return data;
     }
+    /**
+     * @param {string} domain
+     */
     async get(domain) {
         return await executeLock('nginx', () => {
             return new Promise((resolve, reject) => {

@@ -11,13 +11,12 @@ export default function () {
     var router = express.Router();
     router.get('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
         try {
-            const node = await executor.get(req.query.domain);
-            if (req.query.view === 'raw') {
-                res.contentType('text/plain');
-                res.send(node.toString());
-            } else {
-                res.json({...executor.extractInfo(node, req.query.domain), raw: node.toString()});
-            }
+            const node = await executor.get(req.query.domain + "");
+            const raw = node.toString();
+            res.json({
+                ...executor.extractInfo(node, req.query.domain),
+                raw,
+            });
         } catch (error) {
             next(error);
         }
