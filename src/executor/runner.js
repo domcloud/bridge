@@ -383,7 +383,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 };
             }
             const source = config.source;
-            if (!source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
+            if (source.url !== '*' && !source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
                 throw new Error("Invalid source URL");
             }
             if (config.directory && !source.directory) {
@@ -391,13 +391,20 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 delete config.directory;
             }
             var url = new URL(source.url);
-            if (url.pathname.endsWith('.git') || url.hostname.match(/^(www\.)?(github|gitlab)\.com$/)) {
-                source.clone = true;
+            if (!source.type || !['clone', 'extract'].includes(source.type)) {
+                if (url.pathname.endsWith('.git') || url.hostname.match(/^(www\.)?(github|gitlab)\.com$/)) {
+                    source.type = 'clone';
+                } else {
+                    source.type = 'extract';
+                }
             }
             let executedCMD = [`rm -rf * .* 2>/dev/null`];
+            let executedCMDNote = '';
             let firewallStatus = !!iptablesExec.getByUsers(await iptablesExec.getParsed(), domaindata['Username'])[0];
-
-            if (source.clone) {
+            if (source.url === '*') {
+                // we just delete them all
+                executedCMDNote = 'Clearing files';
+            } else if (source.type === 'clone') {
                 if (!source.branch && source.directory) {
                     source.branch = source.directory;
                 } else if (!source.branch && url.hash) {
@@ -409,19 +416,22 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 }
                 executedCMD.push(`git clone ${escapeShell(url.toString())}` +
                     `${source.branch ? ` -b ${escapeShell(source.branch)}`  : ''}` +
-                    `${source.shallow ? ` --depth 1`  : ''}` + ' .');
-            } else {
+                    `${source.shallow ? ` --depth 1`  : ''}` +
+                    `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
+                executedCMDNote = 'Cloning files';
+            } else if (source.type === 'extract') {
                 executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
                 executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*`);
                 if (source.directory) {
                     executedCMD.push(`mv ${escapeShell(source.directory)}/{.,}* .`);
                     executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
                 }
+                executedCMDNote = 'Downloading files';
             }
             if (firewallStatus) {
                 await iptablesExec.setDelUser(domaindata['Username']);
             }
-            await writeLog("$> Downloading source");
+            await writeLog("$> " + executedCMDNote);
             for (const exec of executedCMD) {
                 await writeLog(await sshExec(exec));
             }

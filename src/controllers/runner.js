@@ -42,6 +42,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     let fullLogData = '';
     let chunkedLogData = '';
     let timeForNextChunk = Date.now();
+    let startTime = Date.now();
     const write = new PassThrough();
     const headers = {
         'Content-Type': 'text/plain',
@@ -102,7 +103,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         }
     } finally {
         console.log('!> finish');
-        await writeAsync(write, `\n$> Execution ${aborted ? 'Aborted' : 'Finished'}\n`);
+        await writeAsync(write, `\n$> Execution ${aborted ? 'Aborted' : 'Finished'} in ${(Date.now() - startTime) / 1000}s\n`);
         if (write && !write.writableEnded) {
             write.end();
         }
