@@ -26,7 +26,7 @@ const passengerKeys = [
     'document_root', 'base_uri', 'app_root', 'sticky_sessions'
 ];
 const locationKeys = [
-    "root", "alias", "rewrite", "try_files", "return", "index", "expires"
+    "root", "alias", "rewrite", "try_files", "return", "index", "expires", "allow", "deny",
 ];
 const sslNames = ["", "off", "enforce", "on"];
 
