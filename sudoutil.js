@@ -95,6 +95,7 @@ switch (cli.args.shift()) {
         if (cat(env.IPTABLES_TMP).exec(`${env.IPTABLES_LOAD} -t`).code !== 0)
             exit(1);
         cat(env.IPTABLES_TMP).to(env.IPTABLES_OUT);
+        cat(env.IPTABLES_OUT).exec(env.IPTABLES_LOAD);
         exit(0);
     case 'IP6TABLES_SET':
         // making sure whitelist set is exist
@@ -102,6 +103,7 @@ switch (cli.args.shift()) {
         if (cat(env.IP6TABLES_TMP).exec(`${env.IP6TABLES_LOAD} -t`).code !== 0)
             exit(1);
         cat(env.IP6TABLES_TMP).to(env.IP6TABLES_OUT);
+        cat(env.IP6TABLES_OUT).exec(env.IP6TABLES_LOAD);
         exit(0);
     case 'NAMED_GET':
         arg = cli.args.shift();
