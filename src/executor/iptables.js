@@ -51,10 +51,11 @@ class IptablesExecutor {
                 return "Done unchanged for iptables";
             }
             ShellString(encodeIPTables(p)).to(tmpFile);
+            await spawnSudoUtil('IPTABLES_SET');
             return "Updated for iptables";
         });
         const v6 = await executeLock('iptables', async () => {
-            await spawnSudoUtil('IPTABLES_GET');
+            await spawnSudoUtil('IP6TABLES_GET');
             var p = parseIptablesDoc(cat(tmpFile6));
             const rules = p.filter.rules;
             if (!appendIfNotExist(rules, {
@@ -66,6 +67,7 @@ class IptablesExecutor {
                 return "Done unchanged for ip6tables";
             }
             ShellString(encodeIPTables(p)).to(tmpFile6);
+            await spawnSudoUtil('IP6TABLES_SET');
             return "Updated for ip6tables";
         });
         return [v4, v6].join(", ");
@@ -84,10 +86,11 @@ class IptablesExecutor {
                 return "Done unchanged for iptables";
             }
             ShellString(encodeIPTables(p)).to(tmpFile);
+            await spawnSudoUtil('IPTABLES_SET');
             return "Updated for iptables";
         });
         const v6 = await executeLock('iptables', async () => {
-            await spawnSudoUtil('IPTABLES_GET');
+            await spawnSudoUtil('IP6TABLES_GET');
             var p = parseIptablesDoc(cat(tmpFile6));
             const rules = p.filter.rules;
             if (!deleteIfNotExist(rules, {
@@ -99,6 +102,7 @@ class IptablesExecutor {
                 return "Done unchanged for ip6tables";
             }
             ShellString(encodeIPTables(p)).to(tmpFile6);
+            await spawnSudoUtil('IP6TABLES_SET');
             return "Updated for ip6tables";
         });
         return [v4, v6].join(", ");
