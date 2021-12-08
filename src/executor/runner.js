@@ -455,14 +455,14 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 case 'php':
                     await writeLog("$> changing PHP engine to " + value);
                     await writeExec(await virtualminExec.execFormatted("modify-web", {
-                        subdomain,
-                        '--php-version': value,
+                        domain: subdomain,
+                        'php-version': value,
                     }));
                     break;
                 case 'ssl':
                     await writeLog("$> getting let's encrypt");
                     await writeExec(await virtualminExec.execFormatted("generate-letsencrypt-cert", {
-                        subdomain,
+                        domain: subdomain,
                         'renew': 2,
                         'web': true,
                     }));
@@ -470,7 +470,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 case 'root':
                     await writeLog("$> changing root folder");
                     await writeExec(await virtualminExec.execFormatted("modify-web", {
-                        subdomain,
+                        domain: subdomain,
                         'document-dir': value,
                     }));
                     break;
