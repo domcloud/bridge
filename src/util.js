@@ -234,3 +234,7 @@ export const normalizeShellOutput = function ( /** @type {string} */ output) {
     text = text.replace(/^(Exit status: .+)/gim, "\u001b[36m$1\u001b[0m");
     return text;
 }
+
+export const getDbName = function ( /** @type {string} */ user, /** @type {string} */ db = 'db') {
+    return (`${user.replace(/-/g, '_')}_${db}`).replace(/[^a-zA-Z0-9_]/g, '');
+}

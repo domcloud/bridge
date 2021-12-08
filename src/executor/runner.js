@@ -4,6 +4,7 @@ import {
 
 import {
     escapeShell,
+    getDbName,
     getVersion,
     spawnSudoUtil
 } from "../util.js";
@@ -28,12 +29,12 @@ const maxExecutionTime = 300000;
  */
 export default async function runConfig(config, domain, writer, sandbox = false) {
     let starttime = Date.now();
-    const writeLog = async (s) => {
+    const writeLog = async ( /** @type {string} */ s) => {
         await writer(s + "\n");
         if (Date.now() > starttime + maxExecutionTime)
             throw new Error("Execution has timed out");
     }
-    const writeExec = async (s) => {
+    const writeExec = async ( /** @type {{ stdout: string; stderr: string; code: string; }} */ s) => {
         await writeLog(s.stdout);
         if (s.stderr) {
             await writeLog(s.stderr.split('\n').map(x => '! ' + x).join('\n'));
@@ -229,7 +230,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             if (!dbname) {
                                 break;
                             }
-                            dbname = domaindata['Username'].replace(/-/, /_/) + "_" + dbname;
+                            dbname = getDbName(domaindata['Username'], dbname);
                             await writeLog(`$> Creating db instance ${dbname} on MySQL`);
                             await writeExec(await virtualminExec.execFormatted("create-database", {
                                 domain,
@@ -267,7 +268,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             if (!dbname) {
                                 break;
                             }
-                            dbname = domaindata['Username'].replace(/-/, /_/) + "_" + dbname;
+                            dbname = getDbName(domaindata['Username'], dbname);
                             await writeLog(`$> Creating db instance ${dbname} on PostgreSQL`);
                             await writeExec(await virtualminExec.execFormatted("create-database", {
                                 domain,
@@ -328,13 +329,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await writeLog(await iptablesExec.setDelUser(domaindata['Username']));
                         }
                         break;
-                    case 'php':
-                        await writeLog("$> changing PHP engine to " + value);
-                        await writeExec(await virtualminExec.execFormatted("modify-web", {
-                            domain,
-                            '--php-version': value,
-                        }));
-                        break;
                     case 'python':
                         await writeLog("$> changing Python engine to " + value);
                         await sshExec("curl -sS https://webinstall.dev/pyenv | bash");
@@ -353,21 +347,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await sshExec(`curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -`);
                         await sshExec(`curl -sSL https://get.rvm.io | bash -s ${value}`);
                         await sshExec("ruby --version");
-                        break;
-                    case 'ssl':
-                        await writeLog("$> getting let's encrypt");
-                        await writeExec(await virtualminExec.execFormatted("generate-letsencrypt-cert", {
-                            domain,
-                            'renew': 2,
-                            'web': true,
-                        }));
-                        break;
-                    case 'root':
-                        await writeLog("$> changing root folder");
-                        await writeExec(await virtualminExec.execFormatted("modify-web", {
-                            domain,
-                            'document-dir': value,
-                        }));
                         break;
                     default:
                         break;
@@ -440,21 +419,12 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
         }
         if (config.subdomain) {
-            await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog);
+            await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, writeExec);
         } else {
-            if (config.commands) {
-                await sshExec(`DATABASE='${domaindata['Username']}_db' ; DOMAIN='${domain}' ; USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`);
-                for (const cmd of config.commands) {
-                    await writeLog(await sshExec(cmd));
-                }
-            }
-            if (config.nginx) {
-                await writeLog("$> Applying nginx config");
-                await writeLog(await nginxExec.set(domain, config.nginx));
-            }
+            await runConfigSubdomain(config, domaindata, domain, sshExec, writeLog, writeExec, true);
             if (config.subdomains) {
                 for (const sub of config.subdomains) {
-                    await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog);
+                    await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog, writeExec);
                 }
             }
         }
@@ -467,13 +437,54 @@ export default async function runConfig(config, domain, writer, sandbox = false)
     }
 }
 
-export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog) {
-    await sshExec(`mkdir -p ${domaindata['Home directory']}/domains/${subdomain}/public_html && cd "$_"`);
+/**
+ * @param {{features: any;commands: any;nginx: any;}} config
+ * @param {{[x: string]: any}} domaindata
+ * @param {string} subdomain
+ * @param {{(cmd: string): Promise<any>}} sshExec
+ * @param {{(s: string): Promise<void>}} writeLog
+ * @param {{ (s: { stdout: string; stderr: string; code: string; }): Promise<void> }} writeExec
+ */
+export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, writeExec, stillroot = false) {
+    if (Array.isArray(config.features)) {
+        await writeLog("$> Applying features");
+        for (const feature of config.features) {
+            const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
+            const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
+            switch (key) {
+                case 'php':
+                    await writeLog("$> changing PHP engine to " + value);
+                    await writeExec(await virtualminExec.execFormatted("modify-web", {
+                        subdomain,
+                        '--php-version': value,
+                    }));
+                    break;
+                case 'ssl':
+                    await writeLog("$> getting let's encrypt");
+                    await writeExec(await virtualminExec.execFormatted("generate-letsencrypt-cert", {
+                        subdomain,
+                        'renew': 2,
+                        'web': true,
+                    }));
+                    break;
+                case 'root':
+                    await writeLog("$> changing root folder");
+                    await writeExec(await virtualminExec.execFormatted("modify-web", {
+                        subdomain,
+                        'document-dir': value,
+                    }));
+                    break;
+            }
+        }
+    }
     if (config.commands) {
+        await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' ; DOMAIN='${subdomain}' ; USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`);
+        await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
         for (const cmd of config.commands) {
             await writeLog(await sshExec(cmd));
         }
     }
+
     if (config.nginx) {
         await writeLog("$> Applying nginx config on " + subdomain);
         await writeLog(await nginxExec.set(subdomain, config.nginx));
