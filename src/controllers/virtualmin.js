@@ -1,6 +1,6 @@
 import express from 'express';
-import { virtualminExec } from '../executor/virtualmin';
-import { checkAuth, checkGet } from '../util';
+import { virtualminExec } from '../executor/virtualmin.js';
+import { checkAuth, checkGet } from '../util.js';
 
 export default function () {
     var router = express.Router();
