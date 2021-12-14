@@ -7,6 +7,7 @@ import {
     initUtils
 } from './util.js';
 import runner from './controllers/runner.js';
+import virtualmin from './controllers/virtualmin.js';
 
 dotenv.config();
 initUtils();
@@ -19,6 +20,7 @@ app.use('/named', named());
 app.use('/nginx', nginx());
 app.use('/iptables', iptables());
 app.use('/runner', runner());
+app.use('/virtualmin', virtualmin());
 app.use(function (err, req, res, next) {
     res.json(err);
 });
