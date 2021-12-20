@@ -49,7 +49,7 @@ class NginxExecutor {
                             case "document_root":
                             case "app_root":
                                 // expand home path
-                                vall = path.join(`/home/${config.user}`, config.passenger[key]);
+                                vall = path.join(`/home/${info.user}`, config.passenger[key]);
                                 break;
                             case "app_start_command":
                                 // add quote strings
