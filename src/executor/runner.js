@@ -176,6 +176,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await writeExec(await virtualminExec.execFormatted("modify-domain", value, {
                                 domain,
                             }));
+                            // in case if we change domain name
+                            if (value && value.newdomain)
+                                domain = value.newdomain;
                             domaindata = await virtualminExec.getDomainInfo(domain);
                             break;
                         case 'disable':
