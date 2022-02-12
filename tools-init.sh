@@ -1,3 +1,4 @@
+#!/bin/bash
 
 if [ ! -d "./phpmyadmin" ]; then
     git clone https://github.com/phpmyadmin/phpmyadmin.git phpmyadmin -b STABLE --depth 1
