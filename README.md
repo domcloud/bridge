@@ -4,6 +4,8 @@ The core script runner to control any server which has Virtualmin and Phusion Pa
 
 ## Installation
 
+Note: You can't put this service under Phusion Passenger because it will be killed during NginX reconfiguration so please use instruction below to run it under `pm2`.
+
 1. `git clone https://github.com/domcloud/dom-next-rootkit/ .`
 2. Run init script `sh ./tools-init.sh`
 3. Paste the final message to root user (so sudoutil.js can be run as root)
