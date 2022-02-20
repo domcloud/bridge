@@ -1,13 +1,10 @@
-import express from 'express';
 import {
-    checkAuth,
-    checkGet,
     executeLock,
     spawnSudoUtil
 } from '../util.js';
 import path from 'path';
 import shelljs from 'shelljs';
-import parser, {
+import {
     NginxConfFile
 } from 'nginx-conf';
 const tmpFile = path.join(process.cwd(), '/.tmp/nginx')

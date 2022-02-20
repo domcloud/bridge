@@ -334,22 +334,22 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         break;
                     case 'python':
                         await writeLog("$> changing Python engine to " + value);
-                        await sshExec("curl -sS https://webinstall.dev/pyenv | bash");
-                        await sshExec("pyenv install -v");
-                        await sshExec("pyenv global " + value);
-                        await sshExec("python --version");
+                        await writeLog(await sshExec("curl -sS https://webinstall.dev/pyenv | bash"));
+                        await writeLog(await sshExec("pyenv install -v"));
+                        await writeLog(await sshExec("pyenv global " + value));
+                        await writeLog(await sshExec("python --version"));
                         break;
                     case 'node':
                         await writeLog("$> changing Node engine to " + value);
-                        await sshExec(`curl -sS https://webinstall.dev/node@${value} | bash`);
-                        await sshExec("node --version");
+                        await writeLog(await sshExec(`curl -sS https://webinstall.dev/node@${value} | bash`));
+                        await writeLog(await sshExec("node --version"));
                         break;
                     case 'ruby':
                         await writeLog("$> changing Ruby engine to " + value);
-                        await sshExec(`curl -sSL https://rvm.io/mpapis.asc | gpg --import -`);
-                        await sshExec(`curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -`);
-                        await sshExec(`curl -sSL https://get.rvm.io | bash -s ${value}`);
-                        await sshExec("ruby --version");
+                        await writeLog(await sshExec(`curl -sSL https://rvm.io/mpapis.asc | gpg --import -`));
+                        await writeLog(await sshExec(`curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -`));
+                        await writeLog(await sshExec(`curl -sSL https://get.rvm.io | bash -s ${value}`));
+                        await writeLog(await sshExec("ruby --version"));
                         break;
                     default:
                         break;

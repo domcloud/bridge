@@ -1,8 +1,5 @@
 import {
     appendIfNotExist,
-    checkAuth,
-    checkGet,
-    checkPost,
     deleteIfNotExist,
     executeLock,
     spawnSudoUtil
