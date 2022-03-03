@@ -1,8 +1,8 @@
-# dom-next-rootkit
+# DOM Cloud Bridge
 
-The core script runner to control any server which has Virtualmin and Phusion Passenger boot together.
+The core script runner to control any server which has Virtualmin and Phusion Passenger boot together. To be used to control a server booted with DOM Cloud Docker Instance.
 
-## Installation
+## Self Installation
 
 Note: You can't put this service under Phusion Passenger because it will be killed during NginX reconfiguration so please use instruction below to run it under `pm2`.
 
