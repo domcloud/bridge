@@ -23,11 +23,3 @@ jobs:
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_NYC }}
           data: >-
             {"commands":["git pull","npx pm2 restart all"]}
-      - name: Invoke deployment hook
-        uses: distributhor/workflow-webhook@v2
-        env:
-          webhook_url: ${{ secrets.WEBHOOK_URL }}
-          webhook_secret: ${{ secrets.WEBHOOK_SECRET_JPN }}
-          webhook_auth: ${{ secrets.WEBHOOK_AUTH_JPN }}
-          data: >-
-            {"commands":["git pull","npx pm2 restart all"]}

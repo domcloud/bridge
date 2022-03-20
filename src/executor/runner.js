@@ -356,7 +356,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 }
             }
         }
-        await sshExec('unset HISTFILE'); // https://stackoverflow.com/a/9039154/3908409
+        await sshExec('unset HISTFILE TERM'); // https://stackoverflow.com/a/9039154/3908409
         await writeLog(await sshExec(`mkdir -p ${domaindata['Home directory']}/public_html && cd "$_"`));
         if (config.source) {
             if (typeof config.source === 'string') {
@@ -374,7 +374,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
             var url = new URL(source.url);
             if (!source.type || !['clone', 'extract'].includes(source.type)) {
-                if (url.pathname.endsWith('.git') || url.hostname.match(/^(www\.)?(github|gitlab)\.com$/)) {
+                if (url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip'))) {
                     source.type = 'clone';
                 } else {
                     source.type = 'extract';
@@ -390,11 +390,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 if (!source.branch && source.directory) {
                     source.branch = source.directory;
                 } else if (!source.branch && url.hash) {
-                    source.branch = url.hash.substr(1);
+                    source.branch = url.hash.substring(1);
                     url.hash = '';
-                }
-                if (source.shallow !== false) {
-                    source.shallow = true;
                 }
                 executedCMD.push(`git clone ${escapeShell(url.toString())}` +
                     `${source.branch ? ` -b ${escapeShell(source.branch)}`  : ''}` +
