@@ -12,15 +12,14 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "axios": "^0.21.1",
+    "axios": "^0.26.1",
     "cli": "^1.0.1",
-    "dotenv": "^10.0.0",
+    "dotenv": "^16.0.0",
     "express": "^4.17.1",
-    "got": "^9.6.0",
     "nginx-conf": "^2.0.0",
     "pm2": "^5.1.2",
     "proper-lockfile": "^4.1.2",
-    "shelljs": "^0.8.4",
+    "shelljs": "^0.8.5",
     "ssh2": "^1.4.0"
   },
   "devDependencies": {

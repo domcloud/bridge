@@ -8,7 +8,7 @@ import {
     check
 } from 'proper-lockfile';
 
-let tokenSecret, allowIps, sudoutil, metadata;
+let tokenSecret, allowIps, sudoutil, version;
 import fs from 'fs';
 export const initUtils = () => {
     tokenSecret = `Bearer ${process.env.SECRET}`;
@@ -17,11 +17,11 @@ export const initUtils = () => {
         return a;
     }, {}) : null
     sudoutil = path.join(process.cwd(), '/sudoutil.js');
-    metadata = JSON.parse(fs.readFileSync(path.join(process.cwd(), '/package.json')).toString('utf-8'));
+    version = JSON.parse(fs.readFileSync(path.join(process.cwd(), '/package.json')).toString('utf-8')).version;
 }
 
 export const getVersion = () => {
-    return metadata.version;
+    return version;
 }
 
 export const checkAuth = function (
@@ -145,10 +145,10 @@ export const executeLock = function (
                 release = releaseCall;
                 return callback();
             }).then(arg => {
-                release();
+                if (release) release();
                 resolve(arg);
-            })
-            .catch(err => {
+            }).catch(err => {
+                if (release) release();
                 reject(err);
             });
     });

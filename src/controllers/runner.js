@@ -22,6 +22,7 @@ import {
 import {
     dirname
 } from 'path';
+import axios from 'axios';
 
 /**
  * @param {import('stream').Writable} stream
@@ -49,18 +50,19 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     };
     let aborted = false;
     /**
-     * @type {got.GotPromise<string>}
+     * @type {Promise<import('axios').AxiosResponse<string>>}
      */
     let latestSend = null;
+    const cancelController = new AbortController();
     write.on('data', (chunk) => {
         if (!callback) return;
         chunkedLogData += chunk;
         if ((!fullLogData || timeForNextChunk < Date.now()) && latestSend === null) {
             // for startup message
-            latestSend = got.post(callback, {
+            var prefix = (fullLogData ? '[Chunked data...]\n' : 'Running runner... Please wait...\n');
+            latestSend = axios.post(callback, prefix + normalizeShellOutput(chunkedLogData), {
                 headers,
-                body: (fullLogData ? '[Chunked data...]\n' : 'Running runner... Please wait...\n') + normalizeShellOutput(chunkedLogData),
-
+                signal: cancelController.signal,
             });
             latestSend.then(function () {
                 latestSend = null;
@@ -73,13 +75,11 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         fullLogData += chunk;
     });
     write.on('end', () => {
-        if (latestSend) // avoid race condition
-            latestSend.cancel();
+        cancelController.abort()
         // and finish message with full log
         if (callback)
-            got.post(callback, {
-                headers,
-                body: normalizeShellOutput(fullLogData)
+            axios.post(callback, normalizeShellOutput(fullLogData), {
+                headers
             });
     });
     try {
