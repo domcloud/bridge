@@ -20,7 +20,8 @@ import {
 import {
     virtualminExec
 } from "./virtualmin.js";
-const maxExecutionTime = 300000;
+// TODO: Need to able to customize this
+const maxExecutionTime = 500000;
 
 /**
  * @param {any} config
@@ -31,8 +32,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
     let starttime = Date.now();
     const writeLog = async ( /** @type {string} */ s) => {
         await writer(s + "\n");
-        if (Date.now() > starttime + maxExecutionTime)
-            throw new Error("Execution has timed out");
     }
     const writeExec = async ( /** @type {{ stdout: string; stderr: string; code: string; }} */ s) => {
         await writeLog(s.stdout);
@@ -90,6 +89,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
      */
     let ssh;
     let sshExec;
+    let hangPreventer;
     if (process.env.NODE_ENV === 'development') {
         sshExec = async (cmd) => {
             await writeLog(cmd);
@@ -121,41 +121,34 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         });
         sshStream.on('close', () => ssh.end());
         let cb = null;
+        hangPreventer = setTimeout(() => {
+            // SSH prone to wait indefinitely, so we need to set a timeout
+            writeLog("! Execution has timed out. Exiting");
+            ssh.destroy();
+            ssh = null;
+        }, maxExecutionTime);
         sshStream.on('data', function (chunk) {
-            if (cb)
-                cb(chunk.toString());
+            if (cb) {
+                cb(chunk.toString())
+            }
         })
         sshExec = ( /** @type {string} */ cmd) => {
-            let resolved = false;
-            // SSH prone to wait indefinitely, so we need to set a timeout
-            return Promise.race([
-                new Promise((resolve, reject) => {
-                    setTimeout(() => {
-                            if (!resolved) {
-                                reject();
-                                ssh.destroy();
-                            }
-                        }, Math.max(0, maxExecutionTime - (Date.now() - starttime)),
-                        "Execution has timed out");
-                }),
-                new Promise((resolve, reject) => {
-                    if (Date.now() > starttime + maxExecutionTime)
-                        return reject("Execution has timed out");
-                    let res = '';
-                    cb = ( /** @type {string} */ chunk) => {
-                        res += chunk;
-                        if (chunk.match(/\[.+?\@.+? .+?\]\$/)) {
-                            cb = null;
-                            res = res.replace(/\[.+?\@.+? .+?\]\$/, '');
-                            res = res.replace(/\0/g, '');
-                            resolve('$> ' + res.trim());
-                            resolved = true;
-                        }
-                    };
-                    if (cmd)
-                        sshStream.write(cmd + "\n");
-                })
-            ]);
+            return new Promise((resolve, reject) => {
+                let res = '';
+                cb = ( /** @type {string} */ chunk) => {
+                    res += chunk;
+                    if (chunk.match(/\[.+?\@.+? .+?\]\$/)) {
+                        cb = null;
+                        res = res.replace(/\[.+?\@.+? .+?\]\$/, '');
+                        res = res.replace(/\0/g, '');
+                        resolve('$> ' + res.trim());
+                        return true;
+                    }
+                    return false;
+                };
+                if (cmd)
+                    sshStream.write(cmd + "\n");
+            })
         }
         await sshExec(''); // drop initial message
     }
@@ -440,6 +433,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
     } catch (err) {
         throw err;
     } finally {
+        if (hangPreventer) {
+            clearTimeout(hangPreventer);
+        }
         if (ssh && ssh.destroy) {
             ssh.destroy();
         }
