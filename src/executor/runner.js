@@ -481,8 +481,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
     }
     if (config.commands) {
-        await sshExec(` CI=true ; CONTINUOUS_INTEGRATION=true ; DEBIAN_FRONTEND=noninteractive ; LANG=en_US.UTF-8 ; LC_ALL=en_US.UTF-8 `);
-        await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' ; DOMAIN='${subdomain}' ; USERNAME='${domaindata['Username']}' ; PASSWORD='${domaindata['Password']}'`);
+        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`);
+        await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' DOMAIN='${subdomain}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`);
         await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
         for (const cmd of config.commands) {
             await writeLog(await sshExec(cmd));
