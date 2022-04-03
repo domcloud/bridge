@@ -365,25 +365,28 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 };
             }
             const source = config.source;
-            if (source.url !== '*' && !source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
+            if (source.url !== '-' && !source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
                 throw new Error("Invalid source URL");
             }
             if (config.directory && !source.directory) {
                 source.directory = config.directory;
                 delete config.directory;
             }
-            var url = new URL(source.url);
-            if (!source.type || !['clone', 'extract'].includes(source.type)) {
-                if (url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip'))) {
-                    source.type = 'clone';
-                } else {
-                    source.type = 'extract';
+            var url;
+            if (source.url !== 'clear') {
+                url = new URL(source.url);
+                if (!source.type || !['clone', 'extract'].includes(source.type)) {
+                    if (url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip'))) {
+                        source.type = 'clone';
+                    } else {
+                        source.type = 'extract';
+                    }
                 }
             }
             let executedCMD = [`rm -rf * .* 2>/dev/null`];
             let executedCMDNote = '';
             let firewallStatus = !!iptablesExec.getByUsers(await iptablesExec.getParsed(), domaindata['Username'])[0];
-            if (source.url === '*') {
+            if (source.url === 'clear') {
                 // we just delete them all
                 executedCMDNote = 'Clearing files';
             } else if (source.type === 'clone') {
