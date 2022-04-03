@@ -51,7 +51,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             dir: true,
             webmin: true,
             unix: true,
-            'limits-from-plan': true,
             'virtualmin-nginx': true,
             'virtualmin-nginx-ssl': true,
         }));
@@ -127,10 +126,16 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 cb(chunk.toString());
         })
         sshExec = ( /** @type {string} */ cmd) => {
+            let resolved = false;
             // SSH prone to wait indefinitely, so we need to set a timeout
             return Promise.race([
                 new Promise((resolve, reject) => {
-                    setTimeout(reject, Math.max(0, maxExecutionTime - (Date.now() - starttime)),
+                    setTimeout(() => {
+                            if (!resolved) {
+                                reject();
+                                ssh.destroy();
+                            }
+                        }, Math.max(0, maxExecutionTime - (Date.now() - starttime)),
                         "Execution has timed out");
                 }),
                 new Promise((resolve, reject) => {
@@ -144,6 +149,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             res = res.replace(/\[.+?\@.+? .+?\]\$/, '');
                             res = res.replace(/\0/g, '');
                             resolve('$> ' + res.trim());
+                            resolved = true;
                         }
                     };
                     if (cmd)
