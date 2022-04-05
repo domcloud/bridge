@@ -364,7 +364,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 };
             }
             const source = config.source;
-            if (source.url !== '-' && !source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
+            if (source.url !== 'clear' && !source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
                 throw new Error("Invalid source URL");
             }
             if (config.directory && !source.directory) {
