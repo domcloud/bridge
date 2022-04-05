@@ -18,6 +18,12 @@ if [ ! -d "./phppgadmin" ]; then
     sed -i "s/['owned_only'] = false/['owned_only'] = true/g" conf/config.inc.php
     cd ..
 fi
+if [ ! -d "./webssh" ]; then
+    git clone https://github.com/huashengdun/webssh.git webssh --depth 1
+    cd ./webssh
+    pip install --user -r requirements.txt
+    cd ..
+fi
 if [ ! -d "./webssh2" ]; then
     git clone https://github.com/billchurch/webssh2.git webssh2 --depth 1
     cd ./webssh2/app

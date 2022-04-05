@@ -4,5 +4,6 @@ node_modules
 test/*.out
 phpmyadmin
 phppgadmin
+webssh
 webssh2
 *.log
