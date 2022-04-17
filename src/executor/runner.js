@@ -21,6 +21,7 @@ import {
 import {
     virtualminExec
 } from "./virtualmin.js";
+
 // TODO: Need to able to customize this
 const maxExecutionTime = 500000;
 
@@ -125,7 +126,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         let cb = null;
         hangPreventer = setTimeout(() => {
             // SSH prone to wait indefinitely, so we need to set a timeout
-            writeLog("! Execution has timed out. Exiting");
+            writeLog(`! Execution took more than ${maxExecutionTime / 1000}s. Exiting SSH`);
             ssh.destroy();
             ssh = null;
         }, maxExecutionTime);
@@ -136,6 +137,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         })
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise((resolve, reject) => {
+                if (!ssh) reject({
+                    message: "SSH disconnected out before executing command:",
+                    stack: cmd
+                });
                 let first = true;
                 cb = ( /** @type {string} */ chunk) => {
                     chunk = chunk.replace(/\0/g, '');

@@ -43,42 +43,42 @@ function writeAsync(stream, content) {
 }
 
 export async function runConfigInBackground(body, domain, sandbox, callback) {
-    let fullLogData = '';
-    let chunkedLogData = '';
-    let timeForNextChunk = Date.now();
-    let startTime = Date.now();
+    let fullLogData = '',
+        chunkedLogData = 'Running runner... Please wait...\n',
+        delay = 5000,
+        startTime = Date.now();
     const write = new PassThrough();
     const headers = {
-        'Content-Type': 'text/plain',
+        'Content-Type': 'text/plain; charset=UTF-8',
     };
-    let aborted = false;
-    /**
-     * @type {Promise<import('axios').AxiosResponse<string>>}
-     */
-    let latestSend = null;
+    let aborted = false,
+        periodicAbort = null;
     const cancelController = new AbortController();
+    const periodicSender = async () => {
+        periodicAbort = null;
+        var prefix = (fullLogData ? '[Chunked data...]\n' : '');
+        try {
+            if (chunkedLogData != '') {
+                await axios.post(callback, prefix + normalizeShellOutput(chunkedLogData), {
+                    headers,
+                    signal: cancelController.signal,
+                });
+            }
+            chunkedLogData = '';
+        } finally {
+            if (!cancelController.signal.aborted)
+                periodicAbort = setTimeout(periodicSender, delay);
+        }
+    }
+    periodicSender();
     write.on('data', (chunk) => {
         if (!callback) return;
         chunkedLogData += chunk;
-        if ((!fullLogData || timeForNextChunk < Date.now()) && latestSend === null) {
-            // for startup message
-            var prefix = (fullLogData ? '[Chunked data...]\n' : 'Running runner... Please wait...\n');
-            latestSend = axios.post(callback, prefix + normalizeShellOutput(chunkedLogData), {
-                headers,
-                signal: cancelController.signal,
-            });
-            latestSend.then(function () {
-                latestSend = null;
-            }).catch(function (err) {
-                latestSend = null;
-            });
-            timeForNextChunk = Date.now() + 5000;
-            chunkedLogData = '';
-        }
         fullLogData += chunk;
     });
     write.on('end', () => {
         cancelController.abort()
+        periodicAbort && clearTimeout(periodicAbort);
         // and finish message with full log
         if (callback)
             axios.post(callback, normalizeShellOutput(fullLogData), {
@@ -91,7 +91,6 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             await writeAsync(write, s);
         }, sandbox);
     } catch (error) {
-        aborted = true;
         console.log('!> ', error);
         if (error.stdout !== undefined) {
             await writeAsync(write, `$> Error occured with exit code ${error.code || 'unknown'}\n`);
@@ -104,6 +103,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             await writeAsync(write, '$> Error occured\n');
             await writeAsync(write, JSON.stringify(error, Object.getOwnPropertyNames(error)) + '\n');
         }
+        aborted = true;
     } finally {
         console.log('!> finish');
         await writeAsync(write, `\n$> Execution ${aborted ? 'Aborted' : 'Finished'} in ${(Date.now() - startTime) / 1000}s\n`);
