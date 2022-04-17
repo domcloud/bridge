@@ -46,6 +46,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
     if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {
         // create new domain
         await writeLog("$> virtualmin create-domain");
+        await writeLog("Creating virtual domain. This will take a moment...");
         await writeExec(await virtualminExec.execFormatted("create-domain", config.features[0].create, {
             domain,
             dir: true,

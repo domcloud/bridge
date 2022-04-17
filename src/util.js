@@ -18,9 +18,9 @@ export const initUtils = () => {
     }, {}) : null
     sudoutil = path.join(process.cwd(), '/sudoutil.js');
     version = JSON.parse(fs.readFileSync(path.join(process.cwd(), '/package.json')).toString('utf-8')).version;
-    exec('git rev-parse --short HEAD', function(err, stdout) {
-        revision = err ? '<UNKNOWN>' : stdout;
-    });
+    const rev = fs.readFileSync('.git/HEAD').toString().trim();
+    revision = rev.indexOf(':') === -1 ? rev : fs.readFileSync('.git/' + rev.substring(5)).toString().trim();
+    revision = revision.substring(0, 7);
 }
 
 export const getVersion = () => {
