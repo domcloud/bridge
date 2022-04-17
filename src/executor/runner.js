@@ -132,25 +132,35 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 cb(chunk.toString())
             }
         })
-        sshExec = ( /** @type {string} */ cmd) => {
+        sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise((resolve, reject) => {
-                let res = '';
+                let first = true;
                 cb = ( /** @type {string} */ chunk) => {
-                    res += chunk;
+                    chunk = chunk.replace(/\0/g, '');
                     if (chunk.match(/\[.+?\@.+? .+?\]\$/)) {
                         cb = null;
-                        res = res.replace(/\[.+?\@.+? .+?\]\$/, '');
-                        res = res.replace(/\0/g, '');
-                        resolve('$> ' + res.trim());
+                        chunk = chunk.replace(/\[.+?\@.+? .+?\]\$/, '');
+                        if (write) {
+                            writer(chunk);
+                        }
+                        resolve();
                         return true;
+                    } else {
+                        if (first) {
+                            chunk = '$> ' + chunk.trimStart();
+                            first = false;
+                        }
+                        if (write) {
+                            writer(chunk);
+                        }
+                        return false;
                     }
-                    return false;
                 };
                 if (cmd)
                     sshStream.write(cmd + "\n");
             })
         }
-        await sshExec(''); // drop initial message
+        await sshExec('', false); // drop initial message
     }
     try {
         if (config.root) {
@@ -333,30 +343,30 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         break;
                     case 'python':
                         await writeLog("$> changing Python engine to " + value);
-                        await writeLog(await sshExec("curl -sS https://webinstall.dev/pyenv | bash"));
-                        await writeLog(await sshExec("pyenv install -v"));
-                        await writeLog(await sshExec("pyenv global " + value));
-                        await writeLog(await sshExec("python --version"));
+                        await sshExec("curl -sS https://webinstall.dev/pyenv | bash");
+                        await sshExec("pyenv install -v");
+                        await sshExec("pyenv global " + value);
+                        await sshExec("python --version");
                         break;
                     case 'node':
                         await writeLog("$> changing Node engine to " + value);
-                        await writeLog(await sshExec(`curl -sS https://webinstall.dev/node@${value} | bash`));
-                        await writeLog(await sshExec("node --version"));
+                        await sshExec(`curl -sS https://webinstall.dev/node@${value} | bash`);
+                        await sshExec("node --version");
                         break;
                     case 'ruby':
                         await writeLog("$> changing Ruby engine to " + value);
-                        await writeLog(await sshExec(`curl -sSL https://rvm.io/mpapis.asc | gpg --import -`));
-                        await writeLog(await sshExec(`curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -`));
-                        await writeLog(await sshExec(`curl -sSL https://get.rvm.io | bash -s ${value}`));
-                        await writeLog(await sshExec("ruby --version"));
+                        await sshExec(`curl -sSL https://rvm.io/mpapis.asc | gpg --import -`);
+                        await sshExec(`curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -`);
+                        await sshExec(`curl -sSL https://get.rvm.io | bash -s ${value}`);
+                        await sshExec("ruby --version");
                         break;
                     default:
                         break;
                 }
             }
         }
-        await sshExec('unset HISTFILE TERM'); // https://stackoverflow.com/a/9039154/3908409
-        await writeLog(await sshExec(`mkdir -p ${domaindata['Home directory']}/public_html && cd "$_"`));
+        await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
+        await sshExec(`mkdir -p ${domaindata['Home directory']}/public_html && cd "$_"`);
         if (config.source) {
             if (typeof config.source === 'string') {
                 config.source = {
@@ -414,7 +424,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
             await writeLog("$> " + executedCMDNote);
             for (const exec of executedCMD) {
-                await writeLog(await sshExec(exec));
+                await sshExec(exec);
             }
             if (firewallStatus) {
                 await iptablesExec.setAddUser(domaindata['Username']);
@@ -446,7 +456,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
  * @param {{features: any;commands: any;nginx: any;}} config
  * @param {{[x: string]: any}} domaindata
  * @param {string} subdomain
- * @param {{(cmd: string): Promise<any>}} sshExec
+ * @param {{(cmd: string, write?: boolean): Promise<any>}} sshExec
  * @param {{(s: string): Promise<void>}} writeLog
  * @param {{ (s: { stdout: string; stderr: string; code: string; }): Promise<void> }} writeExec
  */
@@ -483,11 +493,11 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
     }
     if (config.commands) {
-        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`);
-        await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' DOMAIN='${subdomain}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`);
+        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
+        await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' DOMAIN='${subdomain}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
         for (const cmd of config.commands) {
-            await writeLog(await sshExec(cmd));
+            await sshExec(cmd);
         }
     }
 
