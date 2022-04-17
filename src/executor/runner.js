@@ -474,35 +474,40 @@ export default async function runConfig(config, domain, writer, sandbox = false)
  * @param {{ (s: { stdout: string; stderr: string; code: string; }): Promise<void> }} writeExec
  */
 export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, writeExec, stillroot = false) {
+
+    const featureRunner = async (feature) => {
+        const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
+        const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
+        switch (key) {
+            case 'php':
+                await writeLog("$> changing PHP engine to " + value);
+                await writeExec(await virtualminExec.execFormatted("modify-web", {
+                    domain: subdomain,
+                    'php-version': value,
+                }));
+                break;
+            case 'ssl':
+                await writeLog("$> getting let's encrypt");
+                await writeExec(await virtualminExec.execFormatted("generate-letsencrypt-cert", {
+                    domain: subdomain,
+                    'renew': 2,
+                    'web': true,
+                }));
+                break;
+            case 'root':
+                await writeLog("$> changing root folder");
+                await writeExec(await virtualminExec.execFormatted("modify-web", {
+                    domain: subdomain,
+                    'document-dir': value,
+                }));
+                break;
+        }
+    }
+
     if (Array.isArray(config.features)) {
         await writeLog("$> Applying features");
         for (const feature of config.features) {
-            const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
-            const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
-            switch (key) {
-                case 'php':
-                    await writeLog("$> changing PHP engine to " + value);
-                    await writeExec(await virtualminExec.execFormatted("modify-web", {
-                        domain: subdomain,
-                        'php-version': value,
-                    }));
-                    break;
-                case 'ssl':
-                    await writeLog("$> getting let's encrypt");
-                    await writeExec(await virtualminExec.execFormatted("generate-letsencrypt-cert", {
-                        domain: subdomain,
-                        'renew': 2,
-                        'web': true,
-                    }));
-                    break;
-                case 'root':
-                    await writeLog("$> changing root folder");
-                    await writeExec(await virtualminExec.execFormatted("modify-web", {
-                        domain: subdomain,
-                        'document-dir': value,
-                    }));
-                    break;
-            }
+            await featureRunner(feature);
         }
     }
     if (config.commands) {
@@ -510,7 +515,15 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' DOMAIN='${subdomain}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
         for (const cmd of config.commands) {
-            await sshExec(cmd);
+            if (typeof cmd === 'string') {
+                await sshExec(cmd);
+            } else if (typeof cmd === 'object') {
+                if (cmd.command) {
+                    await sshExec(cmd.command, cmd.write === false ? false : true);
+                } else if (cmd.feature) {
+                    await featureRunner(cmd.feature);
+                }
+            }
         }
     }
 
