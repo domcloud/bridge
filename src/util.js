@@ -1,6 +1,6 @@
 import path from 'path';
 import {
-    spawn
+    spawn, exec
 } from 'child_process';
 import {
     lock,
@@ -8,7 +8,7 @@ import {
     check
 } from 'proper-lockfile';
 
-let tokenSecret, allowIps, sudoutil, version;
+let tokenSecret, allowIps, sudoutil, version, revision;
 import fs from 'fs';
 export const initUtils = () => {
     tokenSecret = `Bearer ${process.env.SECRET}`;
@@ -18,10 +18,17 @@ export const initUtils = () => {
     }, {}) : null
     sudoutil = path.join(process.cwd(), '/sudoutil.js');
     version = JSON.parse(fs.readFileSync(path.join(process.cwd(), '/package.json')).toString('utf-8')).version;
+    exec('git rev-parse --short HEAD', function(err, stdout) {
+        revision = err ? '<UNKNOWN>' : stdout;
+    });
 }
 
 export const getVersion = () => {
     return version;
+}
+
+export const getRevision = () => {
+    return revision;
 }
 
 export const checkAuth = function (

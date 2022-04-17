@@ -5,6 +5,7 @@ import {
 import {
     escapeShell,
     getDbName,
+    getRevision,
     getVersion,
     spawnSudoUtil
 } from "../util.js";
@@ -41,7 +42,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         if (s.code !== null)
             await writeLog("Exit status: " + s.code);
     }
-    await writeLog(`DOM Cloud runner v${getVersion()} in ${domain} at ${new Date(starttime).toISOString()}`);
+    await writeLog(`DOM Cloud runner v${getVersion()} ref ${getRevision()} in ${domain} at ${new Date(starttime).toISOString()}`);
     if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {
         // create new domain
         await writeLog("$> virtualmin create-domain");
@@ -141,14 +142,20 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         cb = null;
                         chunk = chunk.replace(/\[.+?\@.+? .+?\]\$/, '');
                         if (write) {
-                            writer(chunk);
+                            writer(chunk.trimEnd() + "\n");
                         }
                         resolve();
                         return true;
                     } else {
                         if (first) {
-                            chunk = '$> ' + chunk.trimStart();
-                            first = false;
+                            if (chunk.includes('\n')) {
+                                // change first line
+                                chunk = '$> ' + cmd + '\n' + chunk.split('\n', 2)[1];
+                                first = false;
+                            } else {
+                                // drop, need qualifier
+                                return false;
+                            }
                         }
                         if (write) {
                             writer(chunk);
