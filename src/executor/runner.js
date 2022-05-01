@@ -356,9 +356,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         break;
                     case 'python':
                         await writeLog("$> changing Python engine to " + value);
-                        await sshExec("curl -sS https://webinstall.dev/pyenv | bash");
-                        await sshExec("pyenv install -v");
-                        await sshExec("pyenv global " + value);
+                        await sshExec("pyenv >2 /dev/null || (curl -sS https://webinstall.dev/pyenv | bash)");
+                        await sshExec("source ~/.bash_profile");
+                        await sshExec(`pyenv install ${value ? value + ':latest' : '3:latest'}`);
+                        await sshExec(`pyenv global $(pyenv versions --bare | tail -n 1)`);
                         await sshExec("python --version");
                         break;
                     case 'node':
