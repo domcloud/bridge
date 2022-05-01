@@ -504,12 +504,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
     }
 
-    if (Array.isArray(config.features)) {
-        await writeLog("$> Applying features");
-        for (const feature of config.features) {
-            await featureRunner(feature);
-        }
-    }
     if (config.commands) {
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
         await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' DOMAIN='${subdomain}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
@@ -524,6 +518,13 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await featureRunner(cmd.feature);
                 }
             }
+        }
+    }
+
+    if (Array.isArray(config.features)) {
+        await writeLog("$> Applying features");
+        for (const feature of config.features) {
+            await featureRunner(feature);
         }
     }
 
