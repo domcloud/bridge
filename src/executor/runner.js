@@ -356,6 +356,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         break;
                     case 'python':
                         await writeLog("$> changing Python engine to " + (value || 'latest'));
+                        await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
                         await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash) && source ~/.bash_profile");
                         await sshExec(`pyenv install ${value ? value + ':latest' : '3:latest'} -s`);
                         await sshExec(`pyenv global $(pyenv versions --bare | tail -n 1)`);
