@@ -1,6 +1,6 @@
 {
-  "name": "dom-newrootkit",
-  "version": "0.9.8",
+  "name": "domcloud-bridge",
+  "version": "0.9.9",
   "description": "",
   "main": "index.js",
   "scripts": {

@@ -6,7 +6,6 @@ import {
 } from '../util.js';
 import express from 'express';
 import runConfig from '../executor/runner.js';
-import got from 'got';
 import {
     PassThrough
 } from 'stream';
