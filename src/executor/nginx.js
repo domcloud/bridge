@@ -45,6 +45,10 @@ class NginxExecutor {
                         switch (key) {
                             case "document_root":
                             case "app_root":
+                            case "ruby":
+                            case "nodejs":
+                            case "python":
+                            case "meteor_app_settings":
                                 // expand home path
                                 vall = path.join(`/home/${info.user}`, config.passenger[key]);
                                 break;
