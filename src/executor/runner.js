@@ -363,8 +363,14 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await sshExec("python --version");
                         break;
                     case 'node':
-                        await writeLog("$> changing Node engine to " + value);
-                        await sshExec(`curl -sS https://webinstall.dev/node@${value} | bash`);
+                        await writeLog("$> changing Node engine to " + (value || 'lts'));
+                        await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
+                        await sshExec("pathman add .local/opt/node/bin && source ~/.bash_profile");
+                        await sshExec(`curl -sS https://webinstall.dev/node@${value || 'lts'} | bash`);
+                        if (value && value != 'lts' && value < '16.10') {
+                            await sshExec("npm i -g corepack");
+                        }
+                        await sshExec("corepack enable");
                         await sshExec("node --version");
                         break;
                     case 'ruby':
