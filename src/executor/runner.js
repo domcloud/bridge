@@ -84,7 +84,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
     }
     let domaindata = await virtualminExec.getDomainInfo(domain);
     if (!domaindata) {
-        await writeLog("Server is not exist. Finishing execution");
+        await writeLog("\n$> Server is not exist. Finishing execution");
         return;
     }
     /**
@@ -126,7 +126,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         let cb = null;
         hangPreventer = setTimeout(async () => {
             // SSH prone to wait indefinitely, so we need to set a timeout
-            await writeLog(`! Execution took more than ${maxExecutionTime / 1000}s. Exiting SSH`);
+            await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s. Exiting SSH`);
             ssh.destroy();
             ssh = null;
         }, maxExecutionTime);
