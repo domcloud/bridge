@@ -435,7 +435,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 }
                 executedCMD.push(`git clone ${escapeShell(url.toString())}` +
                     `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
-                    `${source.credential ? `-c credential.helper='!f() { sleep 1; echo "username=\${${source.credential.user}}"; echo "password=\${${source.credential.pass}}"; }; f'` : ''}` +
+                    `${source.credential ? ` -c credential.helper='!f() { sleep 1; echo "username=\${${source.credential.user}}"; echo "password=\${${source.credential.pass}}"; }; f'` : ''}` +
                     `${source.shallow ? ` --depth 1` : ''}` +
                     `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
                 executedCMDNote = 'Cloning files';
@@ -524,7 +524,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 if (config.envs.GITHUB_USER && config.envs.GITHUB_TOKEN) {
                     await writeLog(`$> running git ${value} with user credentials`);
                     await sshExec(`${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
-                    await sshExec(`git -c credential.helper='!f() { sleep 1; echo "username=\${${HOST}_USER}"; echo "password=\${${HOST}_TOKEN}"; }; f'`);
+                    await sshExec(`git -c credential.helper='!f() { sleep 1; echo "username=\${${HOST}_USER}"; echo "password=\${${HOST}_TOKEN}"; }; f' ${value}`);
                 } else {
                     await writeLog(`$> git ${value} ignored due no ${HOST}_USER and ${HOST}_TOKEN`);
                 }
