@@ -124,9 +124,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         });
         sshStream.on('close', () => ssh.end());
         let cb = null;
-        hangPreventer = setTimeout(() => {
+        hangPreventer = setTimeout(async () => {
             // SSH prone to wait indefinitely, so we need to set a timeout
-            writeLog(`! Execution took more than ${maxExecutionTime / 1000}s. Exiting SSH`);
+            await writeLog(`! Execution took more than ${maxExecutionTime / 1000}s. Exiting SSH`);
             ssh.destroy();
             ssh = null;
         }, maxExecutionTime);
@@ -422,9 +422,21 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     source.branch = url.hash.substring(1);
                     url.hash = '';
                 }
+                if (!source.credential && config.envs) {
+                    for (const HOST of ['GITHUB', 'GITLAB', 'BITBUCKET']) {
+                        if (url.hostname.includes(HOST.toLowerCase()) && config.envs[`${HOST}_USER`] && config.envs[`${HOST}_TOKEN`]) {
+                            await sshExec(`${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
+                            source.credential = {
+                                user: `${HOST}_USER`,
+                                pass: `${HOST}_TOKEN`,
+                            };
+                        }
+                    }
+                }
                 executedCMD.push(`git clone ${escapeShell(url.toString())}` +
-                    `${source.branch ? ` -b ${escapeShell(source.branch)}`  : ''}` +
-                    `${source.shallow ? ` --depth 1`  : ''}` +
+                    `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
+                    `${source.credential ? `-c credential.helper='!f() { sleep 1; echo "username=\${${source.credential.user}}"; echo "password=\${${source.credential.pass}}"; }; f'` : ''}` +
+                    `${source.shallow ? ` --depth 1` : ''}` +
                     `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
                 executedCMDNote = 'Cloning files';
             } else if (source.type === 'extract') {
@@ -470,7 +482,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
 }
 
 /**
- * @param {{features: any;commands: any;nginx: any;}} config
+ * @param {{features: any;commands: any;nginx: any;envs: any}} config
  * @param {{[x: string]: any}} domaindata
  * @param {string} subdomain
  * @param {{(cmd: string, write?: boolean): Promise<any>}} sshExec
@@ -505,12 +517,27 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     'document-dir': value,
                 }));
                 break;
+            case 'github':
+            case 'gitlab':
+            case 'bitbucket':
+                let HOST = key.toUpperCase();
+                if (config.envs.GITHUB_USER && config.envs.GITHUB_TOKEN) {
+                    await writeLog(`$> running git ${value} with user credentials`);
+                    await sshExec(`${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
+                    await sshExec(`git -c credential.helper='!f() { sleep 1; echo "username=\${${HOST}_USER}"; echo "password=\${${HOST}_TOKEN}"; }; f'`);
+                } else {
+                    await writeLog(`$> git ${value} ignored due no ${HOST}_USER and ${HOST}_TOKEN`);
+                }
+                break;
         }
     }
 
     if (config.commands) {
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
         await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' DOMAIN='${subdomain}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
+        if (config.envs) {
+            await sshExec(Object.entries(config.envs).map(([k, v]) => `${k}='${v}'`).join(' '), false);
+        }
         await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
         for (const cmd of config.commands) {
             if (typeof cmd === 'string') {
