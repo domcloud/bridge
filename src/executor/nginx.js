@@ -13,9 +13,6 @@ const {
     ShellString
 } = shelljs;
 
-const findServ = (arr, name) => {
-    return arr.find((x) => (x.server_name[0]._value).split(" ").includes(name));
-}
 const passengerKeys = [
     'enabled', 'app_env', 'app_start_command', 'app_type',
     'startup_file', 'ruby', 'nodejs', 'python',
@@ -171,9 +168,6 @@ class NginxExecutor {
         }
         const findFastCgi = (l) => {
             if (l.fastcgi_pass) return l.fastcgi_pass[0]._value;
-            // else if (l._comments && l._comments.length > 0 && l._comments[0].trim().match(/^fastcgi_pass localhost:\[\d{4,5}\]$/)) {
-            //     return l._comments[0].trim().split(' ')[1];
-            // } // read in comments
             else if (l.location) {
                 for (const ll of l.location) {
                     var r = findFastCgi(ll);
@@ -236,15 +230,13 @@ class NginxExecutor {
     async get(domain) {
         return await executeLock('nginx', () => {
             return new Promise((resolve, reject) => {
-                spawnSudoUtil('NGINX_GET').then(() => {
+                spawnSudoUtil('NGINX_GET', [domain]).then(() => {
                     NginxConfFile.create(tmpFile, (err, conf) => {
                         if (err)
                             return reject(err);
                         try {
                             let node = conf.nginx;
-                            if (domain !== 'all')
-                                node = findServ(node.http[0].server, domain);
-                            return resolve(node);
+                            return resolve(node.server[0]);
                         } catch (error) {
                             return reject(error);
                         }
@@ -259,7 +251,7 @@ class NginxExecutor {
      */
     async set(domain, config) {
         return await executeLock('nginx', async () => {
-            await spawnSudoUtil('NGINX_GET');
+            await spawnSudoUtil('NGINX_GET', [domain]);
             return await new Promise((resolve, reject) => {
                 var src = cat(tmpFile).toString();
                 // https://github.com/virtualmin/virtualmin-nginx/issues/18
@@ -267,7 +259,7 @@ class NginxExecutor {
                 NginxConfFile.createFromSource(src, (err, conf) => {
                     if (err)
                         return reject(err);
-                    const node = findServ(conf.nginx.http[0].server, domain);
+                    const node = conf.nginx.server[0];
                     if (!node) {
                         return reject(new Error(`Cannot find domain ${domain}`));
                     }
@@ -275,7 +267,7 @@ class NginxExecutor {
                     info.config = config;
                     this.applyInfo(node, info);
                     ShellString(conf.toString()).to(tmpFile);
-                    spawnSudoUtil('NGINX_SET').then(() => {
+                    spawnSudoUtil('NGINX_SET', [domain]).then(() => {
                         resolve("Done updated\n" + node.toString());
                     }).catch((err) => {
                         reject(err);

@@ -23,12 +23,14 @@ const {
     cat,
     cd,
     exec,
+    mv,
+    rm,
     exit,
 } = shelljs;
 
 const env = Object.assign({}, {
-    NGINX_PATH: '/etc/nginx/nginx.conf',
-    NGINX_OUT: '/etc/nginx/nginx.conf',
+    NGINX_PATH: '/etc/nginx/conf.d/$.conf',
+    NGINX_OUT: '/etc/nginx/conf.d/$.conf',
     NGINX_BIN: 'nginx',
     NGINX_START: 'systemctl start nginx',
     NGINX_TMP: path.join(__dirname, '.tmp/nginx'),
@@ -50,6 +52,7 @@ const env = Object.assign({}, {
     NAMED_RESYNC: 'rndc retransfer $',
     NAMED_TMP: path.join(__dirname, '.tmp/named'),
     VIRTUALMIN: 'virtualmin',
+    PHPFPM_LOCATIONS: '/etc/php-fpm.d/$.conf',
     SCRIPT: path.join(__dirname, 'sudoutil.js'),
 }, process.env);
 
@@ -69,13 +72,21 @@ cd(__dirname); // making sure because we're in sudo
 let arg;
 switch (cli.args.shift()) {
     case 'NGINX_GET':
-        cat(env.NGINX_PATH).to(env.NGINX_TMP);
+        arg = cli.args.shift();
+        cat(env.NGINX_PATH.replace('$', arg)).to(env.NGINX_TMP);
         fixOwner(env.NGINX_TMP);
         exit(0);
     case 'NGINX_SET':
-        if (exec(`${env.NGINX_BIN} -t -c '${env.NGINX_TMP}'`).code !== 0)
+        arg = cli.args.shift();
+        let DEST = env.NGINX_OUT.replace('$', arg);
+        mv(DEST, DEST+'.bak');
+        cat(env.NGINX_TMP).to(DEST);
+        if (exec(`${env.NGINX_BIN} -t`).code !== 0) {
+            rm(DEST);
+            mv(DEST+'.bak', DEST);
             exit(1);
-        cat(env.NGINX_TMP).to(env.NGINX_OUT);
+        }
+        rm(DEST+'.bak');
         exec(`${env.NGINX_BIN} -s reload`);
         exit(0);
     case 'NGINX_START':
@@ -122,6 +133,13 @@ switch (cli.args.shift()) {
     case 'VIRTUALMIN':
         arg = cli.args.join(' ');
         exit(exec(env.VIRTUALMIN + " " + arg).code);
+    case 'PHPFPM_CLEAN':
+        arg = cli.args.shift();
+        const locations = env.PHPFPM_LOCATIONS.split(',').map(x => x.replace('$', arg));
+        locations.forEach(x => {
+            rm(x)
+        });
+        exit(0);
     default:
         console.error(`Unknown Mode`);
         exit(1);

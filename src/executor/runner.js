@@ -217,8 +217,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             break;
                         case 'delete':
                             await writeLog("$> virtualmin delete-domain");
+                            // sometimes PHP-FPM+NGINX files is not cleared up so we do this early
+                            await spawnSudoUtil('PHPFPM_CLEAN', domaindata['ID']);
                             await writeExec(await virtualminExec.execFormatted("delete-domain", value, {
-                                domain,
+                                user: domaindata['Username'],
                             }));
                             // no need to do other stuff
                             return;

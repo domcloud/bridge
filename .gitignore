@@ -7,3 +7,4 @@ phppgadmin
 webssh
 webssh2
 *.log
+.DS_Store
