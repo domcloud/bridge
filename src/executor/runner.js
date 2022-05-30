@@ -183,6 +183,12 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }]);
             delete config.root;
         }
+        let firewallStatusCache = undefined;
+        let firewallStatus = async () => {
+            if (firewallStatusCache === undefined)
+                firewallStatusCache = !!iptablesExec.getByUsers(await iptablesExec.getParsed(), domaindata['Username'])[0];
+            return firewallStatusCache;
+        };
         if (Array.isArray(config.features)) {
             for (const feature of config.features) {
                 const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
@@ -200,6 +206,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             }));
                             break;
                         case 'rename':
+                            if (value && value["new-user"] && await firewallStatus()) {
+                                await iptablesExec.setDelUser(domaindata['Username']);
+                            }
                             await writeLog("$> virtualmin rename-domain");
                             await writeExec(await virtualminExec.execFormatted("rename-domain", value, {
                                 domain,
@@ -207,6 +216,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             // in case if we change domain name
                             if (value && value["new-domain"])
                                 domain = value["new-domain"];
+                            await new Promise(r => setTimeout(r, 1000));
+                            if (value && value["new-user"] && await firewallStatus()) {
+                                await iptablesExec.setAddUser(value["new-user"]);
+                            }
                             domaindata = await virtualminExec.getDomainInfo(domain);
                             break;
                         case 'disable':
@@ -357,9 +370,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         if (value === '' || value === 'on') {
                             await writeLog("$> changing firewall protection to " + value);
                             await writeLog(await iptablesExec.setAddUser(domaindata['Username']));
+                            firewallStatusCache = true;
                         } else if (value === 'off') {
                             await writeLog("$> changing firewall protection to " + value);
                             await writeLog(await iptablesExec.setDelUser(domaindata['Username']));
+                            firewallStatusCache = false;
                         }
                         break;
                     case 'python':
@@ -419,7 +434,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
             let executedCMD = [`rm -rf * .* 2>/dev/null`];
             let executedCMDNote = '';
-            let firewallStatus = !!iptablesExec.getByUsers(await iptablesExec.getParsed(), domaindata['Username'])[0];
             if (source.url === 'clear') {
                 // we just delete them all
                 executedCMDNote = 'Clearing files';
@@ -456,14 +470,14 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 }
                 executedCMDNote = 'Downloading files';
             }
-            if (firewallStatus) {
+            if (await firewallStatus()) {
                 await iptablesExec.setDelUser(domaindata['Username']);
             }
             await writeLog("$> " + executedCMDNote);
             for (const exec of executedCMD) {
                 await sshExec(exec);
             }
-            if (firewallStatus) {
+            if (await firewallStatus()) {
                 await iptablesExec.setAddUser(domaindata['Username']);
             }
         }
