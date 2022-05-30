@@ -22,7 +22,7 @@ const passengerKeys = [
 const locationKeys = [
     "root", "alias", "rewrite", "try_files", "return", "index", "expires", "allow", "deny",
 ];
-const sslNames = ["", "off", "enforce", "on"];
+const sslNames = ["", "off", "enforce", "on", "always"];
 
 class NginxExecutor {
     /** @param {import('nginx-conf/dist/src/conf').NginxConfItem} node */
@@ -70,30 +70,23 @@ class NginxExecutor {
                 }
             }
             if (config.fastcgi) {
-                switch (config.fastcgi) {
-                    case "on":
-                        node._add("location", "~ \\.php(/|$)");
-                        var n = node.location[node.location.length - 1];
-                        n._add("try_files", '$uri =404');
-                        n._add("fastcgi_pass", info.fcgi);
-                        break;
-                    case "off":
-                        node._add("location", "= .actuallydisabledphpexecution");
-                        var n = node.location[node.location.length - 1];
-                        n._add("return", '404');
-                        n._add("fastcgi_pass", info.fcgi);
-                        break;
-                    case "cached":
-                        n._add("try_files", '$uri =404');
-                        n._add("fastcgi_pass", info.fcgi);
-                        n._add("fastcgi_cache", "phpcache");
-                        break;
-                    case "wpcached":
-                        n._add("try_files", '$uri =404');
-                        n._add("fastcgi_pass", info.fcgi);
-                        n._add("fastcgi_cache", "phpcache");
-                        break;
+                const fff = function (fastcgi) {
+                    switch (fastcgi) {
+                        case "on":
+                        default:
+                            return "$uri =404"
+                        case "off":
+                            return "=404"
+                        case "always":
+                        case "enforce":
+                            return "$uri"
+
+                    }
                 }
+                node._add("location", "~ \\.php(/|$)");
+                var n = node.location[node.location.length - 1];
+                n._add("try_files", fff(config.fastcgi));
+                n._add("fastcgi_pass", info.fcgi);
             }
         }
         Object.getOwnPropertyNames(node).forEach(function (prop) {
@@ -103,7 +96,7 @@ class NginxExecutor {
             }
         });
         node._add('server_name', info.dom);
-        if (info.config.ssl !== "enforce") {
+        if (info.config.ssl !== "enforce" && info.config.ssl !== "always") {
             node._add('listen', info.ip);
             node._add('listen', info.ip6);
         }
