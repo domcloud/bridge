@@ -368,7 +368,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         break;
                     case 'firewall':
                         if (value === '' || value === 'on') {
-                            await writeLog("$> changing firewall protection to " + value);
+                            await writeLog("$> changing firewall protection to " + (value || 'on'));
                             await writeLog(await iptablesExec.setAddUser(domaindata['Username']));
                             firewallStatusCache = true;
                         } else if (value === 'off') {

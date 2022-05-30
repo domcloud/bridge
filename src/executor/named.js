@@ -143,6 +143,48 @@ class NamedExecutor {
             return "Done updated";
         });
     }
+    /**
+     * @param {string} zone
+     * @param {{action: string, domain: string, type: string, value: string}[]} mods
+     * @param {boolean} resync
+     */
+    async set(zone, mods, resync) {
+        await executeLock('named', async () => {
+            await spawnSudoUtil('NAMED_GET', ["" + zone]);
+            var file = parse(cat(tmpFile));
+            var changecount = 0;
+            if (!Array.isArray(mods)) {
+                mods = [mods];
+            }
+            for (let mod of mods) {
+                if (!mod || !mod.action || !mod.domain || !mod.type || !mod.value) {
+                    return "Invalid config";
+                }
+                var arr = getArrayOf(file, mod.type);
+                var map = mapKey[mod.type](mod.domain, ...("" + mod.value).split(' '));
+                if (mod.action === 'add') {
+                    if (appendIfNotExist(arr, map)) {
+                        changecount++;
+                    }
+                }
+                if (mod.action === 'del') {
+                    if (deleteIfNotExist(arr, map)) {
+                        changecount++;
+                    }
+                }
+            }
+            if (changecount === 0) {
+                return "Done unchanged";
+            }
+            file.soa.serial++;
+            ShellString(generate(file)).to(tmpFile);
+            await spawnSudoUtil('NAMED_SET', ["" + zone]);
+            if (resync) {
+                await spawnSudoUtil('NAMED_SYNC', [zone]);
+            }
+            return "Done updated";
+        });
+    }
 }
 
 export const namedExec = new NamedExecutor();

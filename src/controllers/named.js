@@ -24,6 +24,13 @@ export default function () {
             next(error);
         }
     });
+    router.post('/modify', checkAuth, checkGet(['zone']), async function (req, res, next) {
+        try {
+            res.json(await executor.set(req.query.zone + '', req.body, !!req.query.resync));
+        } catch (error) {
+            next(error);
+        }
+    });
     router.post('/add', checkAuth, checkPost(['zone', 'domain', 'type', 'value']), async function (req, res, next) {
         try {
             const r = await executor.add(req.body.zone, req.body.domain, req.body.type, req.body.value);
