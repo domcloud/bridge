@@ -22,7 +22,7 @@ const passengerKeys = [
 const locationKeys = [
     "root", "alias", "rewrite", "try_files", "return", "index", "expires", "allow", "deny",
 ];
-const sslNames = ["", "off", "enforce", "on", "always"];
+const sslNames = ["", "off", "always", "on"];
 
 class NginxExecutor {
     /** @param {import('nginx-conf/dist/src/conf').NginxConfItem} node */
@@ -70,7 +70,7 @@ class NginxExecutor {
                 }
             }
             if (config.fastcgi) {
-                node._add("location", "~ \\.php(/|$)");
+                node._add("location", "~ \\.php" + (config.fastcgi == 'always' ? "(/|$)" : "$"));
                 var n = node.location[node.location.length - 1];
                 switch (config.fastcgi) {
                     case "on":
@@ -126,7 +126,13 @@ class NginxExecutor {
                 r.locations = [];
                 for (const l of (node.location)) {
                     if (l.fastcgi_pass) {
-                        r.fastcgi = r.fastcgi_cache || "on";
+                        if (l.return) {
+                            r.fastcgi = "off";
+                        } else if (l.try_files) {
+                            r.fastcgi = "on";
+                        } else {
+                            r.fastcgi = "always";
+                        }
                     } else {
                         r.locations.push(extractLocations(l, basepath));
                     }
