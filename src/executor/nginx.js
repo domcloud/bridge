@@ -70,22 +70,19 @@ class NginxExecutor {
                 }
             }
             if (config.fastcgi) {
-                const fff = function (fastcgi) {
-                    switch (fastcgi) {
-                        case "on":
-                        default:
-                            return "$uri =404"
-                        case "off":
-                            return "=404"
-                        case "always":
-                        case "enforce":
-                            return "$uri"
-
-                    }
-                }
                 node._add("location", "~ \\.php(/|$)");
                 var n = node.location[node.location.length - 1];
-                n._add("try_files", fff(config.fastcgi));
+                switch (config.fastcgi) {
+                    case "on":
+                    default:
+                        n._add("try_files", "$uri =404");
+                        break;
+                    case "off":
+                        n._add("return", "404");
+                        break;
+                    case "always":
+                        break;
+                }
                 n._add("fastcgi_pass", info.fcgi);
             }
         }
