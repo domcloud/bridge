@@ -1,6 +1,7 @@
 import path from 'path';
 import {
-    spawn, exec
+    spawn,
+    exec
 } from 'child_process';
 import {
     lock,
@@ -130,6 +131,16 @@ export const spawnSudoUtil = function (
     });
 }
 
+export const spawnSudoUtilAsync = function ( /** @type {string} */
+    mode,
+    /** @type {string[]} */
+    args = []) {
+    // must by bypassable using visudo
+    return process.env.NODE_ENV === 'development' ?
+            spawn("node", [sudoutil, mode, ...args], {}) :
+            spawn("sudo", [sudoutil, mode, ...args], {});
+}
+
 export const checkTheLock = function ( /** @type {string} */ file) {
     const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
     return check(realfile, {
@@ -146,18 +157,18 @@ export const executeLock = function (
     return new Promise((resolve, reject) => {
         let release;
         lock(realfile, {
-                retries: 10,
-                realpath: false,
-            }).then((releaseCall) => {
-                release = releaseCall;
-                return callback();
-            }).then(arg => {
-                if (release) release();
-                resolve(arg);
-            }).catch(err => {
-                if (release) release();
-                reject(err);
-            });
+            retries: 10,
+            realpath: false,
+        }).then((releaseCall) => {
+            release = releaseCall;
+            return callback();
+        }).then(arg => {
+            if (release) release();
+            resolve(arg);
+        }).catch(err => {
+            if (release) release();
+            reject(err);
+        });
     });
 }
 // Returns whether an object has a given set of `key:value` pairs.

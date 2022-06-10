@@ -8,11 +8,11 @@ const {
 } = shelljs;
 
 class VirtualminExecutor {
-    async getDomainInfo(domain) {
+    async getDomainInfo(domain = '', simple = true) {
         try {
             let r = await virtualminExec.execFormatted("list-domains", {
                 domain,
-                multiline: true
+                [simple ? 'simple-multiline' : 'multiline']: true
             });
             if (process.env.NODE_ENV === 'development')
                 r = {
@@ -22,30 +22,53 @@ class VirtualminExecutor {
                 }
             if (r.code === 255)
                 throw r;
-            return r.stdout.split('\n')
-                .filter(l => l.startsWith('    '))
-                .map(l => l.split(':', 2).map(x => x.trim()))
-                .reduce((c, k) => {
-                    if (k.length === 2)
-                        c[k[0]] = k[1]
-                    return c;
-                }, {});
+            let data = r.stdout.split('\n'),
+                result = {},
+                neskey = '',
+                nesval = {};
+            for (let line of data) {
+                line = line.trimEnd();
+                if (line.length >= 4 && line[0] === ' ') {
+                    let pair = line.trimStart().split(':', 2);
+                    if (pair.length === 2) {
+                        nesval[pair[0]] = pair[1].trimStart();
+                    }
+                } else if (line.length >= 1) {
+                    if (neskey) {
+                        result[neskey] = nesval;
+                        nesval = {};
+                    }
+                    neskey = line;
+                } else {
+                    nesval[neskey] = line;
+                    break;
+                }
+            }
+            if (domain) {
+                result = result[domain];
+            }
+            return result;
         } catch (error) {
             console.log(error);
             return null;
         }
     }
+    /**
+     * @param {string} program
+     * @param {object[]} opts
+     */
     async execFormatted(program, ...opts) {
         let p = [program];
-        Object.entries(Object.assign({}, ...(opts.filter(x => x && typeof x === 'object')))).forEach(([k, v]) => {
-            if (v) {
-                k = "--" + k;
-                if (typeof v === 'boolean')
-                    p.push(escapeShell(k));
-                else
-                    p.push(escapeShell(k), escapeShell(v));
-            }
-        });
+        Object.entries(Object.assign({}, ...(opts.filter(x => x && typeof x === 'object'))))
+            .forEach(([k, v]) => {
+                if (v) {
+                    k = "--" + k;
+                    if (typeof v === 'boolean')
+                        p.push(escapeShell(k));
+                    else
+                        p.push(escapeShell(k), escapeShell(v));
+                }
+            });
         try {
             return await this.exec(...p);
         } catch (error) {

@@ -7,7 +7,8 @@ import {
     getDbName,
     getRevision,
     getVersion,
-    spawnSudoUtil
+    spawnSudoUtil,
+    spawnSudoUtilAsync
 } from "../util.js";
 import {
     iptablesExec
@@ -88,49 +89,30 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         return;
     }
     /**
-     * @type {Client}
+     * @type {import('child_process').ChildProcessWithoutNullStreams}
      */
     let ssh;
     let sshExec;
-    let hangPreventer;
     if (process.env.NODE_ENV === 'development') {
         sshExec = async (cmd) => {
             await writeLog(cmd);
         }
     } else {
-        ssh = new Client();
-        // connect
-        await new Promise((resolve, reject) => {
-            ssh.on('ready', resolve);
-            ssh.on('error', reject);
-            ssh.connect({
-                host: 'localhost',
-                username: domaindata['Username'],
-                password: domaindata['Password'],
-                readyTimeout: 10000
-            });
-        });
-        // stream
-        /**
-         * @type {import('ssh2').Channel}
-         */
-        const sshStream = await new Promise((resolve, reject) => {
-            ssh.shell((err, stream) => {
-                if (err)
-                    reject(err);
-                else
-                    resolve(stream);
-            });
-        });
-        sshStream.on('close', () => ssh.end());
+        ssh = spawnSudoUtilAsync('SHELL_INTERACTIVE', domaindata['Username']);
         let cb = null;
-        hangPreventer = setTimeout(async () => {
+        setTimeout(async () => {
+            if (ssh == null) return;
             // SSH prone to wait indefinitely, so we need to set a timeout
-            await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s. Exiting SSH`);
-            ssh.destroy();
+            await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s. Exiting`);
+            ssh.kill('SIGKILL');
             ssh = null;
-        }, maxExecutionTime);
-        sshStream.on('data', function (chunk) {
+        }, maxExecutionTime).unref();
+        ssh.stdout.on('data', function (chunk) {
+            if (cb) {
+                cb(chunk.toString())
+            }
+        });
+        ssh.stderr.on('data', function (chunk) {
             if (cb) {
                 cb(chunk.toString())
             }
@@ -170,7 +152,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     }
                 };
                 if (cmd)
-                    sshStream.write(cmd + "\n");
+                    ssh.stdin.write(cmd + "\n");
             })
         }
         await sshExec('', false); // drop initial message
@@ -236,8 +218,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             break;
                         case 'delete':
                             await writeLog("$> virtualmin delete-domain");
-                            // sometimes PHP-FPM+NGINX files is not cleared up so we do this early
-                            await spawnSudoUtil('PHPFPM_CLEAN', domaindata['ID']);
                             await writeExec(await virtualminExec.execFormatted("delete-domain", value, {
                                 user: domaindata['Username'],
                             }));
@@ -494,11 +474,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
     } catch (err) {
         throw err;
     } finally {
-        if (hangPreventer) {
-            clearTimeout(hangPreventer);
-        }
-        if (ssh && ssh.destroy) {
-            ssh.destroy();
+        if (ssh && !ssh.killed) {
+            ssh.kill();
         }
     }
 }

@@ -12,6 +12,9 @@ import {
 import {
     fileURLToPath
 } from 'url';
+import {
+    spawn
+} from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(
     import.meta.url));
@@ -29,6 +32,8 @@ const {
 } = shelljs;
 
 const env = Object.assign({}, {
+    BASH_PATH: '/bin/bash',
+    BASH_SU: 'su',
     NGINX_PATH: '/etc/nginx/conf.d/$.conf',
     NGINX_OUT: '/etc/nginx/conf.d/$.conf',
     NGINX_BIN: 'nginx',
@@ -79,14 +84,14 @@ switch (cli.args.shift()) {
     case 'NGINX_SET':
         arg = cli.args.shift();
         let DEST = env.NGINX_OUT.replace('$', arg);
-        mv(DEST, DEST+'.bak');
+        mv(DEST, DEST + '.bak');
         cat(env.NGINX_TMP).to(DEST);
         if (exec(`${env.NGINX_BIN} -t`).code !== 0) {
             rm(DEST);
-            mv(DEST+'.bak', DEST);
+            mv(DEST + '.bak', DEST);
             exit(1);
         }
-        rm(DEST+'.bak');
+        rm(DEST + '.bak');
         exec(`${env.NGINX_BIN} -s reload`);
         exit(0);
     case 'NGINX_START':
@@ -133,6 +138,14 @@ switch (cli.args.shift()) {
     case 'VIRTUALMIN':
         arg = cli.args.join(' ');
         exit(exec(env.VIRTUALMIN + " " + arg).code);
+    case 'SHELL_INTERACTIVE':
+        arg = cli.args.shift();
+        var su = spawn(env.BASH_SU, [arg, '-s', env.BASH_PATH, '-P'], {
+            stdio: 'inherit'
+        });
+        su.on('exit', function (code) {
+            exit(code);
+        });
     case 'PHPFPM_CLEAN':
         arg = cli.args.shift();
         const locations = env.PHPFPM_LOCATIONS.split(',').map(x => x.replace('$', arg));
