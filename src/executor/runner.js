@@ -137,24 +137,16 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         resolve();
                         return true;
                     } else {
-                        if (first) {
-                            if (chunk.includes('\n')) {
-                                // change first line
-                                chunk = '$> ' + cmd + '\n' + chunk.split('\n', 2)[1];
-                                first = false;
-                            } else {
-                                // drop, need qualifier
-                                return false;
-                            }
-                        }
                         if (write) {
                             writer(chunk);
                         }
                         return false;
                     }
                 };
-                if (cmd)
+                if (cmd) {
                     ssh.stdin.write(cmd + "\n");
+                    writer('$> ' + cmd + "\n");
+                }
             })
         }
         await sshExec(''); // drop initial message
@@ -476,8 +468,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
     } catch (err) {
         throw err;
     } finally {
-        if (ssh && !ssh.killed) {
-            ssh.kill();
+        if (ssh) {
+            ssh.stdin.write('exit\n');
         }
     }
 }
