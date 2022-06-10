@@ -34,6 +34,7 @@ const {
 const env = Object.assign({}, {
     BASH_PATH: '/bin/bash',
     BASH_SU: 'su',
+    BASH_KILL: 'kill',
     NGINX_PATH: '/etc/nginx/conf.d/$.conf',
     NGINX_OUT: '/etc/nginx/conf.d/$.conf',
     NGINX_BIN: 'nginx',
@@ -138,6 +139,9 @@ switch (cli.args.shift()) {
     case 'VIRTUALMIN':
         arg = cli.args.join(' ');
         exit(exec(env.VIRTUALMIN + " " + arg).code);
+    case 'SHELL_KILL':
+        arg = cli.args.shift();
+        exit(exec(`${env.BASH_KILL} -9 ${arg}`).code);
     case 'SHELL_INTERACTIVE':
         arg = cli.args.shift();
         var su = spawn(env.BASH_SU, [arg, '-s', env.BASH_PATH, '-P'], {

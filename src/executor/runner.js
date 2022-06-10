@@ -98,13 +98,13 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             await writeLog(cmd);
         }
     } else {
-        ssh = spawnSudoUtilAsync('SHELL_INTERACTIVE', domaindata['Username']);
+        ssh = spawnSudoUtilAsync('SHELL_INTERACTIVE', [domaindata['Username']]);
         let cb = null;
         setTimeout(async () => {
             if (ssh == null) return;
             // SSH prone to wait indefinitely, so we need to set a timeout
             await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s. Exiting`);
-            ssh.kill('SIGKILL');
+            console.log("SHELLKILL: " + JSON.stringify(await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])));
             ssh = null;
         }, maxExecutionTime).unref();
         ssh.stdout.on('data', function (chunk) {
@@ -126,7 +126,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 let first = true;
                 cb = ( /** @type {string} */ chunk) => {
                     chunk = chunk.replace(/\0/g, '');
-                    if (chunk.match(/\[.+?\@.+? .+?\]\$/)) {
+                    let match = chunk.match(/\[.+?\@.+? .+?\]\$/);
+                    console.log("SSH CHUNK: --> " + chunk + " <-- (" + !!match + ")");
+                    if (match) {
                         cb = null;
                         chunk = chunk.replace(/\[.+?\@.+? .+?\]\$/, '');
                         if (write) {
@@ -155,7 +157,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     ssh.stdin.write(cmd + "\n");
             })
         }
-        await sshExec('', false); // drop initial message
+        await sshExec(''); // drop initial message
     }
     try {
         if (config.root) {
