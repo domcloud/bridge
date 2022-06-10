@@ -146,6 +146,7 @@ switch (cli.args.shift()) {
         su.on('exit', function (code) {
             exit(code);
         });
+        break;
     case 'PHPFPM_CLEAN':
         arg = cli.args.shift();
         const locations = env.PHPFPM_LOCATIONS.split(',').map(x => x.replace('$', arg));
