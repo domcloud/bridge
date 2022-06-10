@@ -44,6 +44,7 @@ class VirtualminExecutor {
                     break;
                 }
             }
+            result[neskey] = nesval;
             if (domain) {
                 result = result[domain];
             }
