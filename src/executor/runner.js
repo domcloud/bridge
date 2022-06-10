@@ -529,7 +529,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
         await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' DOMAIN='${subdomain}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         if (config.envs) {
-            await sshExec(Object.entries(config.envs).map(([k, v]) => `${k}='${v}'`).join(' '), false);
+            // await sshExec(Object.entries(config.envs).map(([k, v]) => `${k}='${v}'`).join(' '), false);
         }
         await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
         for (const cmd of config.commands) {
