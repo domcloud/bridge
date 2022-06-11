@@ -1,7 +1,6 @@
 import {
     checkAuth,
     checkGet,
-    checkTheLock,
     normalizeShellOutput,
 } from '../util.js';
 import express from 'express';

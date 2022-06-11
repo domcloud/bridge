@@ -119,8 +119,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         })
         ssh.on('close', async function (code) {
             if (cb) {
-                cb('', code);
                 ssh = null;
+                cb('', code);
             }
         });
         sshExec = ( /** @type {string} */ cmd, write = true) => {

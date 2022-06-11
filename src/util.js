@@ -141,13 +141,6 @@ export const spawnSudoUtilAsync = function ( /** @type {string} */
             spawn("sudo", [sudoutil, mode, ...args], {});
 }
 
-export const checkTheLock = function ( /** @type {string} */ file) {
-    const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
-    return check(realfile, {
-        realpath: false,
-    })
-}
-
 export const executeLock = function (
     /** @type {string} */
     file,
