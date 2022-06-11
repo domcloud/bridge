@@ -143,9 +143,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 };
                 if (cmd) {
                     if (write) {
-                        ssh.stdin.write(cmd + "\n");
+                        writer('$> ' + cmd + "\n");
                     }
-                    writer('$> ' + cmd + "\n");
+                    ssh.stdin.write(cmd + "\n");
                 } else if (write) {
                     resolve(); // nothing to do
                 }
