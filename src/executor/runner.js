@@ -313,11 +313,13 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             }
                         } else {
                             if (!enabled) {
-                                await writeLog("$> Enabling DNS");
+                                await writeLog("$> Enabling DNS and applying records");
                                 await writeExec(await virtualminExec.execFormatted("enable-feature", value, {
                                     domain,
                                     dns: true,
                                 }));
+                            } else {
+                                await writeLog("$> Applying DNS records");
                             }
                             if (Array.isArray(value)) {
                                 for (let i = 0; i < value.length; i++) {
@@ -325,18 +327,18 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                         if (!value[i].startsWith("add ") && !value[i].startsWith("del ")) {
                                             value[i] = `add ${value[i]}`;
                                         }
-                                        const values = (value[i] + '').toLowerCase().split(' ', 4);
+                                        const values = (value[i] + '').split(' ', 4);
                                         if (values.length == 4) {
                                             value[i] = {
-                                                action: values[0] === 'del' ? 'del' : 'add',
-                                                type: values[1],
-                                                domain: values[2],
+                                                action: values[0].toLowerCase() === 'del' ? 'del' : 'add',
+                                                type: values[1].toLowerCase(),
+                                                domain: values[2].toLowerCase(),
                                                 value: values[3],
                                             }
                                         }
                                     }
                                 }
-                                await writeExec(await namedExec.set(domain, value));
+                                await writeLog(await namedExec.set(domain, value));
                             }
                         }
                         break;
