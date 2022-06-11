@@ -54,8 +54,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         await virtExec("create-domain", config.features[0].create, {
             domain,
             dir: true,
-            webmin: true,
-            unix: true,
+            webmin: !!config.features[0].create.parent,
+            unix: !!config.features[0].create.parent,
             'virtualmin-nginx': true,
             'virtualmin-nginx-ssl': true,
         });
