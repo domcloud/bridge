@@ -48,13 +48,14 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         return new Promise((resolve, reject) => {
             var virt = virtualminExec.execFormattedAsync(program, ...opts);
             virt.stdout.on('data', function (chunk) {
-                writeLog(chunk.toString());
+                writeLog((chunk + '').split('\n').filter(x => x).join('\n').toString());
             });
             virt.stderr.on('data', function (chunk) {
-                writeLog(chunk.toString().split('\n').map(x => '! ' + x).join('\n'));
+                writeLog((chunk + '').toString().split('\n').filter(x => x).map(x => '! ' + x).join('\n'));
             })
-            virt.on('close', function (code) {
-                writeLog("Exit status: " + (code)).then(resolve);
+            virt.on('close', async function (code) {
+                await writeLog("Exit status: " + (code) + "\n");
+                resolve();
             });
         });
     }
