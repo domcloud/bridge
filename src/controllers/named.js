@@ -31,21 +31,5 @@ export default function () {
             next(error);
         }
     });
-    router.post('/add', checkAuth, checkPost(['zone', 'domain', 'type', 'value']), async function (req, res, next) {
-        try {
-            const r = await executor.add(req.body.zone, req.body.domain, req.body.type, req.body.value);
-            res.json(r);
-        } catch (error) {
-            next(error);
-        }
-    });
-    router.post('/del', checkAuth, checkPost(['zone', 'domain', 'type', 'value']), async function (req, res, next) {
-        try {
-            const r = await executor.del(req.body.zone, req.body.domain, req.body.type, req.body.value);
-            res.json(r);
-        } catch (error) {
-            next(error);
-        }
-    });
     return router;
 }

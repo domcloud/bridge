@@ -325,11 +325,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                         if (!value[i].startsWith("add ") && !value[i].startsWith("del ")) {
                                             value[i] = `add ${value[i]}`;
                                         }
-                                        const values = (value[i] + '').split(' ', 4);
+                                        const values = (value[i] + '').toLowerCase().split(' ', 4);
                                         if (values.length == 4) {
                                             value[i] = {
                                                 action: values[0] === 'del' ? 'del' : 'add',
-                                                type: values[1].toLowerCase(),
+                                                type: values[1],
                                                 domain: values[2],
                                                 value: values[3],
                                             }

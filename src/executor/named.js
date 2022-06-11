@@ -159,8 +159,8 @@ class NamedExecutor {
                 if (!mod || !mod.action || !mod.domain || !mod.type || !mod.value) {
                     return "Invalid config";
                 }
-                var arr = getArrayOf(file, mod.type);
-                var map = mapKey[mod.type](mod.domain, ...("" + mod.value).split(' '));
+                var arr = getArrayOf(file, mod.type.toUpperCase());
+                var map = mapKey[mod.type.toLowerCase()](mod.domain, ...("" + mod.value).split(' '));
                 if (mod.action === 'add') {
                     if (appendIfNotExist(arr, map)) {
                         changecount++;
