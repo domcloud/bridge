@@ -58,12 +58,13 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         var prefix = (fullLogData ? '[Chunked data...]\n' : '');
         try {
             if (chunkedLogData != '') {
-                await axios.post(callback, prefix + normalizeShellOutput(chunkedLogData), {
+                var chunkk = chunkedLogData;
+                chunkedLogData = '';
+                await axios.post(callback, prefix + normalizeShellOutput(chunkk), {
                     headers,
                     signal: cancelController.signal,
                 });
             }
-            chunkedLogData = '';
         } finally {
             if (!cancelController.signal.aborted)
                 periodicAbort = setTimeout(periodicSender, delay);

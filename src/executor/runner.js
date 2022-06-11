@@ -32,17 +32,8 @@ const maxExecutionTime = 500000;
  * @param {(log: string) => Promise<void>} writer
  */
 export default async function runConfig(config, domain, writer, sandbox = false) {
-    let starttime = Date.now();
     const writeLog = async ( /** @type {string} */ s) => {
         await writer(s + "\n");
-    }
-    const writeExec = async ( /** @type {{ stdout: string; stderr: string; code: string; }} */ s) => {
-        await writeLog(s.stdout);
-        if (s.stderr) {
-            await writeLog(s.stderr.split('\n').map(x => '! ' + x).join('\n'));
-        }
-        if (s.code !== null)
-            await writeLog("Exit status: " + s.code);
     }
     const virtExec = (program, ...opts) => {
         return new Promise((resolve, reject) => {
@@ -55,11 +46,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             })
             virt.on('close', async function (code) {
                 await writeLog("Exit status: " + (code) + "\n");
-                resolve();
+                resolve(code);
             });
         });
     }
-    await writeLog(`DOM Cloud runner v${getVersion()} ref ${getRevision()} in ${domain} at ${new Date(starttime).toISOString()}`);
+    await writeLog(`DOM Cloud runner v${getVersion()} ref ${getRevision()} in ${domain} at ${new Date().toISOString()}`);
     if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {
         // create new domain
         await writeLog("$> virtualmin create-domain");
@@ -73,8 +64,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             'virtualmin-nginx-ssl': true,
         });
         // sometimes we need to wait for the domain to be created
+        await writeLog("$> virtualmin list-domains");
         await new Promise((resolve, reject) => {
-            setTimeout(resolve, 5000);
+            setTimeout(resolve, 3000);
         });
         await new Promise((resolve, reject) => {
             let tries = 0;
@@ -82,7 +74,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 virtExec("list-domains", {
                     domain
                 }).then(async (s) => {
-                    if (s.code === 0) {
+                    if (s === 0) {
                         resolve();
                     } else {
                         if (++tries < 10) {
