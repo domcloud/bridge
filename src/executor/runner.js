@@ -123,33 +123,35 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     message: "SSH disconnected out before executing command:",
                     stack: cmd
                 });
-                let first = true;
                 cb = ( /** @type {string} */ chunk) => {
                     chunk = chunk.replace(/\0/g, '');
                     let match = chunk.match(/\[.+?\@.+? .+?\]\$/);
-                    console.log("SSH CHUNK: --> " + chunk + " <-- (" + !!match + ")");
                     if (match) {
                         cb = null;
-                        chunk = chunk.replace(/\[.+?\@.+? .+?\]\$/, '');
-                        if (write) {
-                            writer(chunk.trimEnd() + "\n");
+                        chunk = chunk.replace(/\x27.?+$/, '').trimEnd();
+                        if (write && chunk) {
+                            writer(chunk + "\n");
                         }
                         resolve();
                         return true;
                     } else {
-                        if (write) {
+                        if (write && chunk) {
                             writer(chunk);
                         }
                         return false;
                     }
                 };
                 if (cmd) {
-                    ssh.stdin.write(cmd + "\n");
+                    if (write) {
+                        ssh.stdin.write(cmd + "\n");
+                    }
                     writer('$> ' + cmd + "\n");
+                } else if (write) {
+                    resolve(); // nothing to do
                 }
             })
         }
-        await sshExec(''); // drop initial message
+        await sshExec('', false); // drop initial message
     }
     try {
         if (config.root) {
@@ -529,7 +531,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
         await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' DOMAIN='${subdomain}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         if (config.envs) {
-            // await sshExec(Object.entries(config.envs).map(([k, v]) => `${k}='${v}'`).join(' '), false);
+            let entries = Object.entries(config.envs);
+            if (entries.length > 0)
+                await sshExec(entries.map(([k, v]) => `${k}='${v}'`).join(' '), false);
         }
         await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
         for (const cmd of config.commands) {
