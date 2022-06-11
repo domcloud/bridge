@@ -319,7 +319,25 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                     dns: true,
                                 }));
                             }
-                            await writeExec(await namedExec.set(domain, value));
+                            if (Array.isArray(value)) {
+                                for (let i = 0; i < value.length; i++) {
+                                    if (typeof value[i] === 'string') {
+                                        if (!value[i].startsWith("add ") && !value[i].startsWith("del ")) {
+                                            value[i] = `add ${value[i]}`;
+                                        }
+                                        const values = (value[i] + '').split(' ', 4);
+                                        if (values.length == 4) {
+                                            value[i] = {
+                                                action: values[0] === 'del' ? 'del' : 'add',
+                                                type: values[1].toLowerCase(),
+                                                domain: values[2],
+                                                value: values[3],
+                                            }
+                                        }
+                                    }
+                                }
+                                await writeExec(await namedExec.set(domain, value));
+                            }
                         }
                         break;
                     case 'firewall':
