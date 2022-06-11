@@ -41,9 +41,24 @@ function writeAsync(stream, content) {
     });
 }
 
+const MAX_PAYLOAD = 65535;
+
+/**
+ * @param {string} payload
+ */
+function trimPayload(payload) {
+    var length = Buffer.byteLength(payload, 'utf8');
+    if (length > MAX_PAYLOAD) {
+        var trim_msg = '[message truncated...]\n';
+        var trim_len = Buffer.byteLength(trim_msg, 'utf8') + 10;
+        return trim_msg + Buffer.from(payload, 'utf8').slice(0, MAX_PAYLOAD - trim_len).toString('utf8');
+    } else {
+        return payload;
+    }
+}
 export async function runConfigInBackground(body, domain, sandbox, callback) {
-    let fullLogData = '',
-        chunkedLogData = 'Running runner... Please wait...\n',
+    let fullLogData = [],
+        chunkedLogData = ['Running runner... Please wait...\n'],
         delay = 5000,
         startTime = Date.now();
     const write = new PassThrough();
@@ -55,12 +70,11 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     const cancelController = new AbortController();
     const periodicSender = async () => {
         periodicAbort = null;
-        var prefix = (fullLogData ? '[Chunked data...]\n' : '');
         try {
-            if (chunkedLogData != '') {
+            if (chunkedLogData.length > 0) {
                 var chunkk = chunkedLogData;
-                chunkedLogData = '';
-                await axios.post(callback, prefix + normalizeShellOutput(chunkk), {
+                chunkedLogData = ['[Chunked data...]\n'];
+                await axios.post(callback, normalizeShellOutput(chunkk), {
                     headers,
                     // @ts-ignore
                     signal: cancelController.signal,
@@ -74,15 +88,15 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     periodicSender();
     write.on('data', (chunk) => {
         if (!callback) return;
-        chunkedLogData += chunk;
-        fullLogData += chunk;
+        chunkedLogData.push(chunk);
+        fullLogData.push(chunk);
     });
     write.on('end', () => {
         cancelController.abort()
         periodicAbort && clearTimeout(periodicAbort);
         // and finish message with full log
         if (callback)
-            axios.post(callback, normalizeShellOutput(fullLogData), {
+            axios.post(callback, trimPayload(normalizeShellOutput(fullLogData)), {
                 headers
             });
     });
@@ -100,6 +114,8 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         } else if (error.message) {
             await writeAsync(write, `$> Error occured: ${error.message}\n`);
             await writeAsync(write, ('' + error.stack).split('\n').map(x => `$>   ${x}`).join('\n') + '\n');
+        } else if (typeof error === 'string') {
+            await writeAsync(write, `$> Error occured: ${error}\n`);
         } else {
             await writeAsync(write, '$> Error occured\n');
             await writeAsync(write, JSON.stringify(error, Object.getOwnPropertyNames(error)) + '\n');

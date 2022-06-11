@@ -219,8 +219,8 @@ export const escapeShell = function ( /** @type {string[]} */ ...a) {
     return ret.join(' ');
 };
 
-export const normalizeShellOutput = function ( /** @type {string} */ output) {
-    var text = output;
+export const normalizeShellOutput = function ( /** @type {string[]} */ output) {
+    var text = output.join('');
     var text2 = '';
     for (let i = 0; i < text.length; i++) {
         const char = text[i];

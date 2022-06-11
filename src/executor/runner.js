@@ -42,7 +42,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             })
             virt.on('close', async function (code) {
                 await writeLog("Exit status: " + (code) + "\n");
-                resolve(code);
+                (code === 0 ? resolve : reject)(code);
             });
         });
     }
@@ -67,18 +67,15 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             let tries = 0;
             const check = () => {
                 virtExec("list-domains", {
-                    domain
-                }).then(async (s) => {
-                    if (s === 0) {
-                        resolve();
-                    } else {
+                        domain
+                    }).then(resolve)
+                    .catch(x => {
                         if (++tries < 10) {
                             setTimeout(check, 3000);
                         } else {
                             reject("Domain not found after 10 tries");
                         }
-                    }
-                }).catch(reject);
+                    });
             }
             check();
         });
@@ -108,7 +105,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s, exiting gracefully.`);
             await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
             ssh = null;
-            if (cb) cb('');
+            if (cb) cb('', 124);
         }, maxExecutionTime).unref();
         ssh.stdout.on('data', function (chunk) {
             if (cb) {
@@ -117,21 +114,26 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         });
         ssh.stderr.on('data', function (chunk) {
             if (cb) {
-                cb(chunk.toString())
+                cb(chunk.toString().split('\n').map(x => '! ' + x).join('\n'))
             }
         })
+        ssh.on('close', async function (code) {
+            if (cb) {
+                cb('', code);
+                ssh = null;
+            }
+        });
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise((resolve, reject) => {
-                if (!ssh) return reject({
-                    message: "shell has terminated.",
-                    stack: cmd
-                });
-                cb = ( /** @type {string} */ chunk) => {
+                if (!ssh) return reject("shell has terminated already");
+                cb = ( /** @type {string} */ chunk, code) => {
                     if (!ssh) {
-                        return reject({
-                            message: "shell has terminated.",
-                            stack: cmd
-                        });
+                        if (code) {
+                            return writeLog("Exit status: " + (code) + "\n")
+                                .then(() => reject(`shell has terminated.`));
+                        } else {
+                            return resolve();
+                        }
                     }
                     chunk = chunk.replace(/\0/g, '');
                     let match = chunk.match(/\[.+?\@.+? .+?\]\$/);
@@ -161,6 +163,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             })
         }
         await sshExec('', false); // drop initial message
+        await sshExec('set -e', false); // early exit on error
     }
     try {
         if (config.root) {

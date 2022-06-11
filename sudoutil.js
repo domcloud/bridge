@@ -147,7 +147,7 @@ switch (cli.args.shift()) {
         var su = spawn(env.BASH_SU, [arg, '-s', env.BASH_PATH, '-P', '-l'], {
             stdio: 'inherit'
         });
-        su.on('exit', function (code) {
+        su.on('close', function (code) {
             exit(code);
         });
         break;
