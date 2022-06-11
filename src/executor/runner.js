@@ -44,19 +44,33 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         if (s.code !== null)
             await writeLog("Exit status: " + s.code);
     }
+    const virtExec = (program, ...opts) => {
+        return new Promise((resolve, reject) => {
+            var virt = virtualminExec.execFormattedAsync(program, ...opts);
+            virt.stdout.on('data', function (chunk) {
+                writeExec(chunk.toString());
+            });
+            virt.stderr.on('data', function (chunk) {
+                writeExec(chunk.toString().split('\n').map(x => '! ' + x).join('\n'));
+            })
+            virt.on('exit', function (code) {
+                writeLog("Exit status: " + code).then(resolve);
+            });
+        });
+    }
     await writeLog(`DOM Cloud runner v${getVersion()} ref ${getRevision()} in ${domain} at ${new Date(starttime).toISOString()}`);
     if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {
         // create new domain
         await writeLog("$> virtualmin create-domain");
         await writeLog("Creating virtual domain. This will take a moment...");
-        await writeExec(await virtualminExec.execFormatted("create-domain", config.features[0].create, {
+        await virtExec("create-domain", config.features[0].create, {
             domain,
             dir: true,
             webmin: true,
             unix: true,
             'virtualmin-nginx': true,
             'virtualmin-nginx-ssl': true,
-        }));
+        });
         // sometimes we need to wait for the domain to be created
         await new Promise((resolve, reject) => {
             setTimeout(resolve, 5000);
@@ -64,7 +78,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         await new Promise((resolve, reject) => {
             let tries = 0;
             const check = () => {
-                virtualminExec.execFormatted("list-domains", {
+                virtExec("list-domains", {
                     domain
                 }).then(async (s) => {
                     if (s.code === 0) {
@@ -179,18 +193,18 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     switch (key) {
                         case 'modify':
                             await writeLog("$> virtualmin modify-domain");
-                            await writeExec(await virtualminExec.execFormatted("modify-domain", value, {
+                            await virtExec("modify-domain", value, {
                                 domain,
-                            }));
+                            });
                             break;
                         case 'rename':
                             if (value && value["new-user"] && await firewallStatus()) {
                                 await iptablesExec.setDelUser(domaindata['Username']);
                             }
                             await writeLog("$> virtualmin rename-domain");
-                            await writeExec(await virtualminExec.execFormatted("rename-domain", value, {
+                            await virtExec("rename-domain", value, {
                                 domain,
-                            }));
+                            });
                             // in case if we change domain name
                             if (value && value["new-domain"])
                                 domain = value["new-domain"];
@@ -202,21 +216,21 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             break;
                         case 'disable':
                             await writeLog("$> virtualmin disable-domain");
-                            await writeExec(await virtualminExec.execFormatted("disable-domain", value, {
+                            await virtExec("disable-domain", value, {
                                 domain,
-                            }));
+                            });
                             break;
                         case 'enable':
                             await writeLog("$> virtualmin enable-domain");
-                            await writeExec(await virtualminExec.execFormatted("enable-domain", value, {
+                            await virtExec("enable-domain", value, {
                                 domain,
-                            }));
+                            });
                             break;
                         case 'delete':
                             await writeLog("$> virtualmin delete-domain");
-                            await writeExec(await virtualminExec.execFormatted("delete-domain", value, {
+                            await virtExec("delete-domain", value, {
                                 user: domaindata['Username'],
-                            }));
+                            });
                             // no need to do other stuff
                             return;
                         default:
@@ -229,10 +243,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         if (value === "off") {
                             await writeLog("$> Disabling MySQL");
                             if (enabled) {
-                                await writeExec(await virtualminExec.execFormatted("disable-feature", value, {
+                                await virtExec("disable-feature", value, {
                                     domain,
                                     mysql: true,
-                                }));
+                                });
                             } else {
                                 await writeLog("Already disabled");
                             }
@@ -240,10 +254,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             let dbname = null;
                             if (!enabled) {
                                 await writeLog("$> Enabling MySQL");
-                                await writeExec(await virtualminExec.execFormatted("enable-feature", value, {
+                                await virtExec("enable-feature", value, {
                                     domain,
                                     mysql: true,
-                                }));
+                                });
                                 dbname = config.subdomain || "db";
                             }
                             if (value.startsWith("create ")) {
@@ -254,11 +268,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             }
                             dbname = getDbName(domaindata['Username'], dbname);
                             await writeLog(`$> Creating db instance ${dbname} on MySQL`);
-                            await writeExec(await virtualminExec.execFormatted("create-database", {
+                            await virtExec("create-database", {
                                 domain,
                                 name: dbname,
                                 type: 'mysql',
-                            }));
+                            });
                         }
                         break;
                     case 'postgres':
@@ -267,10 +281,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         if (value === "off") {
                             await writeLog("$> Disabling PostgreSQL");
                             if (enabled) {
-                                await writeExec(await virtualminExec.execFormatted("disable-feature", value, {
+                                await virtExec("disable-feature", value, {
                                     domain,
                                     postgres: true,
-                                }));
+                                });
                             } else {
                                 await writeLog("Already disabled");
                             }
@@ -278,10 +292,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             let dbname = null;
                             if (!enabled) {
                                 await writeLog("$> Enabling PostgreSQL");
-                                await writeExec(await virtualminExec.execFormatted("enable-feature", value, {
+                                await virtExec("enable-feature", value, {
                                     domain,
                                     postgres: true,
-                                }));
+                                });
                                 dbname = config.subdomain || "db";
                             }
                             if (value.startsWith("create ")) {
@@ -292,11 +306,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             }
                             dbname = getDbName(domaindata['Username'], dbname);
                             await writeLog(`$> Creating db instance ${dbname} on PostgreSQL`);
-                            await writeExec(await virtualminExec.execFormatted("create-database", {
+                            await virtExec("create-database", {
                                 domain,
                                 name: dbname,
                                 type: 'postgres',
-                            }));
+                            });
                         }
                         break;
                     case 'dns':
@@ -304,20 +318,20 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         if (value === "off") {
                             await writeLog("$> Disabling DNS");
                             if (enabled) {
-                                await writeExec(await virtualminExec.execFormatted("disable-feature", value, {
+                                await virtExec("disable-feature", value, {
                                     domain,
                                     dns: true,
-                                }));
+                                });
                             } else {
                                 await writeLog("Already disabled");
                             }
                         } else {
                             if (!enabled) {
                                 await writeLog("$> Enabling DNS and applying records");
-                                await writeExec(await virtualminExec.execFormatted("enable-feature", value, {
+                                await virtExec("enable-feature", value, {
                                     domain,
                                     dns: true,
-                                }));
+                                });
                             } else {
                                 await writeLog("$> Applying DNS records");
                             }
@@ -458,12 +472,12 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
         }
         if (config.subdomain) {
-            await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, writeExec);
+            await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, virtExec);
         } else {
-            await runConfigSubdomain(config, domaindata, domain, sshExec, writeLog, writeExec, true);
-            if (config.subdomains) {
+            await runConfigSubdomain(config, domaindata, domain, sshExec, writeLog, virtExec, true);
+            if (Array.isArray(config.subdomains)) {
                 for (const sub of config.subdomains) {
-                    await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog, writeExec);
+                    await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog, virtExec);
                 }
             }
         }
@@ -482,9 +496,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
  * @param {string} subdomain
  * @param {{(cmd: string, write?: boolean): Promise<any>}} sshExec
  * @param {{(s: string): Promise<void>}} writeLog
- * @param {{ (s: { stdout: string; stderr: string; code: string; }): Promise<void> }} writeExec
+ * @param {{ (program: any, ...opts: any[]): Promise<any> }} virtExec
  */
-export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, writeExec, stillroot = false) {
+export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, stillroot = false) {
 
     const featureRunner = async (feature) => {
         const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
@@ -492,25 +506,25 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         switch (key) {
             case 'php':
                 await writeLog("$> changing PHP engine to " + value);
-                await writeExec(await virtualminExec.execFormatted("modify-web", {
+                await virtExec("modify-web", {
                     domain: subdomain,
                     'php-version': value,
-                }));
+                });
                 break;
             case 'ssl':
                 await writeLog("$> getting let's encrypt");
-                await writeExec(await virtualminExec.execFormatted("generate-letsencrypt-cert", {
+                await virtExec("generate-letsencrypt-cert", {
                     domain: subdomain,
                     'renew': 2,
                     'web': true,
-                }));
+                });
                 break;
             case 'root':
                 await writeLog("$> changing root folder");
-                await writeExec(await virtualminExec.execFormatted("modify-web", {
+                await virtExec("modify-web", {
                     domain: subdomain,
                     'document-dir': value,
-                }));
+                });
                 break;
             case 'github':
             case 'gitlab':

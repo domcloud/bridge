@@ -1,7 +1,8 @@
 import shelljs from "shelljs";
 import {
     escapeShell,
-    spawnSudoUtil
+    spawnSudoUtil,
+    spawnSudoUtilAsync
 } from "../util.js";
 const {
     cat
@@ -77,14 +78,41 @@ class VirtualminExecutor {
         }
     }
     /**
-     * @param {string[]} command
+     * @param {string} program
+     * @param {object[]} opts
+     * @return {import('child_process').ChildProcessWithoutNullStreams}
      */
+    execFormattedAsync(program, ...opts) {
+        let p = [program];
+        Object.entries(Object.assign({}, ...(opts.filter(x => x && typeof x === 'object'))))
+            .forEach(([k, v]) => {
+                if (v) {
+                    k = "--" + k;
+                    if (typeof v === 'boolean')
+                        p.push(escapeShell(k));
+                    else
+                        p.push(escapeShell(k), escapeShell(v));
+                }
+            });
+        try {
+            return this.execAsync(...p);
+        } catch (error) {
+            return error;
+        }
+    }
     async exec(...command) {
         let str = await spawnSudoUtil('VIRTUALMIN', command);
         // virtualmin often produce extra blank lines
         str.stdout = ('' + str.stdout).replace(/^\s*\n/gm, '');
         str.stderr = ('' + str.stderr).replace(/^\s*\n/gm, '');
         return str;
+    }
+
+    /**
+     * @param {string[]} command
+     */
+    execAsync(...command) {
+        return spawnSudoUtilAsync('VIRTUALMIN', command);
     }
 }
 
