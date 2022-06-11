@@ -311,9 +311,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             } else {
                                 await writeLog("Already disabled");
                             }
-                        } else if (value === 'sync') {
-                            await writeLog("$> Syncing Slave DNS");
-                            namedExec.resync(domain);
                         } else {
                             if (!enabled) {
                                 await writeLog("$> Enabling DNS");
@@ -322,24 +319,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                     dns: true,
                                 }));
                             }
-                            if (Array.isArray(value)) {
-                                for (const obj of value) {
-                                    if (obj.add) {
-                                        var o = ('' + obj.add).split(' ', 3);
-                                        if (o.length < 3) continue;
-                                        await writeLog(`$> Adding DNS Record of type ${o[1].toUpperCase()}`);
-                                        // @ts-ignore
-                                        await writeExec(await namedExec.add(domain, ...o));
-                                    }
-                                    if (obj.del) {
-                                        var o = ('' + obj.del).split(' ', 3);
-                                        if (o.length < 3) continue;
-                                        await writeLog(`$> Removing DNS Record of type ${o[1].toUpperCase()}`);
-                                        // @ts-ignore
-                                        await writeExec(await namedExec.del(domain, ...o));
-                                    }
-                                }
-                            }
+                            await writeExec(await namedExec.set(domain, value));
                         }
                         break;
                     case 'firewall':

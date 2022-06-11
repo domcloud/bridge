@@ -146,10 +146,9 @@ class NamedExecutor {
     /**
      * @param {string} zone
      * @param {{action: string, domain: string, type: string, value: string}[]} mods
-     * @param {boolean} resync
      */
-    async set(zone, mods, resync) {
-        await executeLock('named', async () => {
+    async set(zone, mods) {
+        return await executeLock('named', async () => {
             await spawnSudoUtil('NAMED_GET', ["" + zone]);
             var file = parse(cat(tmpFile));
             var changecount = 0;
@@ -179,10 +178,7 @@ class NamedExecutor {
             file.soa.serial++;
             ShellString(generate(file)).to(tmpFile);
             await spawnSudoUtil('NAMED_SET', ["" + zone]);
-            if (resync) {
-                await spawnSudoUtil('NAMED_SYNC', [zone]);
-            }
-            return "Done updated";
+            return `Done updating ${changecount} records`;
         });
     }
 }

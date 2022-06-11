@@ -26,7 +26,7 @@ export default function () {
     });
     router.post('/modify', checkAuth, checkGet(['zone']), async function (req, res, next) {
         try {
-            res.json(await executor.set(req.query.zone + '', req.body, !!req.query.resync));
+            res.json(await executor.set(req.query.zone + '', req.body));
         } catch (error) {
             next(error);
         }
