@@ -1,8 +1,4 @@
 import {
-    Client
-} from 'ssh2';
-
-import {
     escapeShell,
     getDbName,
     getRevision,
@@ -24,7 +20,7 @@ import {
 } from "./virtualmin.js";
 
 // TODO: Need to able to customize this
-const maxExecutionTime = 30000;
+const maxExecutionTime = 600000;
 
 /**
  * @param {any} config
@@ -396,88 +392,15 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
         }
         await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
-        await sshExec(`mkdir -p ${domaindata['Home directory']}/public_html && cd "$_"`);
-        if (config.source) {
-            if (typeof config.source === 'string') {
-                config.source = {
-                    url: config.source,
-                };
-            }
-            const source = config.source;
-            if (source.url !== 'clear' && !source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
-                throw new Error("Invalid source URL");
-            }
-            if (config.directory && !source.directory) {
-                source.directory = config.directory;
-                delete config.directory;
-            }
-            var url;
-            if (source.url !== 'clear') {
-                url = new URL(source.url);
-                if (!source.type || !['clone', 'extract'].includes(source.type)) {
-                    if (url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip'))) {
-                        source.type = 'clone';
-                    } else {
-                        source.type = 'extract';
-                    }
-                }
-            }
-            let executedCMD = [`rm -rf * .* 2>/dev/null`];
-            let executedCMDNote = '';
-            if (source.url === 'clear') {
-                // we just delete them all
-                executedCMDNote = 'Clearing files';
-            } else if (source.type === 'clone') {
-                if (!source.branch && source.directory) {
-                    source.branch = source.directory;
-                } else if (!source.branch && url.hash) {
-                    source.branch = url.hash.substring(1);
-                    url.hash = '';
-                }
-                if (!source.credential && config.envs) {
-                    for (const HOST of ['GITHUB', 'GITLAB', 'BITBUCKET']) {
-                        if (url.hostname.includes(HOST.toLowerCase()) && config.envs[`${HOST}_USER`] && config.envs[`${HOST}_TOKEN`]) {
-                            await sshExec(`${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
-                            source.credential = {
-                                user: `${HOST}_USER`,
-                                pass: `${HOST}_TOKEN`,
-                            };
-                        }
-                    }
-                }
-                executedCMD.push(`git clone ${escapeShell(url.toString())}` +
-                    `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
-                    `${source.credential ? ` -c credential.helper='!f() { sleep 1; echo "username=\${${source.credential.user}}"; echo "password=\${${source.credential.pass}}"; }; f'` : ''}` +
-                    `${source.shallow ? ` --depth 1` : ''}` +
-                    `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
-                executedCMDNote = 'Cloning files';
-            } else if (source.type === 'extract') {
-                executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
-                executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*`);
-                if (source.directory) {
-                    executedCMD.push(`mv ${escapeShell(source.directory)}/{.,}* .`);
-                    executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
-                }
-                executedCMDNote = 'Downloading files';
-            }
-            if (await firewallStatus()) {
-                await iptablesExec.setDelUser(domaindata['Username']);
-            }
-            await writeLog("$> " + executedCMDNote);
-            for (const exec of executedCMD) {
-                await sshExec(exec);
-            }
-            if (await firewallStatus()) {
-                await iptablesExec.setAddUser(domaindata['Username']);
-            }
-        }
+        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
+        await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         if (config.subdomain) {
-            await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, virtExec);
+            await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, virtExec, await firewallStatus());
         } else {
-            await runConfigSubdomain(config, domaindata, domain, sshExec, writeLog, virtExec, true);
+            await runConfigSubdomain(config, domaindata, domain, sshExec, writeLog, virtExec, await firewallStatus(), true);
             if (Array.isArray(config.subdomains)) {
                 for (const sub of config.subdomains) {
-                    await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog, virtExec);
+                    await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog, virtExec, await firewallStatus());
                 }
             }
         }
@@ -491,15 +414,16 @@ export default async function runConfig(config, domain, writer, sandbox = false)
 }
 
 /**
- * @param {{features: any;commands: any;nginx: any;envs: any}} config
+ * @param {{source: any;features: any;commands: any;nginx: any;envs: any,directory:any}} config
  * @param {{[x: string]: any}} domaindata
  * @param {string} subdomain
  * @param {{(cmd: string, write?: boolean): Promise<any>}} sshExec
  * @param {{(s: string): Promise<void>}} writeLog
  * @param {{ (program: any, ...opts: any[]): Promise<any> }} virtExec
+ * @param {boolean} firewallOn
+ * @param {stillroot} firewallOn
  */
-export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, stillroot = false) {
-
+export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallOn, stillroot = false) {
     const featureRunner = async (feature) => {
         const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
         const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
@@ -540,16 +464,88 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 break;
         }
     }
-
+    await sshExec(`export DOMAIN='${subdomain}'`, false);
+    await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
+    if (config.source) {
+        if (typeof config.source === 'string') {
+            config.source = {
+                url: config.source,
+            };
+        }
+        const source = config.source;
+        if (source.url !== 'clear' && !source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
+            throw new Error("Invalid source URL");
+        }
+        if (config.directory && !source.directory) {
+            source.directory = config.directory;
+            delete config.directory;
+        }
+        var url;
+        if (source.url !== 'clear') {
+            url = new URL(source.url);
+            if (!source.type || !['clone', 'extract'].includes(source.type)) {
+                if (url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip'))) {
+                    source.type = 'clone';
+                } else {
+                    source.type = 'extract';
+                }
+            }
+        }
+        let executedCMD = [`rm -rf * .* 2>/dev/null`];
+        let executedCMDNote = '';
+        if (source.url === 'clear') {
+            // we just delete them all
+            executedCMDNote = 'Clearing files';
+        } else if (source.type === 'clone') {
+            if (!source.branch && source.directory) {
+                source.branch = source.directory;
+            } else if (!source.branch && url.hash) {
+                source.branch = url.hash.substring(1);
+                url.hash = '';
+            }
+            if (!source.credential && config.envs) {
+                for (const HOST of ['GITHUB', 'GITLAB', 'BITBUCKET']) {
+                    if (url.hostname.includes(HOST.toLowerCase()) && config.envs[`${HOST}_USER`] && config.envs[`${HOST}_TOKEN`]) {
+                        await sshExec(`${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
+                        source.credential = {
+                            user: `${HOST}_USER`,
+                            pass: `${HOST}_TOKEN`,
+                        };
+                    }
+                }
+            }
+            executedCMD.push(`git clone ${escapeShell(url.toString())}` +
+                `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
+                `${source.credential ? ` -c credential.helper='!f() { sleep 1; echo "username=\${${source.credential.user}}"; echo "password=\${${source.credential.pass}}"; }; f'` : ''}` +
+                `${source.shallow ? ` --depth 1` : ''}` +
+                `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
+            executedCMDNote = 'Cloning files';
+        } else if (source.type === 'extract') {
+            executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
+            executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*`);
+            if (source.directory) {
+                executedCMD.push(`mv ${escapeShell(source.directory)}/{.,}* .`);
+                executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
+            }
+            executedCMDNote = 'Downloading files';
+        }
+        if (firewallOn) {
+            await iptablesExec.setDelUser(domaindata['Username']);
+        }
+        await writeLog("$> " + executedCMDNote);
+        for (const exec of executedCMD) {
+            await sshExec(exec);
+        }
+        if (firewallOn) {
+            await iptablesExec.setAddUser(domaindata['Username']);
+        }
+    }
     if (config.commands) {
-        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
-        await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' DOMAIN='${subdomain}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         if (config.envs) {
             let entries = Object.entries(config.envs);
             if (entries.length > 0)
                 await sshExec(entries.map(([k, v]) => `${k}='${v}'`).join(' '), false);
         }
-        await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
         for (const cmd of config.commands) {
             if (typeof cmd === 'string') {
                 await sshExec(cmd);

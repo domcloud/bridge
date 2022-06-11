@@ -62,6 +62,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
                 chunkedLogData = '';
                 await axios.post(callback, prefix + normalizeShellOutput(chunkk), {
                     headers,
+                    // @ts-ignore
                     signal: cancelController.signal,
                 });
             }
