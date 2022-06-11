@@ -128,7 +128,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     let match = chunk.match(/\[.+?\@.+? .+?\]\$/);
                     if (match) {
                         cb = null;
-                        chunk = chunk.replace(/\x27.?+$/, '').trimEnd();
+                        chunk = chunk.replace(/\x27.+?$/, '').trimEnd();
                         if (write && chunk) {
                             writer(chunk + "\n");
                         }

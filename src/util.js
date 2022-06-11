@@ -225,7 +225,7 @@ export const normalizeShellOutput = function ( /** @type {string} */ output) {
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
         const next = text.length > i + 1 ? text[i + 1] : '';
-        const prev = text.length > i - 1 ? text[i - 1] : '';
+        const prev = 0 <= i - 1 ? text[i - 1] : '';
         if (char === '\r') {
             if (next === '\u001b') {
                 i++;

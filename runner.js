@@ -25,13 +25,9 @@ const {
     sandbox,
     callback
 } = payload;
-try {
-    runConfigInBackground(body, domain, sandbox, callback).catch(err => {
-        console.error(err);
-    });
-    // resetIdleTimer();
-} catch (error) {
-    console.error(error);
-}
+
+runConfigInBackground(body, domain, sandbox, callback).catch(err => {
+    console.error(err);
+});
 
 console.log(`Starting runner node ${process.pid}`);
