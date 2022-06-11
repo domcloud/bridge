@@ -24,7 +24,7 @@ import {
 } from "./virtualmin.js";
 
 // TODO: Need to able to customize this
-const maxExecutionTime = 500000;
+const maxExecutionTime = 30000;
 
 /**
  * @param {any} config
@@ -110,9 +110,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         setTimeout(async () => {
             if (ssh == null) return;
             // SSH prone to wait indefinitely, so we need to set a timeout
-            await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s. Exiting`);
-            console.log("SHELLKILL: " + JSON.stringify(await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])));
+            await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s, exiting gracefully.`);
+            await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
             ssh = null;
+            if (cb) cb('');
         }, maxExecutionTime).unref();
         ssh.stdout.on('data', function (chunk) {
             if (cb) {
@@ -126,11 +127,17 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         })
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise((resolve, reject) => {
-                if (!ssh) reject({
-                    message: "SSH disconnected out before executing command:",
+                if (!ssh) return reject({
+                    message: "shell has terminated.",
                     stack: cmd
                 });
                 cb = ( /** @type {string} */ chunk) => {
+                    if (!ssh) {
+                        return reject({
+                            message: "shell has terminated.",
+                            stack: cmd
+                        });
+                    }
                     chunk = chunk.replace(/\0/g, '');
                     let match = chunk.match(/\[.+?\@.+? .+?\]\$/);
                     if (match) {

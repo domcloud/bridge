@@ -141,7 +141,7 @@ switch (cli.args.shift()) {
         exit(exec(env.VIRTUALMIN + " " + arg).code);
     case 'SHELL_KILL':
         arg = cli.args.shift();
-        exit(exec(`${env.BASH_KILL} -9 ${arg}`).code);
+        exit(exec(`${env.BASH_KILL} ${arg}`).code);
     case 'SHELL_INTERACTIVE':
         arg = cli.args.shift();
         var su = spawn(env.BASH_SU, [arg, '-s', env.BASH_PATH, '-P', '-l'], {
