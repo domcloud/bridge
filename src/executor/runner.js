@@ -52,12 +52,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         await writeLog("$> virtualmin create-domain");
         await writeLog("Creating virtual domain. This will take a moment...");
         await virtExec("create-domain", config.features[0].create, {
-            domain,
             dir: true,
-            webmin: !config.features[0].create.parent,
-            unix: !config.features[0].create.parent,
             'virtualmin-nginx': true,
             'virtualmin-nginx-ssl': true,
+            webmin: !config.features[0].create.parent,
+            unix: !config.features[0].create.parent,
         });
         // sometimes we need to wait for the domain to be created
         await writeLog("$> virtualmin list-domains");
