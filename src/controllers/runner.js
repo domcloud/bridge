@@ -51,7 +51,7 @@ function trimPayload(payload) {
     if (length > MAX_PAYLOAD) {
         var trim_msg = '[message truncated...]\n';
         var trim_len = Buffer.byteLength(trim_msg, 'utf8') + 10;
-        return trim_msg + Buffer.from(payload, 'utf8').slice(0, MAX_PAYLOAD - trim_len).toString('utf8');
+        return trim_msg + Buffer.from(payload, 'utf8').slice(length - (MAX_PAYLOAD - trim_len)).toString('utf8');
     } else {
         return payload;
     }
