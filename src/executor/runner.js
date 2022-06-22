@@ -509,16 +509,13 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 for (const HOST of ['GITHUB', 'GITLAB', 'BITBUCKET']) {
                     if (url.hostname.includes(HOST.toLowerCase()) && config.envs[`${HOST}_USER`] && config.envs[`${HOST}_TOKEN`]) {
                         await sshExec(`${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
-                        source.credential = {
-                            user: `${HOST}_USER`,
-                            pass: `${HOST}_TOKEN`,
-                        };
+                        executedCMD.push(`printf "#!/bin/bash\\necho username=$${HOST}_USER\\necho password=$${HOST}_TOKEN" > ~/.git-credential-helper.sh`);
+                        executedCMD.push(`git config credential.helper "/bin/bash ~/.git-credential-helper.sh"`);
                     }
                 }
             }
             executedCMD.push(`git clone ${escapeShell(url.toString())}` +
                 `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
-                `${source.credential ? ` -c credential.helper='!f() { sleep 1; echo "username=\${${source.credential.user}}"; echo "password=\${${source.credential.pass}}"; }; f'` : ''}` +
                 `${source.shallow ? ` --depth 1` : ''}` +
                 `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
             executedCMDNote = 'Cloning files';
