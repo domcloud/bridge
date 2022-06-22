@@ -493,7 +493,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
             }
         }
-        let executedCMD = [`rm -rf * .* 2>/dev/null`];
+        let executedCMD = [`rm -rf ..?* .[!.]* *`];
         let executedCMDNote = '';
         if (source.url === 'clear') {
             // we just delete them all
