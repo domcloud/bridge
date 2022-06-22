@@ -452,18 +452,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     'document-dir': value,
                 });
                 break;
-            case 'github':
-            case 'gitlab':
-            case 'bitbucket':
-                let HOST = key.toUpperCase();
-                if (config.envs.GITHUB_USER && config.envs.GITHUB_TOKEN) {
-                    await writeLog(`$> running git ${value} with user credentials`);
-                    await sshExec(`${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
-                    await sshExec(`git -c credential.helper='!f() { sleep 1; echo "username=\${${HOST}_USER}"; echo "password=\${${HOST}_TOKEN}"; }; f' ${value}`);
-                } else {
-                    await writeLog(`$> git ${value} ignored due no ${HOST}_USER and ${HOST}_TOKEN`);
-                }
-                break;
         }
     }
     await sshExec(`export DOMAIN='${subdomain}'`, false);
@@ -508,7 +496,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             if (!source.credential && config.envs) {
                 for (const HOST of ['GITHUB', 'GITLAB', 'BITBUCKET']) {
                     if (url.hostname.includes(HOST.toLowerCase()) && config.envs[`${HOST}_USER`] && config.envs[`${HOST}_TOKEN`]) {
-                        await sshExec(`${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
+                        await sshExec(`export ${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
                         executedCMD.push(`printf '#!/bin/bash\\necho username=$${HOST}_USER\\necho password=$${HOST}_TOKEN' > ~/.git-credential-helper.sh`);
                         executedCMD.push(`git config --global credential.helper "/bin/bash ~/.git-credential-helper.sh"`);
                     }
@@ -543,7 +531,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         if (config.envs) {
             let entries = Object.entries(config.envs);
             if (entries.length > 0)
-                await sshExec(entries.map(([k, v]) => `${k}='${v}'`).join(' '), false);
+                await sshExec("export " + entries.map(([k, v]) => `${k}='${v}'`).join(' '), false);
         }
         for (const cmd of config.commands) {
             if (typeof cmd === 'string') {
