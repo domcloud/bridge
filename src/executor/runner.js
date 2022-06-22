@@ -509,8 +509,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 for (const HOST of ['GITHUB', 'GITLAB', 'BITBUCKET']) {
                     if (url.hostname.includes(HOST.toLowerCase()) && config.envs[`${HOST}_USER`] && config.envs[`${HOST}_TOKEN`]) {
                         await sshExec(`${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
-                        executedCMD.push(`printf "#!/bin/bash\\necho username=$${HOST}_USER\\necho password=$${HOST}_TOKEN" > ~/.git-credential-helper.sh`);
-                        executedCMD.push(`git config credential.helper "/bin/bash ~/.git-credential-helper.sh"`);
+                        executedCMD.push(`printf "\\#!/bin/bash\\necho username=\\$${HOST}_USER\\necho password=\\$${HOST}_TOKEN" > ~/.git-credential-helper.sh`);
+                        executedCMD.push(`git config --global credential.helper "/bin/bash ~/.git-credential-helper.sh"`);
                     }
                 }
             }
