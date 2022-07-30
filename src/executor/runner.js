@@ -481,7 +481,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
             }
         }
-        let executedCMD = [`rm -rf ..?* .[!.]* *`];
+        let executedCMD = [`shopt -s dotglob`, `rm -rf *`];
         let executedCMDNote = '';
         if (source.url === 'clear') {
             // we just delete them all
@@ -509,13 +509,14 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             executedCMDNote = 'Cloning files';
         } else if (source.type === 'extract') {
             executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
-            executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 * .*`);
+            executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);
             if (source.directory) {
-                executedCMD.push(`mv ${escapeShell(source.directory)}/{.,}* .`);
+                executedCMD.push(`mv ${escapeShell(source.directory)}/* .`);
                 executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
             }
             executedCMDNote = 'Downloading files';
         }
+        executedCMD.push(`shopt -u dotglob`);
         if (firewallOn) {
             await iptablesExec.setDelUser(domaindata['Username']);
         }
