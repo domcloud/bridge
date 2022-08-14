@@ -8,8 +8,11 @@ import {
     unlock,
     check
 } from 'proper-lockfile';
+import axios from 'axios';
+
 
 let tokenSecret, allowIps, sudoutil, version, revision;
+let phpReleaseData = ['5.6', '7.4'];
 import fs from 'fs';
 export const initUtils = () => {
     tokenSecret = `Bearer ${process.env.SECRET}`;
@@ -22,6 +25,29 @@ export const initUtils = () => {
     const rev = fs.readFileSync('.git/HEAD').toString().trim();
     revision = rev.indexOf(':') === -1 ? rev : fs.readFileSync('.git/' + rev.substring(5)).toString().trim();
     revision = revision.substring(0, 7);
+    axios.get('https://www.php.net/releases/?json').then(res => {
+        Object.values(res.data).forEach(v => {
+            v.supported_versions.forEach(ver => {
+                if (!phpReleaseData.includes(ver)) {
+                    phpReleaseData.push(ver);
+                }
+            });
+        });
+    }).catch(err => {
+        console.log('error fetching PHP release', err);
+    });
+}
+
+export const getLtsPhp = (major) => {
+    if (!major) {
+        return phpReleaseData[phpReleaseData.length - 1];
+    }
+    for (let i = phpReleaseData.length; i-- > 0;) {
+        const element = phpReleaseData[i];
+        if (element.startsWith(major + '.')) {
+            return element;
+        }
+    }
 }
 
 export const getVersion = () => {
@@ -137,8 +163,8 @@ export const spawnSudoUtilAsync = function ( /** @type {string} */
     args = []) {
     // must by bypassable using visudo
     return process.env.NODE_ENV === 'development' ?
-            spawn("node", [sudoutil, mode, ...args], {}) :
-            spawn("sudo", [sudoutil, mode, ...args], {});
+        spawn("node", [sudoutil, mode, ...args], {}) :
+        spawn("sudo", [sudoutil, mode, ...args], {});
 }
 
 export const executeLock = function (

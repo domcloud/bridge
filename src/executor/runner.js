@@ -1,6 +1,7 @@
 import {
     escapeShell,
     getDbName,
+    getLtsPhp,
     getRevision,
     getVersion,
     spawnSudoUtil,
@@ -67,8 +68,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             let tries = 0;
             const check = () => {
                 virtExec("list-domains", {
-                        domain
-                    }).then(resolve)
+                    domain
+                }).then(resolve)
                     .catch(x => {
                         if (++tries < 10) {
                             setTimeout(check, 3000);
@@ -374,10 +375,18 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await sshExec("python --version");
                         break;
                     case 'node':
+                        let arg = value;
+                        if (value == "latest" || value == "current") {
+                            arg = ""
+                        } else if (!value || value == "stable") {
+                            arg = "@lts"
+                        } else {
+                            arg = "@" + value
+                        }
                         await writeLog("$> changing Node engine to " + (value || 'lts'));
                         await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
                         await sshExec("pathman add .local/opt/node/bin && source ~/.bash_profile");
-                        await sshExec(`curl -sS https://webinstall.dev/node@${value || 'lts'} | bash`);
+                        await sshExec(`curl -sS https://webinstall.dev/node${arg} | bash`);
                         await sshExec("command -v corepack &> /dev/null || npm i -g corepack && corepack enable");
                         await sshExec("node --version");
                         break;
@@ -428,14 +437,24 @@ export default async function runConfig(config, domain, writer, sandbox = false)
 export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallOn, stillroot = false) {
     const featureRunner = async (feature) => {
         const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
-        const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
+        let value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
         switch (key) {
             case 'php':
-                await writeLog("$> changing PHP engine to " + value);
-                await virtExec("modify-web", {
-                    domain: subdomain,
-                    'php-version': value,
-                });
+                if (value) {
+                    if (value == 'lts' || value == 'latest') {
+                        value = getLtsPhp();
+                    } else if (!value.includes('.')) {
+                        value = getLtsPhp(value);
+                    } 
+                    if (!value) {
+                        throw new Error(`php version ${value} not found`);
+                    }
+                    await writeLog("$> changing PHP engine to " + value);
+                    await virtExec("modify-web", {
+                        domain: subdomain,
+                        'php-version': value,
+                    });
+                }
                 break;
             case 'ssl':
                 await writeLog("$> getting let's encrypt");
