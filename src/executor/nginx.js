@@ -14,8 +14,8 @@ const {
 } = shelljs;
 
 const passengerKeys = [
-    'enabled', 'app_env', 'app_start_command', 'app_type',
-    'startup_file', 'ruby', 'nodejs', 'python',
+    'enabled', 'app_env', 'env_var_list', 'app_start_command',
+    'app_type', 'startup_file', 'ruby', 'nodejs', 'python',
     'meteor_app_settings', 'friendly_error_pages',
     'document_root', 'base_uri', 'app_root', 'sticky_sessions'
 ];
@@ -40,6 +40,11 @@ class NginxExecutor {
                     if (config.passenger[key]) {
                         let vall;
                         switch (key) {
+                            case "env_var_list":
+                                config.passenger[key].forEach((/** @type {String} */ v) => {
+                                    node._add("passenger_env_var", (v || '').replace('=', ' '));
+                                });
+                                continue;
                             case "document_root":
                             case "app_root":
                             case "ruby":
@@ -141,14 +146,21 @@ class NginxExecutor {
                     delete r.locations;
             }
             for (const k of Object.keys(node)) {
-                if (k.startsWith("passenger_") && passengerKeys.includes(k.slice("passenger_".length))) {
+                if (k.startsWith("passenger_")) {
                     const ke = k.slice("passenger_".length);
+                    const ve = node[k][0]._value + '';
                     r.passenger = r.passenger || {};
-                    r.passenger[ke] = node[k][0]._value;
                     if (ke === "document_root" || ke === "app_root") {
-                        r.passenger[ke] = r.passenger[ke].slice(basepath.length);
+                        r.passenger[ke] = ve.slice(basepath.length);
                     } else if (ke === "app_start_command") {
-                        r.passenger[ke] = r.passenger[ke].startsWith('"') ? JSON.parse(r.passenger[ke]) : r.passenger[ke];
+                        r.passenger[ke] = ve.startsWith('"') ? JSON.parse(r.passenger[ke]) : r.passenger[ke];
+                    } else if (ke === "env_var") {
+                        r.passenger["env_var_list"] = r.passenger["env_var_list"] || [];
+                        for (const env of node[k]) {
+                            r.passenger["env_var_list"].push((env._value + '').replace(' ', '='));
+                        }
+                    } else {
+                        r.passenger[ke] = ve;
                     }
                 }
                 if (locationKeys.includes(k)) {
