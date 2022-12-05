@@ -445,7 +445,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         value = getLtsPhp();
                     } else if (!value.includes('.')) {
                         value = getLtsPhp(value);
-                    } 
+                    }
                     if (!value) {
                         throw new Error(`php version ${value} not found`);
                     }
@@ -454,6 +454,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         domain: subdomain,
                         'php-version': value,
                     });
+
+                    await sshExec(`echo -e "\\u23\\u21/bin/bash\\n$(which php${value.replace('.', '')}) \\u22\\u24\\u40\\u22"; chmod +x ~/local/.bin/php`, false);
                 }
                 break;
             case 'ssl':

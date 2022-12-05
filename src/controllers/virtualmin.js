@@ -9,5 +9,11 @@ export default function () {
             user: req.query.user,
         })));
     });
+    router.get('/list-domains', checkAuth, checkGet(['domain']), async function (req, res, next) {
+        // TODO
+    });
+    router.get('/list-bandwidth', checkAuth, checkGet(['domain']), async function (req, res, next) {
+        // TODO
+    });
     return router;
 }
