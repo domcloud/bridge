@@ -455,7 +455,13 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         'php-version': value,
                     });
 
-                    await sshExec(`echo -e "\\u23\\u21/bin/bash\\n$(which php${value.replace('.', '')}) \\u22\\u24\\u40\\u22"; chmod +x ~/local/.bin/php`, false);
+                    var phpVer = value.replace('.', '');
+                    if (phpVer == '74') {
+                        // OS Default
+                        await sshExec(`rm ~/.local/bin/php`, false);
+                    } else {
+                        await sshExec(`echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22"; chmod +x ~/.local/bin/php`, false);
+                    }
                 }
                 break;
             case 'ssl':
