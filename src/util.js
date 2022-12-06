@@ -50,6 +50,10 @@ export const getLtsPhp = (major) => {
     }
 }
 
+export const getLtsPython = () => {
+    return '3.10';
+}
+    
 export const getVersion = () => {
     return version;
 }
