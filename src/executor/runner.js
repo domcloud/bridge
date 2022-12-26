@@ -469,7 +469,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         // OS Default
                         await sshExec(`rm ~/.local/bin/php`, false);
                     } else {
-                        await sshExec(`echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22"; chmod +x ~/.local/bin/php`, false);
+                        await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);
                     }
                 }
                 break;
