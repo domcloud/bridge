@@ -371,9 +371,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         var ver = value;
                         if (!value || value == 'latest' || value == "lts" || value == ':latest') {
                             ver = getLtsPython() + ":latest"
-                        } else if (value.endsWith(":latest")) {
-                            ver = value;
-                        } else {
+                        } else if (/^\d+(\.\d+)?$/.test(value)) {
                             ver = value + ":latest";
                         }
                         await writeLog("$> changing Python engine to " + ver);

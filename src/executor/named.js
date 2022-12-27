@@ -176,9 +176,10 @@ class NamedExecutor {
                 return "Done unchanged";
             }
             file.soa.serial++;
-            ShellString(generate(file)).to(tmpFile);
+            var result = generate(file);
+            ShellString(result).to(tmpFile);
             await spawnSudoUtil('NAMED_SET', ["" + zone]);
-            return `Done updating ${changecount} records`;
+            return `Done updating ${changecount} records\n${result}`;
         });
     }
 }
