@@ -160,7 +160,8 @@ class NamedExecutor {
                     return "Invalid config";
                 }
                 var arr = getArrayOf(file, mod.type.toUpperCase());
-                var map = mapKey[mod.type.toLowerCase()](mod.domain, ...("" + mod.value).split(' '));
+                var domain = (mod.domain || '').toLowerCase();
+                var map = mapKey[mod.type.toLowerCase()](domain, ...("" + mod.value).split(' '));
                 if (mod.action === 'add') {
                     if (appendIfNotExist(arr, map)) {
                         changecount++;
