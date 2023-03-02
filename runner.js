@@ -9,7 +9,7 @@ import {
 dotenv.config();
 initUtils();
 
-const payload = JSON.parse(process.argv[2]);
+const payload = JSON.parse(process.env.RUNNER_PAYLOAD);
 console.log(`Executing`, payload);
 const cleanUpServer = ( /** @type {any} */ code) => {
     console.log(`Exiting runner node ${process.pid} with code ${code}`);

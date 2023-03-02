@@ -134,9 +134,12 @@ const __filename = fileURLToPath(
 const __dirname = dirname(__filename);
 const childLogger = fs.openSync(path.join(__dirname, `../../logs/${new Date().toISOString().substr(0, 10)}.log`), 'a');
 export async function runConfigInBackgroundSingleton(payload) {
-    spawn('node', [path.join(process.cwd(), '/runner.js'), JSON.stringify(payload)], {
+    spawn('node', [path.join(process.cwd(), '/runner.js')], {
         stdio: ['ignore', childLogger, childLogger],
         detached: true,
+        env: {
+            RUNNER_PAYLOAD: JSON.stringify(payload),
+        }
     }).unref();
 }
 
