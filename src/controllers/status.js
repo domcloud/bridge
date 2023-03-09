@@ -11,11 +11,13 @@ const {
 } = shelljs;
 
 const tmpCheck = path.join(process.cwd(), '/.tmp/check')
+const tmpTest = path.join(process.cwd(), '/.tmp/test')
+const refreshTime = 15000;
+
 let lastCheck = 0;
 let lastCheckResult = {};
 let lastCheckOK = false;
 
-const tmpTest = path.join(process.cwd(), '/.tmp/test')
 let lastTest = 0;
 let lastTestResult = {};
 let lastTestOK = false;
@@ -25,7 +27,7 @@ export default function () {
     var router = express.Router();
     router.get('/check', async function (req, res, next) {
         try {
-            if (lastCheck < Date.now() - 1000) {
+            if (lastCheck < Date.now() - refreshTime) {
                 await spawnSudoUtil('SHELL_CHECK');
                 lastCheckResult = JSON.parse(cat(tmpCheck));
                 lastCheckOK = lastCheckResult.status == 'OK';
@@ -38,7 +40,7 @@ export default function () {
     });
     router.get('/test', async function (req, res, next) {
         try {
-            if (lastTest < Date.now() - 1000) {
+            if (lastTest < Date.now() - refreshTime) {
                 await spawnSudoUtil('SHELL_TEST');
                 lastTestResult = JSON.parse(cat(tmpTest));
                 lastTestOK = lastTestResult.status == 'OK';

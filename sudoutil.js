@@ -192,10 +192,12 @@ switch (cli.args.shift()) {
         var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
         var fpmpaths = [...fpmlist.map((f) => env.PHPFPM_REMILOC.replace('$', f)), env.PHPFPM_LOCATION];
         var fpms = fpmpaths.map((f) => exec(`${f} -t`, { silent: true }));
+        var iptables = exec(`${env.IPTABLES_LOAD} -t ${env.IPTABLES_PATH}`, { silent: true });
+        var ip6tables = exec(`${env.IP6TABLES_LOAD} -t ${env.IP6TABLES_PATH}`, { silent: true });
 
         var exitcode = 0;
-        if (nginx.code !== 0 ||
-            fpms.some((f) => f.code !== 0))
+        if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
+            fpms.some((f) => f.code !== 0) )
             exitcode = 1;
         ShellString(JSON.stringify({
             timestamp: Date.now(),
@@ -203,10 +205,14 @@ switch (cli.args.shift()) {
             codes: {
                 nginx: nginx.code,
                 fpms: fpms.map((f) => f.code),
+                iptables: iptables.code,
+                ip6tables: ip6tables.code,
             },
             logs: {
                 nginx: nginx.stderr,
                 fpms: fpms.map((f) => f.stderr),
+                iptables: iptables.stderr,
+                ip6tables: ip6tables.stderr,
             },
         })).to(env.SHELLTEST_TMP);
         exit(0);
