@@ -10,22 +10,41 @@ const {
     ShellString
 } = shelljs;
 
-const tmpStatus = path.join(process.cwd(), '/.tmp/status')
-let lastStatus = 0;
-let lastStatusResult = '';
-let lastStatusOK = false;
+const tmpCheck = path.join(process.cwd(), '/.tmp/check')
+let lastCheck = 0;
+let lastCheckResult = '';
+let lastCheckOK = false;
+
+const tmpTest = path.join(process.cwd(), '/.tmp/test')
+let lastTest = 0;
+let lastTestResult = '';
+let lastTestOK = false;
+
 
 export default function () {
     var router = express.Router();
-    router.get('/', async function (req, res, next) {
+    router.get('/check', async function (req, res, next) {
         try {
-            if (lastStatus < Date.now() - 1000) {
+            if (lastCheck < Date.now() - 1000) {
                 await spawnSudoUtil('SHELL_CHECK');
-                lastStatusResult = cat(tmpStatus);
-                lastStatusOK = lastStatusResult.indexOf('"OK"') !== -1;
-                lastStatus = Date.now();
+                lastCheckResult = cat(tmpCheck);
+                lastCheckOK = lastCheckResult.indexOf('"OK"') !== -1;
+                lastCheck = Date.now();
             }
-            res.status(lastStatusOK ? 200 : 500).send(lastStatusResult);
+            res.status(lastCheckOK ? 200 : 500).json(lastCheckResult);
+        } catch (error) {
+            next(error);
+        }
+    });
+    router.get('/test', async function (req, res, next) {
+        try {
+            if (lastTest < Date.now() - 1000) {
+                await spawnSudoUtil('SHELL_TEST');
+                lastTestResult = cat(tmpTest);
+                lastTestOK = lastTestResult.indexOf('"OK"') !== -1;
+                lastTest = Date.now();
+            }
+            res.status(lastTestOK ? 200 : 500).json(lastTestResult);
         } catch (error) {
             next(error);
         }

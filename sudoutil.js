@@ -63,7 +63,8 @@ const env = Object.assign({}, {
     PHPFPM_LOCATION: '/usr/sbin/php-fpm',
     PHPFPM_REMILIST: '/opt/remi/',
     PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',
-    STATUS_TMP: path.join(__dirname, '.tmp/status'),
+    SHELLCHECK_TMP: path.join(__dirname, '.tmp/check'),
+    SHELLTEST_TMP: path.join(__dirname, '.tmp/test'),
     SCRIPT: path.join(__dirname, 'sudoutil.js'),
 }, process.env);
 
@@ -162,12 +163,7 @@ switch (cli.args.shift()) {
         }, 1000 * 60 * 60).unref();
         break;
     case 'SHELL_CHECK':
-        var nginx = exec(`${env.NGINX_BIN} -t`, { silent: true });
         var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
-        var fpmpaths = [...fpmlist.map((f) => env.PHPFPM_REMILOC.replace('$', f)), env.PHPFPM_LOCATION];
-        var fpms = fpmpaths.map((f) => exec(`${f} -t`, { silent: true }));
-        var iptables = exec(`${env.IPTABLES_LOAD} -t`, { silent: true });
-        var ip6tables = exec(`${env.IP6TABLES_LOAD} -t`, { silent: true });
         var services = [
             'nginx',
             'php-fpm',
@@ -181,6 +177,23 @@ switch (cli.args.shift()) {
             'postgresql',
         ]
         var statutes = exec(`systemctl is-failed ${services.join(' ')}`, { silent: true }).split('\n').filter((s) => s !== '');
+
+        var exitcode = 0;
+        if (statutes.some((s) => s !== 'active'))
+            exitcode = 1;
+        ShellString(JSON.stringify({
+            timestamp: Date.now(),
+            status: exitcode === 0 ? 'OK' : 'ERROR',
+            statuses: Object.fromEntries(services.map((k, i) => [k, statutes[i]]))
+        })).to(env.SHELLCHECK_TMP);
+        exit(0);
+    case 'SHELL_TEST':
+        var nginx = exec(`${env.NGINX_BIN} -t`, { silent: true });
+        var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
+        var fpmpaths = [...fpmlist.map((f) => env.PHPFPM_REMILOC.replace('$', f)), env.PHPFPM_LOCATION];
+        var fpms = fpmpaths.map((f) => exec(`${f} -t`, { silent: true }));
+        var iptables = exec(`${env.IPTABLES_LOAD} -t`, { silent: true });
+        var ip6tables = exec(`${env.IP6TABLES_LOAD} -t`, { silent: true });
 
         var exitcode = 0;
         if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
@@ -202,8 +215,7 @@ switch (cli.args.shift()) {
                 iptables: iptables.stdout,
                 ip6tables: ip6tables.stdout,
             },
-            statuses: Object.fromEntries(services.map((k, i) => [k, statutes[i]]))
-        })).to(env.STATUS_TMP);
+        })).to(env.SHELLTEST_TMP);
         exit(0);
     default:
         console.error(`Unknown Mode`);
