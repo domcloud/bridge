@@ -12,12 +12,12 @@ const {
 
 const tmpCheck = path.join(process.cwd(), '/.tmp/check')
 let lastCheck = 0;
-let lastCheckResult = '';
+let lastCheckResult = {};
 let lastCheckOK = false;
 
 const tmpTest = path.join(process.cwd(), '/.tmp/test')
 let lastTest = 0;
-let lastTestResult = '';
+let lastTestResult = {};
 let lastTestOK = false;
 
 
@@ -27,8 +27,8 @@ export default function () {
         try {
             if (lastCheck < Date.now() - 1000) {
                 await spawnSudoUtil('SHELL_CHECK');
-                lastCheckResult = cat(tmpCheck);
-                lastCheckOK = lastCheckResult.indexOf('"OK"') !== -1;
+                lastCheckResult = JSON.parse(cat(tmpCheck));
+                lastCheckOK = lastCheckResult.status == 'OK';
                 lastCheck = Date.now();
             }
             res.status(lastCheckOK ? 200 : 500).json(lastCheckResult);
@@ -40,8 +40,8 @@ export default function () {
         try {
             if (lastTest < Date.now() - 1000) {
                 await spawnSudoUtil('SHELL_TEST');
-                lastTestResult = cat(tmpTest);
-                lastTestOK = lastTestResult.indexOf('"OK"') !== -1;
+                lastTestResult = JSON.parse(cat(tmpTest));
+                lastTestOK = lastTestResult.status == 'OK';
                 lastTest = Date.now();
             }
             res.status(lastTestOK ? 200 : 500).json(lastTestResult);
