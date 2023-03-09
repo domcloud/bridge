@@ -2,6 +2,7 @@ import express from 'express'
 import dotenv from 'dotenv'
 import named from './controllers/named.js';
 import nginx from './controllers/nginx.js';
+import status from './controllers/status.js';
 import iptables from './controllers/iptables.js';
 import {
     initUtils
@@ -17,6 +18,7 @@ const app = express();
 app.use(express.static('public'));
 app.use(express.json());
 app.use('/named', named());
+app.use('/status', status());
 app.use('/nginx', nginx());
 app.use('/iptables', iptables());
 app.use('/runner', runner());

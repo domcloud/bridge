@@ -29,6 +29,8 @@ const {
     mv,
     rm,
     exit,
+    ls,
+    ShellString,
 } = shelljs;
 
 const env = Object.assign({}, {
@@ -58,7 +60,10 @@ const env = Object.assign({}, {
     NAMED_RESYNC: 'rndc retransfer $',
     NAMED_TMP: path.join(__dirname, '.tmp/named'),
     VIRTUALMIN: 'virtualmin',
-    PHPFPM_LOCATIONS: '/etc/php-fpm.d/$.conf',
+    PHPFPM_LOCATION: '/usr/sbin/php-fpm',
+    PHPFPM_REMILIST: '/opt/remi/',
+    PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',
+    STATUS_TMP: path.join(__dirname, '.tmp/status'),
     SCRIPT: path.join(__dirname, 'sudoutil.js'),
 }, process.env);
 
@@ -141,7 +146,7 @@ switch (cli.args.shift()) {
         exit(exec(env.VIRTUALMIN + " " + arg).code);
     case 'SHELL_KILL':
         arg = cli.args.shift();
-        exit(exec(`${env.BASH_KILL} ${arg}`).code);
+        exec(`${env.BASH_KILL} ${arg}`, { shell: '' }).code;
     case 'SHELL_INTERACTIVE':
         arg = cli.args.shift();
         var su = spawn(env.BASH_SU, [arg, '-s', env.BASH_PATH, '-P', '-l'], {
@@ -150,13 +155,55 @@ switch (cli.args.shift()) {
         su.on('close', function (code) {
             exit(code);
         });
+        setTimeout(() => {
+            // just in case
+            if (!su.killed)
+                su.kill();
+        }, 1000 * 60 * 60).unref();
         break;
-    case 'PHPFPM_CLEAN':
-        arg = cli.args.shift();
-        const locations = env.PHPFPM_LOCATIONS.split(',').map(x => x.replace('$', arg));
-        locations.forEach(x => {
-            rm(x)
-        });
+    case 'SHELL_CHECK':
+        var nginx = exec(`${env.NGINX_BIN} -t`, { silent: true });
+        var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
+        var fpmpaths = [...fpmlist.map((f) => env.PHPFPM_REMILOC.replace('$', f)), env.PHPFPM_LOCATION];
+        var fpms = fpmpaths.map((f) => exec(`${f} -t`, { silent: true }));
+        var iptables = exec(`${env.IPTABLES_LOAD} -t`, { silent: true });
+        var ip6tables = exec(`${env.IP6TABLES_LOAD} -t`, { silent: true });
+        var services = [
+            'nginx',
+            'php-fpm',
+            ...[...fpmlist.map((f) => f + '-php-fpm')],
+            'iptables',
+            'ip6tables',
+            'named',
+            'webmin',
+            'sshd',
+            'mariadb',
+            'postgresql',
+        ]
+        var statutes = exec(`systemctl is-failed ${services.join(' ')}`, { silent: true }).split('\n').filter((s) => s !== '');
+
+        var exitcode = 0;
+        if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
+            fpms.some((f) => f.code !== 0) ||
+            statutes.some((s) => s !== 'active'))
+            exitcode = 1;
+        ShellString(JSON.stringify({
+            timestamp: Date.now(),
+            status: exitcode === 0 ? 'OK' : 'ERROR',
+            codes: {
+                nginx: nginx.code,
+                fpms: fpms.map((f) => f.code),
+                iptables: iptables.code,
+                ip6tables: ip6tables.code,
+            },
+            logs: {
+                nginx: nginx.stdout,
+                fpms: fpms.map((f) => f.stdout),
+                iptables: iptables.stdout,
+                ip6tables: ip6tables.stdout,
+            },
+            statuses: Object.fromEntries(services.map((k, i) => [k, statutes[i]]))
+        })).to(env.STATUS_TMP);
         exit(0);
     default:
         console.error(`Unknown Mode`);
