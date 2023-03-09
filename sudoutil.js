@@ -205,8 +205,8 @@ switch (cli.args.shift()) {
                 fpms: fpms.map((f) => f.code),
             },
             logs: {
-                nginx: nginx.stdout,
-                fpms: fpms.map((f) => f.stdout),
+                nginx: nginx.stderr,
+                fpms: fpms.map((f) => f.stderr),
             },
         })).to(env.SHELLTEST_TMP);
         exit(0);
