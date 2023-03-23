@@ -60,7 +60,6 @@ const env = Object.assign({}, {
     NAMED_RESYNC: 'rndc retransfer $',
     NAMED_TMP: path.join(__dirname, '.tmp/named'),
     VIRTUALMIN: 'virtualmin',
-    PHPFPM_LOCATION: '/usr/sbin/php-fpm',
     PHPFPM_REMILIST: '/opt/remi/',
     PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',
     SHELLCHECK_TMP: path.join(__dirname, '.tmp/check'),
@@ -166,7 +165,6 @@ switch (cli.args.shift()) {
         var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
         var services = [
             'nginx',
-            'php-fpm',
             ...[...fpmlist.map((f) => f + '-php-fpm')],
             'iptables',
             'ip6tables',
@@ -190,7 +188,7 @@ switch (cli.args.shift()) {
     case 'SHELL_TEST':
         var nginx = exec(`${env.NGINX_BIN} -t`, { silent: true });
         var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
-        var fpmpaths = [...fpmlist.map((f) => env.PHPFPM_REMILOC.replace('$', f)), env.PHPFPM_LOCATION];
+        var fpmpaths = fpmlist.map((f) => env.PHPFPM_REMILOC.replace('$', f));
         var fpms = fpmpaths.map((f) => exec(`${f} -t`, { silent: true }));
         var iptables = exec(`${env.IPTABLES_LOAD} -t ${env.IPTABLES_PATH}`, { silent: true });
         var ip6tables = exec(`${env.IP6TABLES_LOAD} -t ${env.IP6TABLES_PATH}`, { silent: true });

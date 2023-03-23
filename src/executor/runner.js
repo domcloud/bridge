@@ -239,6 +239,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 }
                 switch (key) {
                     case 'mysql':
+                    case 'mariadb':
                         enabled = isFeatureEnabled('mysql');
                         if (value === "off") {
                             await writeLog("$> Disabling MySQL");
