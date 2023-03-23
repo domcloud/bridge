@@ -59,6 +59,8 @@ const env = Object.assign({}, {
     NAMED_RELOAD: 'rndc reload $',
     NAMED_RESYNC: 'rndc retransfer $',
     NAMED_TMP: path.join(__dirname, '.tmp/named'),
+    OPENSSL_PATH: '/etc/pki/tls/openssl.cnf',
+    OPENSSL_OUT: '/etc/pki/tls/openssl.cnf',
     VIRTUALMIN: 'virtualmin',
     PHPFPM_REMILIST: '/opt/remi/',
     PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',
@@ -144,9 +146,15 @@ switch (cli.args.shift()) {
     case 'VIRTUALMIN':
         arg = cli.args.join(' ');
         exit(exec(env.VIRTUALMIN + " " + arg).code);
+    case 'OPENSSL_CLEAN':
+        var cnf = cat(env.OPENSSL_PATH).toString();
+        cnf = cnf.replace(/^subjectAltName=DNS.+\n/gm, '');
+        ShellString(cnf).to(env.OPENSSL_OUT);
+        exit(0);
     case 'SHELL_KILL':
         arg = cli.args.shift();
         exec(`${env.BASH_KILL} ${arg}`, { shell: '' }).code;
+        exit(0);
     case 'SHELL_INTERACTIVE':
         arg = cli.args.shift();
         var su = spawn(env.BASH_SU, [arg, '-s', env.BASH_PATH, '-P', '-l'], {
@@ -195,7 +203,7 @@ switch (cli.args.shift()) {
 
         var exitcode = 0;
         if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
-            fpms.some((f) => f.code !== 0) )
+            fpms.some((f) => f.code !== 0))
             exitcode = 1;
         ShellString(JSON.stringify({
             timestamp: Date.now(),

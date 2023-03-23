@@ -1,0 +1,51 @@
+# OpenSSL example configuration file.
+# See doc/man5/config.pod for more info.
+#
+# This is mostly being used for generation of certificate requests,
+# but may be used for auto loading of providers
+
+# Note that you can include other files from the main configuration
+# file using the .include directive.
+#.include filename
+
+# This definition stops the following lines choking if HOME isn't
+# defined.
+HOME                    = .
+
+ # Use this in order to automatically load providers.
+openssl_conf = openssl_init
+
+# Comment out the next line to ignore configuration errors
+config_diagnostics = 1
+
+# Extra OBJECT IDENTIFIER info:
+# oid_file       = $ENV::HOME/.oid
+oid_section = new_oids
+
+# This stuff is for subjectAltName and issuerAltname.
+# Import the email address.
+# subjectAltName=email:copy
+# An alternative to produce certificates that aren't
+# deprecated according to PKIX.
+# subjectAltName=email:move
+
+# Copy subject details
+# issuerAltName=issuer:copy
+
+# This is required for TSA certificates.
+# extendedKeyUsage = critical,timeStamping
+
+[ v3_req ]
+subjectAltName=DNS:example.com
+subjectAltName=DNS:*.example.net,DNS:nyc
+
+
+# Extensions to add to a certificate request
+
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+
+[ v3_ca ]
+subjectAltName=DNS:example.com
+subjectAltName=DNS:*.example.net,DNS:nyc
+

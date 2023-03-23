@@ -469,6 +469,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 break;
             case 'ssl':
                 await writeLog("$> getting let's encrypt");
+                await spawnSudoUtil('OPENSSL_CLEAN');
                 await virtExec("generate-letsencrypt-cert", {
                     domain: subdomain,
                     'renew': 2,
