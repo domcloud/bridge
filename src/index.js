@@ -24,6 +24,7 @@ app.use('/iptables', iptables());
 app.use('/runner', runner());
 app.use('/virtualmin', virtualmin());
 app.use(function (err, req, res, next) {
+    res.status(500);
     res.json(err);
 });
 const port = process.env.PORT ? parseInt(process.env.PORT) : 2223;
