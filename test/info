@@ -35,6 +35,7 @@ suba.example.com
     PHP execution mode: fpm
     Possible PHP execution modes: fcgid fpm
     SuExec for CGIs: disabled
+Use of uninitialized value $childs in numeric eq (==) at /usr/libexec/webmin/virtualmin-nginx/virtual_feature.pl line 1548
     PHP fCGId subprocesses: 64
     PHP max execution time: 30
     PHP version: 7.4

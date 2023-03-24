@@ -15,7 +15,7 @@ export default function () {
                 res.send(executor.getRaw(p));
             else {
                 if (req.query.user) {
-                    res.json(executor.getByUsers(p, ...("" + req.query.user).split(',')));
+                    res.json(executor.getByUsers(p, ...(req.query.user.toString()).split(',')));
                 } else {
                     res.json((p));
                 }
@@ -26,14 +26,14 @@ export default function () {
     });
     router.post('/add', checkPost(['user']), async function (req, res, next) {
         try {
-            res.json(await executor.setAddUser(req.body.user));
+            res.json(await executor.setAddUser(req.body.user.toString()));
         } catch (error) {
             next(error);
         }
     });
     router.post('/del', checkPost(['user']), async function (req, res, next) {
         try {
-            res.json(await executor.setDelUser(req.body.user));
+            res.json(await executor.setDelUser(req.body.user.toString()));
         } catch (error) {
             next(error);
         }

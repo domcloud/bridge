@@ -11,7 +11,7 @@ export default function () {
     var router = express.Router();
     router.post('/resync', checkAuth, checkGet(['zone']), async function (req, res, next) {
         try {
-            await executor.resync(req.query.zone + '');
+            await executor.resync(req.query.zone.toString());
             res.json("OK");
         } catch (error) {
             next(error);
@@ -19,14 +19,14 @@ export default function () {
     });
     router.get('/show', checkAuth, checkGet(['zone']), async function (req, res, next) {
         try {
-            res.json(await executor.show(req.query.zone + ''));
+            res.json(await executor.show(req.query.zone.toString()));
         } catch (error) {
             next(error);
         }
     });
     router.post('/modify', checkAuth, checkGet(['zone']), async function (req, res, next) {
         try {
-            res.json(await executor.set(req.query.zone + '', req.body));
+            res.json(await executor.set(req.query.zone.toString(), req.body));
         } catch (error) {
             next(error);
         }

@@ -121,10 +121,14 @@ export function checkPost(args) {
     }
 }
 
+/**
+ * 
+ * @param {string} mode 
+ * @param {string[]} args 
+ * @returns  {Promise<{code: number | string, stdout: string, stderr: string}>}
+ */
 export const spawnSudoUtil = function (
-    /** @type {string} */
     mode,
-    /** @type {string[]} */
     args = []) {
     // must by bypassable using visudo
     return new Promise((resolve, reject) => {
