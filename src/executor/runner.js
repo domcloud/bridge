@@ -84,8 +84,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         // FOR SOME REASON IN MY SERVER, NGINX SUDDENLY STOPPED WORKING
         console.log('start emerg nginx ', await spawnSudoUtil('NGINX_START'));
     }
-    let domaindata = await virtualminExec.getDomainInfo(domain);
-    if (!domaindata) {
+    let domaindata
+    try {
+        domaindata = await virtualminExec.getDomainInfo(domain);
+    } catch {
         await writeLog("\n$> Server is not exist. Finishing execution");
         return;
     }

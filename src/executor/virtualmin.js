@@ -13,92 +13,82 @@ class VirtualminExecutor {
      * @param {string | string[]} domain
      */
     async getDomainInfo(domain, simple = true) {
-        try {
-            let r = await virtualminExec.execFormatted("list-domains", {
-                domain,
-                [simple ? 'simple-multiline' : 'multiline']: true
-            });
-            if (process.env.NODE_ENV === 'development')
-                r = {
-                    code: 0,
-                    stdout: cat('./test/info'),
-                    stderr: '',
+        let r = await virtualminExec.execFormatted("list-domains", {
+            domain,
+            [simple ? 'simple-multiline' : 'multiline']: true
+        });
+        if (process.env.NODE_ENV === 'development')
+            r = {
+                code: 0,
+                stdout: cat('./test/info'),
+                stderr: '',
+            }
+        if (r.code === 255)
+            throw r;
+        let data = r.stdout.split('\n'),
+            result = {},
+            neskey = '',
+            nesval = {};
+        for (let line of data) {
+            line = line.trimEnd();
+            if (line.length >= 4 && line[0] === ' ') {
+                let pair = line.trimStart().split(':', 2);
+                if (pair.length === 2) {
+                    nesval[pair[0]] = pair[1].trimStart();
                 }
-            if (r.code === 255)
-                throw r;
-            let data = r.stdout.split('\n'),
-                result = {},
-                neskey = '',
-                nesval = {};
-            for (let line of data) {
-                line = line.trimEnd();
-                if (line.length >= 4 && line[0] === ' ') {
-                    let pair = line.trimStart().split(':', 2);
-                    if (pair.length === 2) {
-                        nesval[pair[0]] = pair[1].trimStart();
-                    }
-                } else if (line.length >= 1 && !line.includes(' ')) {
-                    if (neskey) {
-                        result[neskey] = nesval;
-                        nesval = {};
-                    }
-                    neskey = line;
-                } 
+            } else if (line.length >= 1 && !line.includes(' ')) {
+                if (neskey) {
+                    result[neskey] = nesval;
+                    nesval = {};
+                }
+                neskey = line;
             }
-            result[neskey] = nesval;
-            if (typeof domain === 'string') {
-                result = result[domain];
-            }
-            return result;
-        } catch (error) {
-            console.log(error);
-            return null;
         }
+        result[neskey] = nesval;
+        if (typeof domain === 'string') {
+            result = result[domain];
+        }
+        return result;
     }
     /**
      * @param {string | string[]} domain
      */
     async getBandwidthInfo(domain) {
-        try {
-            let r = await virtualminExec.execFormatted("list-bandwidth", {
-                domain,
-            });
-            if (process.env.NODE_ENV === 'development')
-                r = {
-                    code: 0,
-                    stdout: cat('./test/bandwidth'),
-                    stderr: '',
-                }
-            if (r.code === 255)
-                throw r;
-            let data = r.stdout.split('\n'),
-                result = {},
-                neskey = '',
-                nesval = {};
-            for (let line of data) {
-                line = line.trimEnd();
-                if (line.length >= 4 && line[0] === ' ') {
-                    let pair = line.trimStart().split(':', 3);
-                    if (pair.length === 3) {
-                        nesval[pair[0]] = parseInt(pair[2].trim());
-                    }
-                } else if (line.length >= 1 && !line.includes(' ')) {
-                    if (neskey) {
-                        result[neskey] = nesval;
-                        nesval = {};
-                    }
-                    neskey = line.replace(/:\r/g, '');
-                }
+        let r = await virtualminExec.execFormatted("list-bandwidth", {
+            domain,
+        });
+        if (process.env.NODE_ENV === 'development')
+            r = {
+                code: 0,
+                stdout: cat('./test/bandwidth'),
+                stderr: '',
             }
-            result[neskey] = nesval;
-            if (typeof domain === 'string') {
-                result = result[domain];
+        if (r.code === 255)
+            throw r;
+        let data = r.stdout.split('\n'),
+            result = {},
+            neskey = '',
+            nesval = {};
+        for (let line of data) {
+            line = line.trimEnd();
+            if (line.length >= 4 && line[0] === ' ') {
+                let pair = line.trimStart().split(':', 3);
+                if (pair.length === 3) {
+                    nesval[pair[0]] = parseInt(pair[2].trim());
+                }
+            } else if (line.length >= 1 && !line.includes(' ')) {
+                if (neskey) {
+                    result[neskey] = nesval;
+                    nesval = {};
+                }
+                neskey = line.replace(/:\r/g, '');
             }
-            return result;
-        } catch (error) {
-            console.log(error);
-            return null;
         }
+        result[neskey] = nesval;
+        if (typeof domain === 'string') {
+            result = result[domain];
+        }
+        return result;
     }
     /**
      * @param {string} program
