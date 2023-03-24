@@ -81,7 +81,7 @@ class VirtualminExecutor {
                     result[neskey] = nesval;
                     nesval = {};
                 }
-                neskey = line.replace(/:\r/g, '');
+                neskey = line.replace(/:|\r/g, '');
             }
         }
         result[neskey] = nesval;
