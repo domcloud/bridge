@@ -400,6 +400,53 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await sshExec("command -v corepack &> /dev/null || npm i -g corepack && corepack enable");
                         await sshExec("node --version");
                         break;
+                    case 'deno':
+                        arg = value;
+                        if (value == "latest" || value == "current") {
+                            arg = ""
+                        } else if (!value || value == "lts") {
+                            arg = "@stable"
+                        } else {
+                            arg = "@" + value
+                        }
+                        await writeLog("$> changing Node engine to " + (value || 'stable'));
+                        await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
+                        await sshExec("pathman add .local/opt/deno/bin && source ~/.bash_profile");
+                        await sshExec(`curl -sS https://webinstall.dev/deno${arg} | bash`);
+                        await sshExec("deno --version");
+                        break;
+                    case 'go':
+                    case 'golang':
+                        arg = value;
+                        if (value == "latest" || value == "current") {
+                            arg = ""
+                        } else if (!value || value == "lts") {
+                            arg = "@stable"
+                        } else {
+                            arg = "@" + value
+                        }
+                        await writeLog("$> changing Golang engine to " + (value || 'stable'));
+                        await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
+                        await sshExec("pathman add .local/opt/go/bin && source ~/.bash_profile");
+                        await sshExec(`curl -sS https://webinstall.dev/golang${arg} | bash`);
+                        await sshExec("go --version");
+                    case 'rust':
+                    case 'rustlang':
+                        // TODO: Add versioning?
+                        // arg = value;
+                        // if (value == "latest" || value == "current") {
+                        //     arg = ""
+                        // } else if (!value || value == "lts") {
+                        //     arg = "@stable"
+                        // } else {
+                        //     arg = "@" + value
+                        // }
+                        await writeLog("$> changing Rustlang engine to " + (value || 'stable'));
+                        await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
+                        await sshExec("pathman add .local/opt/rust/bin && source ~/.bash_profile");
+                        await sshExec(`curl -sS https://webinstall.dev/rustlang | bash`);
+                        await sshExec("rust --version");
+                        break;
                     case 'ruby':
                         await writeLog("$> changing Ruby engine to " + value);
                         await sshExec(`curl -sSL https://rvm.io/mpapis.asc | gpg --import -`);
