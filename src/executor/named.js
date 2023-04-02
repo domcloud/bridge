@@ -98,7 +98,11 @@ class NamedExecutor {
     async show(zone) {
         return await executeLock('named', async () => {
             await spawnSudoUtil('NAMED_GET', [zone]);
-            return parse(cat(tmpFile));
+            const file = cat(tmpFile);
+            return { 
+                ...parse(file),
+                raw: file
+            };
         });
     }
     /**

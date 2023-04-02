@@ -62,7 +62,7 @@ class NginxExecutor {
                                 break;
                             case "app_start_command":
                                 // add quote strings
-                                vall = JSON.stringify(config.passenger[key]);
+                                vall = escapeNginx(config.passenger[key]);
                                 break;
                             default:
                                 vall = config.passenger[key];
@@ -159,7 +159,7 @@ class NginxExecutor {
                     if (ke === "document_root" || ke === "app_root") {
                         r.passenger[ke] = ve.slice(basepath.length);
                     } else if (ke === "app_start_command") {
-                        r.passenger[ke] = ve.startsWith('"') ? JSON.parse(ve) : ve;
+                        r.passenger[ke] = unescapeNginx(ve);
                     } else if (ke === "env_var") {
                         r.passenger["env_var_list"] = r.passenger["env_var_list"] || [];
                         for (const env of node[k]) {

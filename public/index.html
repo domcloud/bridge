@@ -16,11 +16,34 @@
             justify-content: center;
             align-items: center;
         }
+        #stat {
+            text-decoration: none;
+        }
     </style>
 </head>
 
 <body>
-    <p>If you can see this, then this server is fully operational.</p>
+    <p id="stat">Checking this server's health....</p>
+
+    <script>
+        var statTxt = document.getElementById('stat');
+        fetch('/status/check')
+            .then(res => res.json())
+            .then(data => {
+                console.log(data);
+                if (data.status !== 'OK') {
+                    statTxt.innerHTML = '<a href="/status/check">Server is not healthy.</a>';
+                    statTxt.style.color = 'red';
+                } else {
+                    statTxt.innerHTML = 'Server is healthy.';
+                    statTxt.style.color = 'green';
+                }
+            })
+            .catch(err => { 
+                console.error(err);
+                statTxt.innerHTML = '<a href="/status/check">Unable to get server status.</a>';
+            });
+    </script>
 </body>
 
 </html>
