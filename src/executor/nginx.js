@@ -1,6 +1,9 @@
 import {
+    escapeNginx,
     executeLock,
-    spawnSudoUtil
+    spawnSudoUtil,
+    splitLimit,
+    unescapeNginx
 } from '../util.js';
 import path from 'path';
 import shelljs from 'shelljs';
@@ -42,7 +45,10 @@ class NginxExecutor {
                         switch (key) {
                             case "env_var_list":
                                 config.passenger[key].forEach((/** @type {String} */ v) => {
-                                    node._add("passenger_env_var", (v || '').replace('=', ' '));
+                                    var splt = splitLimit(v, /=/g, 2);
+                                    if (splt.length == 2) {
+                                        node._add("passenger_env_var", splt[0] + ' ' + escapeNginx(splt[1]));
+                                    }
                                 });
                                 continue;
                             case "document_root":
@@ -157,7 +163,10 @@ class NginxExecutor {
                     } else if (ke === "env_var") {
                         r.passenger["env_var_list"] = r.passenger["env_var_list"] || [];
                         for (const env of node[k]) {
-                            r.passenger["env_var_list"].push((env._value + '').replace(' ', '='));
+                            var splt = splitLimit(env._value, / /g, 2);
+                            if (splt.length == 2) {
+                                r.passenger["env_var_list"].push(splt[0] + '=' + unescapeNginx(splt[1]));
+                            }
                         }
                     } else {
                         r.passenger[ke] = ve;

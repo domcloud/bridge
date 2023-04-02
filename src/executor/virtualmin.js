@@ -2,7 +2,8 @@ import shelljs from "shelljs";
 import {
     escapeShell,
     spawnSudoUtil,
-    spawnSudoUtilAsync
+    spawnSudoUtilAsync,
+    splitLimit
 } from "../util.js";
 const {
     cat
@@ -32,7 +33,7 @@ class VirtualminExecutor {
         for (let line of data) {
             line = line.trimEnd();
             if (line.length >= 4 && line[0] === ' ') {
-                let pair = line.trimStart().split(':', 2);
+                let pair = splitLimit(line.trimStart(), /:/g, 2);
                 if (pair.length === 2) {
                     nesval[pair[0]] = pair[1].trimStart();
                 }
@@ -72,7 +73,7 @@ class VirtualminExecutor {
         for (let line of data) {
             line = line.trimEnd();
             if (line.length >= 4 && line[0] === ' ') {
-                let pair = line.trimStart().split(':', 3);
+                let pair = splitLimit(line.trimStart(), /:/g, 3);
                 if (pair.length === 3) {
                     nesval[pair[0]] = parseInt(pair[2].trim());
                 }

@@ -6,7 +6,8 @@ import {
     getRevision,
     getVersion,
     spawnSudoUtil,
-    spawnSudoUtilAsync
+    spawnSudoUtilAsync,
+    splitLimit
 } from "../util.js";
 import {
     iptablesExec
@@ -185,7 +186,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         };
         if (Array.isArray(config.features)) {
             for (const feature of config.features) {
-                const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
+                const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
                 const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
                 const isFeatureEnabled = ( /** @type {string} */ f) => {
                     return domaindata['Features'].includes(f);
@@ -344,7 +345,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                         if (!value[i].startsWith("add ") && !value[i].startsWith("del ")) {
                                             value[i] = `add ${value[i]}`;
                                         }
-                                        const values = (value[i] + '').split(' ', 4);
+                                        const values = splitLimit(value[i] + '', / /g, 4);
                                         if (values.length == 4) {
                                             value[i] = {
                                                 action: values[0].toLowerCase() === 'del' ? 'del' : 'add',
@@ -493,7 +494,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
  */
 export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallOn, stillroot = false) {
     const featureRunner = async (feature) => {
-        const key = typeof feature === 'string' ? feature.split(' ', 2)[0] : Object.keys(feature)[0];
+        const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
         let value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
         switch (key) {
             case 'php':

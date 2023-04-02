@@ -53,7 +53,7 @@ export const getLtsPhp = (major) => {
 export const getLtsPython = () => {
     return '3.10';
 }
-    
+
 export const getVersion = () => {
     return version;
 }
@@ -282,4 +282,34 @@ export const normalizeShellOutput = function ( /** @type {string[]} */ output) {
 
 export const getDbName = function ( /** @type {string} */ user, /** @type {string} */ db = 'db') {
     return (`${user.replace(/-/g, '_')}_${db}`).replace(/[^a-zA-Z0-9_]/g, '');
+}
+
+export const escapeNginx = function ( /** @type {string} */ str) {
+    if (/[^A-Za-z0-9_\/:=-]/.test(str)) {
+        return JSON.stringify(str);
+    } else {
+        return str;
+    }
+}
+
+export const unescapeNginx = function ( /** @type {string} */ str) {
+    try {
+        if (/^".*"$/.test(str)) {
+            return JSON.parse(str);
+        } else {
+            return str;
+        }
+    } catch (error) {
+        return "";
+    }
+}
+
+// https://stackoverflow.com/a/29998501/3908409
+export function splitLimit(/** @type {string} */ str,/** @type {RegExp} */  sep, /** @type {Number} */  n) {
+    var out = [];
+
+    while(--n) out.push(str.slice(sep.lastIndex, sep.exec(str).index));
+
+    out.push(str.slice(sep.lastIndex));
+    return out;
 }
