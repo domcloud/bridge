@@ -228,7 +228,6 @@ class NginxExecutor {
         data.fcgi = findFastCgi(node);
         data.config = extractLocations(node, `/home/${data.user}/`);
         delete data.config.match;
-        delete data.config.root;
         delete data.config.alias;
         data.config.ssl = sslNames[data.ssl];
         if (data.http !== 2)

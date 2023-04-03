@@ -1,3 +1,4 @@
+import path from "path";
 import {
     escapeShell,
     getDbName,
@@ -171,13 +172,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         await sshExec('set -e', false); // early exit on error
     }
     try {
-        if (config.root) {
-            // moved to config.features
-            config.features = (config.features || []).concat([{
-                root: config.root
-            }]);
-            delete config.root;
-        }
         let firewallStatusCache = undefined;
         let firewallStatus = async () => {
             if (firewallStatusCache === undefined)
@@ -483,7 +477,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
 }
 
 /**
- * @param {{source: any;features: any;commands: any;nginx: any;envs: any,directory:any}} config
+ * @param {{source: any;features: any;commands: any;nginx: any;envs: any,directory:any, root:any}} config
  * @param {{[x: string]: any}} domaindata
  * @param {string} subdomain
  * @param {{(cmd: string, write?: boolean): Promise<any>}} sshExec
@@ -493,6 +487,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
  * @param {stillroot} firewallOn
  */
 export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallOn, stillroot = false) {
+    var subdomaindata;
     const featureRunner = async (feature) => {
         const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
         let value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
@@ -527,16 +522,36 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 });
                 break;
             case 'root':
-                await writeLog("$> changing root folder");
-                await virtExec("modify-web", {
-                    domain: subdomain,
-                    'document-dir': value,
-                });
+                // remove prefix and trailing slash
+                value = value.replace(/^\/+/, '').replace(/\/+$/, '');
+                var absolutePath = path.join(subdomaindata['Home directory'], value);
+                if (absolutePath !== subdomaindata['HTML directory']) {
+                    await writeLog("$> changing root folder");
+                    await sshExec(`mkdir -p ${absolutePath}`);
+                    await virtExec("modify-web", {
+                        domain: subdomain,
+                        'document-dir': value,
+                    });
+                    subdomaindata['HTML directory'] = absolutePath;
+                } else {
+                    await writeLog("$> root folder is set unchanged");
+                }
                 break;
         }
     }
+    if (stillroot) {
+        subdomaindata = domaindata
+    } else {
+        let domaindata
+        try {
+            domaindata = await virtualminExec.getDomainInfo(subdomain);
+        } catch {
+            await writeLog("\n$> Server is not exist. Finishing execution for " + subdomain + " domain\n");
+            return;
+        }
+    }
     await sshExec(`export DOMAIN='${subdomain}'`, false);
-    await sshExec(`mkdir -p ${domaindata['Home directory']}${stillroot ? '' : `/domains/${subdomain}`}/public_html && cd "$_"`);
+    await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);
     if (config.source) {
         if (typeof config.source === 'string') {
             config.source = {
@@ -626,6 +641,21 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
             }
         }
+    }
+
+
+    if (config.nginx && config.nginx.root) {
+        // moved to config.features
+        config.features = (config.features || []).concat([{
+            root: config.nginx.root
+        }]);
+        delete config.nginx.root;
+    } else if (config.root) {
+        // moved to config.features
+        config.features = (config.features || []).concat([{
+            root: config.root
+        }]);
+        delete config.root;
     }
 
     if (Array.isArray(config.features)) {
