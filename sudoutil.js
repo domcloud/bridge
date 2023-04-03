@@ -179,6 +179,7 @@ switch (cli.args.shift()) {
             'named',
             'webmin',
             'sshd',
+            'crond',
             'mariadb',
             'postgresql',
         ]
