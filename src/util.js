@@ -304,12 +304,27 @@ export const unescapeNginx = function ( /** @type {string} */ str) {
     }
 }
 
-// https://stackoverflow.com/a/29998501/3908409
-export function splitLimit(/** @type {string} */ str,/** @type {RegExp} */  sep, /** @type {Number} */  n) {
-    var out = [];
+// https://stackoverflow.com/a/64296576
+export function splitLimit(/** @type {string} */ input,/** @type {string|RegExp} */  separator, /** @type {Number} */  limit) {
+    // Ensure the separator is global
+    separator = new RegExp(separator, 'g');
+    // Allow the limit argument to be excluded
+    limit = limit ?? -1;
 
-    while(--n) out.push(str.slice(sep.lastIndex, sep.exec(str).index));
+    const output = [];
+    let finalIndex = 0;
 
-    out.push(str.slice(sep.lastIndex));
-    return out;
+    while (--limit) {
+        const lastIndex = separator.lastIndex;
+        const search = separator.exec(input);
+        if (search === null) {
+            break;
+        }
+        finalIndex = separator.lastIndex;
+        output.push(input.slice(lastIndex, search.index));
+    }
+
+    output.push(input.slice(finalIndex));
+
+    return output;
 }
