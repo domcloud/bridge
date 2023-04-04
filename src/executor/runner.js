@@ -436,11 +436,14 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         // } else {
                         //     arg = "@" + value
                         // }
-                        await writeLog("$> changing Rustlang engine to " + (value || 'stable'));
+                        await writeLog(value ? "$> changing Rust engine to " + value : "$> installing Rust engine");
                         await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
-                        await sshExec("pathman add .local/opt/rust/bin && source ~/.bash_profile");
-                        await sshExec(`curl -sS https://webinstall.dev/rustlang | bash`);
-                        await sshExec("rust --version");
+                        await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y)`);
+                        await sshExec(`pathman add $HOME/.cargo/bin && source ~/.bash_profile`);
+                        if (value) {
+                            await sshExec(`rustup toolchain install ${value} && rustup default ${value}`);
+                        }
+                        await sshExec("rustc --version");
                         break;
                     case 'ruby':
                         await writeLog("$> changing Ruby engine to " + value);
