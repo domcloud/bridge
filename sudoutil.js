@@ -158,9 +158,9 @@ switch (cli.args.shift()) {
         var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
         var cleaned = '';
         for (const f of fpmlist) {
-            var path = `${env.PHPFPM_REMICONF.replace('$', f)}/${arg}.conf`;
-            if (existsSync(path)) {
-                rm(path);
+            var p = `${env.PHPFPM_REMICONF.replace('$', f)}/${arg}.conf`;
+            if (existsSync(p)) {
+                rm(p);
                 cleaned = f;
                 break;
             }
