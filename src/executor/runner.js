@@ -386,13 +386,13 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec(`pyenv global $(pyenv versions --bare | tail -n 1)`);
                             await sshExec("python --version");
                         }
-                        
                         break;
                     case 'node':
                         arg = value;
                         if (arg == 'off') {
                             await writeLog("$> removing Node engine");
-                            await sshExec("rm -rf ~/.local/opt/node-* ~/.local/opt/node ~/.local/bin/deno ~/Downloads/webi/node");
+                            await sshExec("rm -rf ~/.local/opt/node-* ~/.local/opt/node ~/Downloads/webi/node");
+                            await sshExec("rm -rf ~/.cache/yarn ~/.cache/node ~/.config/yarn ~/.npm");
                             await sshExec("pathman remove ~/.local/opt/node/bin && source ~/.bash_profile");
                         } else {
                             if (value == "latest" || value == "current") {
@@ -472,11 +472,22 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         break;
                     case 'ruby':
-                        await writeLog("$> changing Ruby engine to " + value);
-                        await sshExec(`curl -sSL https://rvm.io/mpapis.asc | gpg --import -`);
-                        await sshExec(`curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -`);
-                        await sshExec(`curl -sSL https://get.rvm.io | bash -s ${value}`);
-                        await sshExec("ruby --version");
+                        if (value == 'off') {
+                            await sshExec(`rm -rf ~/.rvm`);
+                            await sshExec("sed -i '/rvm\\|RVM/d' ~/.bashrc");
+                        } else {
+                            await writeLog(value ? "$> changing Ruby engine to " + value : "$> installing Ruby engine");
+                            await sshExec(`command -v rvm &> /dev/null || (curl -sSL https://rvm.io/mpapis.asc | gpg --import -)`);
+                            await sshExec(`command -v rvm &> /dev/null || (curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -)`);
+                            await sshExec(`command -v rvm &> /dev/null || (curl -sSL https://get.rvm.io | bash -s stable && source ~/.rvm/scripts/rvm)`);
+                            await sshExec(`rvm autolibs disable`);
+                            if (!value || value == 'latest' || value == 'lts') {
+                                await sshExec(`rvm install ruby --latest --no-docs`);
+                            } else {
+                                await sshExec(`rvm install ${value} --no-docs`);
+                            }
+                            await sshExec("ruby --version");
+                        }
                         break;
                     default:
                         break;
