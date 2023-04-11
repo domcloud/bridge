@@ -185,7 +185,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 const isFeatureEnabled = ( /** @type {string} */ f) => {
                     return domaindata['Features'].includes(f);
                 }
-                let enabled;
+                let enabled, arg;
                 if (!sandbox) {
                     switch (key) {
                         case 'modify':
@@ -367,21 +367,21 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         break;
                     case 'python':
-                        var ver = value;
+                        arg = value;
                         if (!value || value == 'latest' || value == "lts" || value == ':latest') {
-                            ver = getLtsPython() + ":latest"
+                            arg = getLtsPython() + ":latest"
                         } else if (/^\d+(\.\d+)?$/.test(value)) {
-                            ver = value + ":latest";
+                            arg = value + ":latest";
                         }
-                        await writeLog("$> changing Python engine to " + ver);
+                        await writeLog("$> changing Python engine to " + arg);
                         await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
                         await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash) && source ~/.bash_profile");
-                        await sshExec(`pyenv install ${ver} -s`);
+                        await sshExec(`pyenv install ${arg} -s`);
                         await sshExec(`pyenv global $(pyenv versions --bare | tail -n 1)`);
                         await sshExec("python --version");
                         break;
                     case 'node':
-                        let arg = value;
+                        arg = value;
                         if (value == "latest" || value == "current") {
                             arg = ""
                         } else if (!value || value == "stable") {
@@ -428,15 +428,21 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await sshExec("go --version");
                     case 'rust':
                     case 'rustlang':
-
-                        await writeLog(value ? "$> changing Rust engine to " + value : "$> installing Rust engine");
-                        await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
-                        await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal)`);
-                        await sshExec(`pathman add $HOME/.cargo/bin && source ~/.bash_profile`);
-                        if (value) {
-                            await sshExec(`rustup toolchain install ${value} && rustup default ${value}`);
+                        if (value == 'off') {
+                            await writeLog("$> removing Rust engine");
+                            await sshExec("rustup self uninstall -y");
+                            await sshExec("pathman remove $HOME/.cargo/bin && source ~/.bash_profile");
+                            break;
+                        } else {
+                            await writeLog(value ? "$> changing Rust engine to " + value : "$> installing Rust engine");
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
+                            await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal)`);
+                            await sshExec(`pathman add $HOME/.cargo/bin && source ~/.bash_profile`);
+                            if (value) {
+                                await sshExec(`rustup toolchain install ${value} && rustup default ${value}`);
+                            }
+                            await sshExec("rustc --version");    
                         }
-                        await sshExec("rustc --version");
                         break;
                     case 'ruby':
                         await writeLog("$> changing Ruby engine to " + value);
