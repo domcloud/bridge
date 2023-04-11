@@ -50,8 +50,15 @@ export const getLtsPhp = (major) => {
     }
 }
 
-export const getLtsPython = () => {
-    return '3.10';
+export const getLtsPython = (/** @type {boolean} */ latest) => {
+    // 2022 -> 3.10, and incremental every year
+    var year = new Date().getFullYear();
+    var minor = year - 2012;
+    if (latest) {
+        return '3.' + minor;
+    } else {
+        return '3.' + (minor - 1);
+    }
 }
 
 export const getVersion = () => {
