@@ -431,7 +431,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
 
                         await writeLog(value ? "$> changing Rust engine to " + value : "$> installing Rust engine");
                         await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
-                        await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --minimal)`);
+                        await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal)`);
                         await sshExec(`pathman add $HOME/.cargo/bin && source ~/.bash_profile`);
                         if (value) {
                             await sshExec(`rustup toolchain install ${value} && rustup default ${value}`);
