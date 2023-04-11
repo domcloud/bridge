@@ -27,3 +27,6 @@ while read p; do
     done < <(echo $FFI6| sed 's/ /\n/g')
   fi
 done <"$SCRIPT_DIR/sites.conf"
+
+systemctl is-failed --quiet iptables && systemctl restart iptables
+systemctl is-failed --quiet ip6tables && systemctl restart ip6tables

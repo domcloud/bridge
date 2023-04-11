@@ -228,6 +228,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await virtExec("delete-domain", value, {
                                 user: domaindata['Username'],
                             });
+                            await spawnSudoUtil('PHPFPM_CLEAN', domaindata['ID']);
                             // no need to do other stuff
                             return;
                         default:
@@ -427,18 +428,10 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await sshExec("go --version");
                     case 'rust':
                     case 'rustlang':
-                        // TODO: Add versioning?
-                        // arg = value;
-                        // if (value == "latest" || value == "current") {
-                        //     arg = ""
-                        // } else if (!value || value == "lts") {
-                        //     arg = "@stable"
-                        // } else {
-                        //     arg = "@" + value
-                        // }
+
                         await writeLog(value ? "$> changing Rust engine to " + value : "$> installing Rust engine");
                         await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
-                        await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y)`);
+                        await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s --minimal -- -y)`);
                         await sshExec(`pathman add $HOME/.cargo/bin && source ~/.bash_profile`);
                         if (value) {
                             await sshExec(`rustup toolchain install ${value} && rustup default ${value}`);

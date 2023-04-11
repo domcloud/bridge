@@ -7,6 +7,7 @@ import path from 'path';
 import {
     chmodSync,
     chownSync,
+    existsSync,
     statSync
 } from 'fs';
 import {
@@ -63,6 +64,7 @@ const env = Object.assign({}, {
     OPENSSL_OUT: '/etc/pki/tls/openssl.cnf',
     VIRTUALMIN: 'virtualmin',
     PHPFPM_REMILIST: '/opt/remi/',
+    PHPFPM_REMICONF: '/opt/remi/$/php-fpm.d',
     PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',
     SHELLCHECK_TMP: path.join(__dirname, '.tmp/check'),
     SHELLTEST_TMP: path.join(__dirname, '.tmp/test'),
@@ -150,6 +152,22 @@ switch (cli.args.shift()) {
         var cnf = cat(env.OPENSSL_PATH).toString();
         cnf = cnf.replace(/^subjectAltName=DNS.+\n/gm, '');
         ShellString(cnf).to(env.OPENSSL_OUT);
+        exit(0);
+    case 'PHPFPM_CLEAN':
+        arg = cli.args.shift();
+        var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
+        var cleaned = '';
+        for (const f of fpmlist) {
+            var path = `${env.PHPFPM_REMICONF.replace('$', f)}/${arg}.conf`;
+            if (existsSync(path)) {
+                rm(path);
+                cleaned = f;
+                break;
+            }
+        }
+        if (cleaned) {
+            exec(`systemctl restart ${cleaned}-php-fpm`, { silent: true })
+        }
         exit(0);
     case 'SHELL_KILL':
         arg = cli.args.shift();
