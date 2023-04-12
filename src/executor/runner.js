@@ -473,6 +473,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         break;
                     case 'ruby':
                         if (value == 'off') {
+                            await writeLog("$> removing Ruby engine");
                             await sshExec(`rm -rf ~/.rvm`);
                             await sshExec("sed -i '/rvm\\|RVM/d' ~/.bashrc");
                         } else {
