@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ ! -d "./phpmyadmin" ]; then
-    git clone https://github.com/phpmyadmin/phpmyadmin.git phpmyadmin -b STABLE
+    git clone https://github.com/phpmyadmin/phpmyadmin.git phpmyadmin -b STABLE --depth 1
     cd ./phpmyadmin
     composer install --no-dev
     yarn install --production
@@ -11,7 +11,7 @@ if [ ! -d "./phpmyadmin" ]; then
     cd ..
 fi
 if [ ! -d "./phppgadmin" ]; then
-    git clone https://github.com/phppgadmin/phppgadmin.git phppgadmin
+    git clone https://github.com/phpPgAdmin2/phpPgAdmin.git phppgadmin --depth 1
     cd ./phppgadmin
     cp conf/config.inc.php-dist conf/config.inc.php
     sed -i "s/['host'] = ''/['host'] = 'localhost'/" conf/config.inc.php
@@ -19,13 +19,15 @@ if [ ! -d "./phppgadmin" ]; then
     cd ..
 fi
 if [ ! -d "./webssh" ]; then
-    git clone https://github.com/huashengdun/webssh.git webssh
+    git clone https://github.com/huashengdun/webssh.git webssh --depth 1
     cd ./webssh
     pip install --user -r requirements.txt
     cd ..
 fi
+
+: <<'DISABLED'
 if [ ! -d "./webssh2" ]; then
-    git clone https://github.com/billchurch/webssh2.git webssh2
+    git clone https://github.com/billchurch/webssh2.git webssh2 --depth 1
     cd ./webssh2/app
     npm install --production
     cp config.json.sample config.json
@@ -37,7 +39,9 @@ if [ ! -d "./webssh2" ]; then
     echo "require('.');" > app.js
     cd ../..
 fi
-npm ci
+DISABLED
+
+npm i
 chmod +x sudoutil.js
 echo You need to add sudoutil.js to sudoers
 echo "echo '`whoami` ALL = (root) NOPASSWD: `echo $PWD`/sudoutil.js' | sudo EDITOR='tee' visudo /etc/sudoers.d/`whoami`"
