@@ -583,9 +583,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     if (stillroot) {
         subdomaindata = domaindata
     } else {
-        let domaindata
         try {
-            domaindata = await virtualminExec.getDomainInfo(subdomain);
+            subdomaindata = await virtualminExec.getDomainInfo(subdomain);
         } catch {
             await writeLog("\n$> Server is not exist. Finishing execution for " + subdomain + " domain\n");
             return;
@@ -702,6 +701,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     if (Array.isArray(config.features)) {
         await writeLog("$> Applying features");
         for (const feature of config.features) {
+            if (typeof feature === 'string' && feature.match(/^ssl/)) {
+                continue;
+            }
             await featureRunner(feature);
         }
     }
@@ -709,5 +711,13 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     if (config.nginx) {
         await writeLog("$> Applying nginx config on " + subdomain);
         await writeLog(await nginxExec.set(subdomain, config.nginx));
+    }
+
+    if (Array.isArray(config.features)) {
+        for (const feature of config.features) {
+            if (typeof feature === 'string' && feature.match(/^ssl/)) {
+                await featureRunner(feature);
+            }
+        }
     }
 }
