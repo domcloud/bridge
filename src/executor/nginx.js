@@ -97,6 +97,7 @@ class NginxExecutor {
                 n._add("fastcgi_pass", info.fcgi);
             }
         }
+        // remove all properties
         Object.getOwnPropertyNames(node).forEach(function (prop) {
             if (prop.startsWith("_")) return;
             while (node[prop] && node[prop].length > 0) {
@@ -104,12 +105,14 @@ class NginxExecutor {
             }
         });
         node._add('server_name', info.dom);
-        if (info.config.ssl !== "enforce" && info.config.ssl !== "always") {
+        let sslconf = info.config.ssl || sslNames[info.ssl];
+        let httpconf = info.config.http || info.http;
+        if (sslconf !== "enforce" && sslconf !== "always") {
             node._add('listen', info.ip);
             node._add('listen', info.ip6);
         }
-        if (info.config.ssl !== "off") {
-            var postfix = info.config.http == 1 ? '' : ' http2';
+        if (sslconf !== "off") {
+            var postfix = httpconf == 1 ? '' : ' http2';
             node._add('listen', info.ip + ":443 ssl" + postfix);
             node._add('listen', info.ip6 + ":443 ssl" + postfix);
         } {
@@ -281,6 +284,43 @@ class NginxExecutor {
                     }
                     const info = this.extractInfo(node, domain);
                     info.config = config;
+                    this.applyInfo(node, info);
+                    ShellString(conf.toString()).to(tmpFile);
+                    spawnSudoUtil('NGINX_SET', [domain]).then(() => {
+                        resolve("Done updated\n" + node.toString());
+                    }).catch((err) => {
+                        reject(err);
+                    })
+                });
+            });
+        })
+    }
+    /**
+     * @param {string} domain
+     * @param {string} ssl
+     * @param {string} http
+     */
+    async setSsl(domain, ssl, http) {
+        return await executeLock('nginx', async () => {
+            await spawnSudoUtil('NGINX_GET', [domain]);
+            return await new Promise((resolve, reject) => {
+                var src = cat(tmpFile).toString();
+                // https://github.com/virtualmin/virtualmin-nginx/issues/18
+                src = src.replace(/ default_server/g, '');
+                NginxConfFile.createFromSource(src, (err, conf) => {
+                    if (err)
+                        return reject(err);
+                    const node = conf.nginx.server[0];
+                    if (!node) {
+                        return reject(new Error(`Cannot find domain ${domain}`));
+                    }
+                    const info = this.extractInfo(node, domain);
+                    if (ssl) {
+                        info.config.ssl = ssl;
+                    }
+                    if (http) {
+                        info.config.http = http;
+                    }
                     this.applyInfo(node, info);
                     ShellString(conf.toString()).to(tmpFile);
                     spawnSudoUtil('NGINX_SET', [domain]).then(() => {
