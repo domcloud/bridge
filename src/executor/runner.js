@@ -55,7 +55,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         // create new domain
         await writeLog("$> virtualmin create-domain");
         await writeLog("Creating virtual domain. This will take a moment...");
-        await virtExec("create-domain", config.features[0].create, {
+        await virtExec("create-domain", config.features[0].create, process.env.MODE === 'dev' ? {
+            dir: true,
+            webmin: true,
+            unix: true,
+        } : {
             dir: true,
             'virtualmin-nginx': true,
             'virtualmin-nginx-ssl': true,
@@ -313,6 +317,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         break;
                     case 'dns':
+                        if (process.env.MODE === 'dev') {
+                            break;
+                        }
                         enabled = isFeatureEnabled('dns');
                         if (value === "off") {
                             await writeLog("$> Disabling DNS");
@@ -356,6 +363,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         break;
                     case 'firewall':
+                        if (process.env.MODE === 'dev') {
+                            break;
+                        }
                         if (value === '' || value === 'on') {
                             await writeLog("$> changing firewall protection to " + (value || 'on'));
                             await writeLog(await iptablesExec.setAddUser(domaindata['Username']));
@@ -543,17 +553,23 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     if (!value) {
                         throw new Error(`php version ${value} not found`);
                     }
+
                     await writeLog("$> changing PHP engine to " + value);
-                    await virtExec("modify-web", {
-                        domain: subdomain,
-                        'php-version': value,
-                    });
+                    if (process.env.MODE !== 'dev') {
+                        await virtExec("modify-web", {
+                            domain: subdomain,
+                            'php-version': value,
+                        });
+                    }
 
                     var phpVer = value.replace('.', '');
                     await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);
                 }
                 break;
             case 'ssl':
+                if (process.env.MODE === 'dev') {
+                    break;
+                }
                 if (['off', 'always', 'enforce', 'on'].includes(value)) {
                     await writeLog("$> Applying nginx ssl config on " + subdomain);
                     await writeLog(await nginxExec.setSsl(subdomain, value, ""));
@@ -568,6 +584,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 break;
             case 'root':
+                if (process.env.MODE === 'dev') {
+                    break;
+                }
                 // remove prefix and trailing slash
                 value = value.replace(/^\/+/, '').replace(/\/+$/, '');
                 var absolutePath = path.join(subdomaindata['Home directory'], value);
@@ -713,15 +732,18 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
     }
 
-    if (config.nginx) {
-        await writeLog("$> Applying nginx config on " + subdomain);
-        await writeLog(await nginxExec.set(subdomain, config.nginx));
-    }
 
-    if (Array.isArray(config.features)) {
-        for (const feature of config.features) {
-            if (typeof feature === 'string' && feature.match(/^ssl/)) {
-                await featureRunner(feature);
+    if (process.env.MODE !== 'dev') {
+        if (config.nginx) {
+            await writeLog("$> Applying nginx config on " + subdomain);
+            await writeLog(await nginxExec.set(subdomain, config.nginx));
+        }
+
+        if (Array.isArray(config.features)) {
+            for (const feature of config.features) {
+                if (typeof feature === 'string' && feature.match(/^ssl/)) {
+                    await featureRunner(feature);
+                }
             }
         }
     }
