@@ -37,6 +37,7 @@ const {
 const env = Object.assign({}, {
     BASH_PATH: '/bin/bash',
     BASH_SU: 'su',
+    BASH_SUDO: 'sudo',
     BASH_KILL: 'kill',
     NGINX_PATH: '/etc/nginx/conf.d/$.conf',
     NGINX_OUT: '/etc/nginx/conf.d/$.conf',
@@ -173,6 +174,21 @@ switch (cli.args.shift()) {
         arg = cli.args.shift();
         exec(`${env.BASH_KILL} ${arg}`, { shell: '' }).code;
         exit(0);
+    case 'SHELL_SUDO':
+        arg = cli.args.shift();
+        exec(`${env.BASH_KILL} ${arg}`, { shell: '' }).code;
+        var sudo = spawn(env.BASH_SUDO, ['-u', arg, '-i', ...cli.args], {
+            stdio: 'inherit'
+        });
+        sudo.on('close', function (code) {
+            exit(code);
+        });
+        setTimeout(() => {
+            // just in case
+            if (!sudo.killed)
+            sudo.kill();
+        }, 1000 * 60 * 60).unref();
+        break;
     case 'SHELL_INTERACTIVE':
         arg = cli.args.shift();
         var su = spawn(env.BASH_SU, [arg, '-s', env.BASH_PATH, '-P', '-l'], {

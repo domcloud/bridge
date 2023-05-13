@@ -4,6 +4,7 @@ import named from './controllers/named.js';
 import nginx from './controllers/nginx.js';
 import status from './controllers/status.js';
 import iptables from './controllers/iptables.js';
+import screend from './controllers/screend.js';
 import {
     initUtils
 } from './util.js';
@@ -21,6 +22,7 @@ app.use('/named', named());
 app.use('/status', status());
 app.use('/nginx', nginx());
 app.use('/iptables', iptables());
+app.use('/screend', screend());
 app.use('/runner', runner());
 app.use('/virtualmin', virtualmin());
 app.use(function (err, req, res, next) {
