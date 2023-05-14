@@ -176,7 +176,6 @@ switch (cli.args.shift()) {
         exit(0);
     case 'SHELL_SUDO':
         arg = cli.args.shift();
-        exec(`${env.BASH_KILL} ${arg}`, { shell: '' }).code;
         var sudo = spawn(env.BASH_SUDO, ['-u', arg, '-i', ...cli.args], {
             stdio: 'inherit'
         });
