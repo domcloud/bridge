@@ -462,7 +462,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec(`curl -sS https://webinstall.dev/golang${arg} | WEBI__GO_ESSENTIALS=true bash && source ~/.bash_profile`);
                             await sshExec("go version");
                         }
-
+                        break;
                     case 'rust':
                     case 'rustlang':
                         if (value == 'off') {
