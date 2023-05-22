@@ -702,6 +702,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await sshExec(cmd.command, cmd.write === false ? false : true);
                 } else if (cmd.feature) {
                     await featureRunner(cmd.feature);
+                } else if (cmd.filename && cmd.content) {
+                    await writeLog("$> writing " + cmd.filename);
+                    await sshExec(`echo "${cmd.content.replace(/[`\$"]/g, "\\$0") }" > ${cmd.filename}`, false);
                 }
             }
         }
