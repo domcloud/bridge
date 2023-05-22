@@ -459,7 +459,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             }
                             await writeLog("$> changing Golang engine to " + (value || 'stable'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
-                            await sshExec(`curl -sS https://webinstall.dev/golang${arg} | WEBI__GO_ESSENTIALS=true bash`);
+                            await sshExec(`curl -sS https://webinstall.dev/golang${arg} | WEBI__GO_ESSENTIALS=true bash && source ~/.bash_profile`);
                             await sshExec("go version");
                         }
 
