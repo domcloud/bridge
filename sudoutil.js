@@ -234,10 +234,12 @@ switch (cli.args.shift()) {
         var fpms = fpmpaths.map((f) => exec(`${f} -t`, { silent: true }));
         var iptables = exec(`${env.IPTABLES_LOAD} -t ${env.IPTABLES_PATH}`, { silent: true });
         var ip6tables = exec(`${env.IP6TABLES_LOAD} -t ${env.IP6TABLES_PATH}`, { silent: true });
+        var storage = exec(`df -h | grep ^/dev`, { silent: true });
+        var storagefull = /\b(9[5-9]|100)%/.test(storage.stdout);
 
         var exitcode = 0;
         if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
-            fpms.some((f) => f.code !== 0))
+            fpms.some((f) => f.code !== 0) || storagefull)
             exitcode = 1;
         ShellString(JSON.stringify({
             timestamp: Date.now(),
@@ -247,12 +249,14 @@ switch (cli.args.shift()) {
                 fpms: fpms.map((f) => f.code),
                 iptables: iptables.code,
                 ip6tables: ip6tables.code,
+                storage: storagefull ? 1 : 0,
             },
             logs: {
-                nginx: nginx.stderr,
-                fpms: fpms.map((f) => f.stderr),
-                iptables: iptables.stderr,
-                ip6tables: ip6tables.stderr,
+                nginx: nginx.stderr.trim().split('\n'),
+                storage: storage.stdout.trim().split('\n'),
+                fpms: fpms.map((f) => f.stderr.trim()),
+                iptables: iptables.stderr.trim().split('\n'),
+                ip6tables: ip6tables.stderr.trim().split('\n'),
             },
         })).to(env.SHELLTEST_TMP);
         exit(0);
