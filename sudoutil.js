@@ -236,6 +236,8 @@ switch (cli.args.shift()) {
         var ip6tables = exec(`${env.IP6TABLES_LOAD} -t ${env.IP6TABLES_PATH}`, { silent: true });
         var storage = exec(`df -h | grep ^/dev`, { silent: true });
         var storagefull = /\b(9[5-9]|100)%/.test(storage.stdout);
+        var inodes = exec(`df -i | grep ^/dev`, { silent: true });
+        var inodesfull = /\b(9[5-9]|100)%/.test(inodes.stdout);
 
         var exitcode = 0;
         if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
@@ -250,10 +252,12 @@ switch (cli.args.shift()) {
                 iptables: iptables.code,
                 ip6tables: ip6tables.code,
                 storage: storagefull ? 1 : 0,
+                inodes: inodesfull ? 1 : 0,
             },
             logs: {
                 nginx: nginx.stderr.trim().split('\n'),
                 storage: storage.stdout.trim().split('\n'),
+                inodes: inodes.stdout.trim().split('\n'),
                 fpms: fpms.map((f) => f.stderr.trim()),
                 iptables: iptables.stderr.trim().split('\n'),
                 ip6tables: ip6tables.stderr.trim().split('\n'),
