@@ -1,5 +1,6 @@
 name: Sync on DOM Cloud
 'on':
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -21,5 +22,13 @@ jobs:
           webhook_url: https://my.domcloud.co/api/githubdeploy
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_NYC }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_NYC }}
+          data: >-
+            {"commands":["git pull","npx pm2 restart all"]}
+      - name: Invoke deployment hook
+        uses: distributhor/workflow-webhook@v2
+        env:
+          webhook_url: https://my.domcloud.co/api/githubdeploy
+          webhook_secret: ${{ secrets.WEBHOOK_SECRET_FRA }}
+          webhook_auth: ${{ secrets.WEBHOOK_AUTH_FRA }}
           data: >-
             {"commands":["git pull","npx pm2 restart all"]}
