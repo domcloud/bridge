@@ -668,6 +668,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
             executedCMDNote = 'Cloning files';
         } else if (source.type === 'extract') {
+            if (!source.directory && url.hash) {
+                source.directory = url.hash.substring(1);
+                url.hash = '';
+            }
             executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
             executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);
             if (source.directory) {
