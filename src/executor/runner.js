@@ -650,7 +650,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             if (!source.branch && source.directory) {
                 source.branch = source.directory;
             } else if (!source.branch && url.hash) {
-                source.branch = url.hash.substring(1);
+                source.branch = decodeURI(url.hash.substring(1));
                 url.hash = '';
             }
             if (!source.credential && config.envs) {
@@ -669,7 +669,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             executedCMDNote = 'Cloning files';
         } else if (source.type === 'extract') {
             if (!source.directory && url.hash) {
-                source.directory = url.hash.substring(1);
+                source.directory = decodeURI(url.hash.substring(1));
                 url.hash = '';
             }
             executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));

@@ -8,7 +8,7 @@ jobs:
   push:
     runs-on: ubuntu-latest
     steps:
-      - name: Invoke deployment hook
+      - name: Invoke SGA deployment hook
         uses: distributhor/workflow-webhook@v2
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
@@ -16,7 +16,7 @@ jobs:
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGA }}
           data: >-
             {"commands":["git pull","npx pm2 restart all"]}
-      - name: Invoke deployment hook
+      - name: Invoke NYC deployment hook
         uses: distributhor/workflow-webhook@v2
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
@@ -24,7 +24,7 @@ jobs:
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_NYC }}
           data: >-
             {"commands":["git pull","npx pm2 restart all"]}
-      - name: Invoke deployment hook
+      - name: Invoke FRA deployment hook
         uses: distributhor/workflow-webhook@v2
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
