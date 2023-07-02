@@ -385,16 +385,19 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec("pathman remove ~/.pyenv/bin && pathman remove ~/.pyenv/shims && source ~/.bash_profile");
                             await sshExec("sed -i '/pyenv/d' ~/.bashrc");
                         } else {
-                            if (!value || /^:?\w+?$/.test(value)) {
-                                arg = getPythonVersion(value) + ":latest"
-                            } else if (/^\d+(\.\d+)?$/.test(value)) {
-                                arg = value + ":latest";
-                            }
-                            await writeLog("$> changing Python engine to " + arg);
+                            const parg = getPythonVersion(value);
+                            await writeLog("$> changing Python engine to " + parg.version);
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
                             await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash) && source ~/.bash_profile");
-                            await sshExec(`pyenv install ${arg} -s`);
-                            await sshExec(`pyenv global $(pyenv versions --bare | tail -n 1)`);
+                            if (parg.binary) {
+                                await sshExec("cd ~/tmp", false);
+                                await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axvf python.tar.zst && rm $_`);
+                                await sshExec(`mv python/install ~/.pyenv/versions/${parg.version} && rm -rf python`);
+                                await sshExec("cd ~/public_html", false);
+                            } else {
+                                await sshExec(`pyenv install ${parg.version} -s`);
+                            }
+                            await sshExec(`pyenv global ${parg.version.replace(":latest", "")}`);
                             await sshExec("python --version");
                         }
                         break;

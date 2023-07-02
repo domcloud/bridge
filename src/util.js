@@ -16,6 +16,26 @@ let tokenSecret, allowIps, sudoutil, version, revision;
 // https://packagist.org/php-statistics
 let phpVersionsList = ['7.4'];
 let rubyVersionsList = [];
+let pythonVersionsList = [];
+/**
+ * @type {Record<string, string>}
+ */
+let pythonVersionsMap = {};
+const pythonConstants = {
+    // https://raw.githubusercontent.com/indygreg/python-build-standalone/latest-release/latest-release.json
+    tag: "20230507",
+    // NOTE: x86_64_v3 requires AVX2 CPU support
+    match: /cpython-(\d+\.\d+\.\d+)\+\d+-x86_64_v3-unknown-linux-gnu-pgo\+lto-full\.tar\.zst/g,
+    index() {
+        return `https://github.com/indygreg/python-build-standalone/releases/expanded_assets/${this.tag}`
+    },
+    /**
+     * @param {string} filename
+     */
+    asset_url(filename) {
+        return `https://github.com/indygreg/python-build-standalone/releases/download/${this.tag}/${filename}`;
+    },
+}
 import fs from 'fs';
 export const initUtils = () => {
     tokenSecret = `Bearer ${process.env.SECRET}`;
@@ -50,9 +70,22 @@ export const initUtils = () => {
             }
         }
         rubyVersionsList.sort().reverse();
-        console.log('rubyVersionsList', rubyVersionsList);
     }).catch(err => {
         console.error('error fetching Ruby releases', err);
+    });
+    axios.get(pythonConstants.index()).then(res => {
+        // @ts-ignore
+        var matches = [...("" + res.data).matchAll(pythonConstants.match)]
+        for (const match of matches) {
+            if (!pythonVersionsMap[match[1]]) {
+                pythonVersionsMap[match[1]] = pythonConstants.asset_url(match[0]);
+                pythonVersionsList.push(match[1]);
+            }
+        }
+        pythonVersionsList.sort().reverse();
+        console.log('pythonVersionsList', pythonVersionsMap);
+    }).catch(err => {
+        console.error('error fetching Python releases', err);
     });
 }
 
@@ -69,39 +102,45 @@ export const getLtsPhp = (/** @type {string} */ major) => {
 }
 
 export const getPythonVersion = (/** @type {string} */ status) => {
-    // 2022 -> 3.10 (latest), and steadily increments every year
-    // Assuming Python 4 will never came....
-    // https://builtin.com/software-engineering-perspectives/python-4
-    var year = new Date().getFullYear();
-    var minor = year - 2012;
-    if (status.startsWith(':')) {
-        status = status.substring(1);
+    const expand = (/** @type {string} */ version) => ({
+        version,
+        binary: pythonVersionsMap[version] || null,
+    })
+    // get latest stable version
+    var stable = pythonVersionsList[0];
+    if (!status) {
+        return expand(stable);
+    }
+    if (/^\d+(\.\d+)?$/.test(status)) {
+        var m = pythonVersionsList.find(x => {
+            return x.startsWith(status);
+        });
+        if (m) {
+            return expand(m);
+        } else {
+            return expand(m + ":latest");
+        }
+    }
+    if (/^\d+\.\d+\.\d+$/.test(status)) {
+        return expand(status);
     }
     switch (status) {
-        case 'alpha':
-            minor += 2;
-            break;
-        case 'beta':
-            minor += 1;
-            break;
         case 'lts':
         case 'security':
-            minor -= 1;
-            break;
+            var security = rubyVersionsList.find(x => {
+                return !x.startsWith(stable.substring(0, stable.lastIndexOf('.')));
+            });
+            return expand(security || stable);
         case 'latest':
         case 'stable':
         default:
-            break;
+            return expand(stable);
     }
-    return '3.' + minor;
 }
 
 export const getRubyVersion = (/** @type {string} */ status) => {
     // get latest stable version
     var stable = rubyVersionsList[0];
-    var security = rubyVersionsList.find(x => {
-        return !x.startsWith(stable.substring(0, stable.lastIndexOf('.')));
-    });
     if (!status) {
         return stable;
     }
@@ -116,10 +155,15 @@ export const getRubyVersion = (/** @type {string} */ status) => {
             return m;
         }
     }
-
+    if (/^\d+\.\d+\.\d+$/.test(status)) {
+        return status;
+    }
     switch (status) {
         case 'lts':
         case 'security':
+            var security = rubyVersionsList.find(x => {
+                return !x.startsWith(stable.substring(0, stable.lastIndexOf('.')));
+            });
             return security || stable;
         case 'latest':
         case 'stable':
