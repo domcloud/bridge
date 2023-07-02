@@ -1,4 +1,7 @@
 import {
+    getRevision,
+    getSupportVersions,
+    getVersion,
     spawnSudoUtil,
 } from '../util.js';
 import express from 'express';
@@ -25,6 +28,13 @@ let lastTestOK = false;
 
 export default function () {
     var router = express.Router();
+    router.get('/about', async function (req, res, next) {
+        res.json({
+            version: getVersion(),
+            revision: getRevision(),
+            supportVersions: getSupportVersions(),
+        })
+    });
     router.get('/check', async function (req, res, next) {
         try {
             if (lastCheck < Date.now() - refreshTime) {

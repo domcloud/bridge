@@ -197,6 +197,14 @@ export const checkAuth = function (
     res.sendStatus(403);
 }
 
+export const getSupportVersions = () => {
+    return {
+        php: phpVersionsList,
+        python: pythonVersionsList,
+        ruby: rubyVersionsList,
+    }
+}
+
 
 /**
  * @param {array} args
