@@ -12,7 +12,10 @@ import axios from 'axios';
 
 
 let tokenSecret, allowIps, sudoutil, version, revision;
-let phpReleaseData = ['5.6', '7.4'];
+// PHP for <= 7.4 is around ~25% of the market share as of 2023
+// https://packagist.org/php-statistics
+let phpVersionsList = ['7.4'];
+let rubyVersionsList = [];
 import fs from 'fs';
 export const initUtils = () => {
     tokenSecret = `Bearer ${process.env.SECRET}`;
@@ -28,36 +31,100 @@ export const initUtils = () => {
     axios.get('https://www.php.net/releases/?json').then(res => {
         Object.values(res.data).forEach(v => {
             v.supported_versions.forEach(ver => {
-                if (!phpReleaseData.includes(ver)) {
-                    phpReleaseData.push(ver);
+                if (!phpVersionsList.includes(ver)) {
+                    phpVersionsList.push(ver);
                 }
             });
         });
+        phpVersionsList.sort().reverse();
     }).catch(err => {
-        console.log('error fetching PHP release', err);
+        console.error('error fetching PHP releases', err);
+    });
+    // TODO: detect OS/arch?
+    axios.get('https://rvm.io/binaries/centos/9/x86_64/').then(res => {
+        // @ts-ignore
+        var matches = [...("" + res.data).matchAll(/href="ruby-([.\d]+).tar.bz2"/g)]
+        for (const match of matches) {
+            if (!rubyVersionsList.includes(match[1])) {
+                rubyVersionsList.push(match[1]);
+            }
+        }
+        rubyVersionsList.sort().reverse();
+        console.log('rubyVersionsList', rubyVersionsList);
+    }).catch(err => {
+        console.error('error fetching Ruby releases', err);
     });
 }
 
-export const getLtsPhp = (major) => {
+export const getLtsPhp = (/** @type {string} */ major) => {
     if (!major) {
-        return phpReleaseData[phpReleaseData.length - 1];
+        return phpVersionsList[0];
     }
-    for (let i = phpReleaseData.length; i-- > 0;) {
-        const element = phpReleaseData[i];
+    for (let i = 0; i < phpVersionsList.length; i++) {
+        const element = phpVersionsList[i];
         if (element.startsWith(major + '.')) {
             return element;
         }
     }
 }
 
-export const getLtsPython = (/** @type {boolean} */ latest) => {
-    // 2022 -> 3.10, and incremental every year
+export const getPythonVersion = (/** @type {string} */ status) => {
+    // 2022 -> 3.10 (latest), and steadily increments every year
+    // Assuming Python 4 will never came....
+    // https://builtin.com/software-engineering-perspectives/python-4
     var year = new Date().getFullYear();
     var minor = year - 2012;
-    if (latest) {
-        return '3.' + minor;
-    } else {
-        return '3.' + (minor - 1);
+    if (status.startsWith(':')) {
+        status = status.substring(1);
+    }
+    switch (status) {
+        case 'alpha':
+            minor += 2;
+            break;
+        case 'beta':
+            minor += 1;
+            break;
+        case 'lts':
+        case 'security':
+            minor -= 1;
+            break;
+        case 'latest':
+        case 'stable':
+        default:
+            break;
+    }
+    return '3.' + minor;
+}
+
+export const getRubyVersion = (/** @type {string} */ status) => {
+    // get latest stable version
+    var stable = rubyVersionsList[0];
+    var security = rubyVersionsList.find(x => {
+        return !x.startsWith(stable.substring(0, stable.lastIndexOf('.')));
+    });
+    if (!status) {
+        return stable;
+    }
+    if (/^ruby-/.test(status)) {
+        status = status.substring(5);
+    }
+    if (/^\d+(\.\d+)?$/.test(status)) {
+        var m = rubyVersionsList.find(x => {
+            return x.startsWith(status);
+        });
+        if (m) {
+            return m;
+        }
+    }
+
+    switch (status) {
+        case 'lts':
+        case 'security':
+            return security || stable;
+        case 'latest':
+        case 'stable':
+        default:
+            return stable;
     }
 }
 

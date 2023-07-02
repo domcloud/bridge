@@ -3,8 +3,9 @@ import {
     escapeShell,
     getDbName,
     getLtsPhp,
-    getLtsPython,
+    getPythonVersion,
     getRevision,
+    getRubyVersion,
     getVersion,
     spawnSudoUtil,
     spawnSudoUtilAsync,
@@ -384,8 +385,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec("pathman remove ~/.pyenv/bin && pathman remove ~/.pyenv/shims && source ~/.bash_profile");
                             await sshExec("sed -i '/pyenv/d' ~/.bashrc");
                         } else {
-                            if (!value || value == 'latest' || value == "lts" || value == ':latest') {
-                                arg = getLtsPython(value == 'latest' || value == ':latest') + ":latest"
+                            if (!value || /^:?\w+?$/.test(value)) {
+                                arg = getPythonVersion(value) + ":latest"
                             } else if (/^\d+(\.\d+)?$/.test(value)) {
                                 arg = value + ":latest";
                             }
@@ -488,15 +489,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec("sed -i '/rvm\\|RVM/d' ~/.bashrc");
                         } else {
                             await writeLog(value ? "$> changing Ruby engine to " + value : "$> installing Ruby engine");
-                            await sshExec(`command -v rvm &> /dev/null || (curl -sSL https://rvm.io/mpapis.asc | gpg --import -)`);
-                            await sshExec(`command -v rvm &> /dev/null || (curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -)`);
-                            await sshExec(`command -v rvm &> /dev/null || (curl -sSL https://get.rvm.io | bash -s stable && source ~/.rvm/scripts/rvm)`);
-                            await sshExec(`rvm autolibs disable`);
-                            if (!value || value == 'latest' || value == 'lts') {
-                                await sshExec(`rvm install ruby --latest --no-docs`);
-                            } else {
-                                await sshExec(`rvm install ${value} --no-docs`);
-                            }
+                            await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://rvm.io/mpapis.asc | gpg --import -; curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -; }`);
+                            await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://get.rvm.io | bash -s stable; source ~/.rvm/scripts/rvm; rvm autolibs disable; }`);
+                            await sshExec(`rvm install ${getRubyVersion(value)} --no-docs`);
                             await sshExec("ruby --version");
                         }
                         break;
@@ -539,32 +534,30 @@ export default async function runConfig(config, domain, writer, sandbox = false)
  */
 export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallOn, stillroot = false) {
     var subdomaindata;
-    const featureRunner = async (feature) => {
+    const featureRunner = async (/** @type {object|string} */ feature) => {
         const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
         let value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
         switch (key) {
             case 'php':
-                if (value) {
-                    if (value == 'lts' || value == 'latest') {
-                        value = getLtsPhp();
-                    } else if (!value.includes('.')) {
-                        value = getLtsPhp(value);
-                    }
-                    if (!value) {
-                        throw new Error(`php version ${value} not found`);
-                    }
-
-                    await writeLog("$> changing PHP engine to " + value);
-                    if (process.env.MODE !== 'dev') {
-                        await virtExec("modify-web", {
-                            domain: subdomain,
-                            'php-version': value,
-                        });
-                    }
-
-                    var phpVer = value.replace('.', '');
-                    await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);
+                if (value == 'lts' || value == 'latest') {
+                    value = getLtsPhp();
+                } else if (!value.includes('.')) {
+                    value = getLtsPhp(value);
                 }
+                if (!value) {
+                    throw new Error(`php version ${value} not found`);
+                }
+
+                await writeLog("$> changing PHP engine to " + value);
+                if (process.env.MODE !== 'dev') {
+                    await virtExec("modify-web", {
+                        domain: subdomain,
+                        'php-version': value,
+                    });
+                }
+
+                var phpVer = value.replace('.', '');
+                await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);
                 break;
             case 'ssl':
                 if (process.env.MODE === 'dev') {
@@ -708,7 +701,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await featureRunner(cmd.feature);
                 } else if (cmd.filename && cmd.content) {
                     await writeLog("$> writing " + cmd.filename);
-                    await sshExec(`echo "${cmd.content.replace(/([`$"\\])/g, "\\$1") }" > ${cmd.filename}`, false);
+                    await sshExec(`echo "${cmd.content.replace(/([`$"\\])/g, "\\$1")}" > ${cmd.filename}`, false);
                 }
             }
         }
