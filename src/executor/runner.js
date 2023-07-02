@@ -393,6 +393,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                 await sshExec("cd ~/tmp", false);
                                 await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
                                 await sshExec(`mv python/install ~/.pyenv/versions/${parg.version} && rm -rf python`);
+                                await sshExec(`(cd ~/.pyenv/versions/${parg.version}/bin && ln -s python3 python)`);
                                 await sshExec("cd ~/public_html", false);
                             } else {
                                 await sshExec(`pyenv install ${parg.version} -s`);
