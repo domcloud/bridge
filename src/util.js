@@ -1,14 +1,8 @@
 import path from 'path';
-import {
-    spawn,
-    exec
-} from 'child_process';
-import {
-    lock,
-    unlock,
-    check
-} from 'proper-lockfile';
+import { spawn } from 'child_process';
+import { lock } from 'proper-lockfile';
 import axios from 'axios';
+import fs from 'fs';
 
 
 let tokenSecret, allowIps, sudoutil, version, revision;
@@ -36,7 +30,6 @@ const pythonConstants = {
         return `https://github.com/indygreg/python-build-standalone/releases/download/${this.tag}/${filename}`;
     },
 }
-import fs from 'fs';
 export const initUtils = () => {
     tokenSecret = `Bearer ${process.env.SECRET}`;
     allowIps = process.env.ALLOW_IP ? process.env.ALLOW_IP.split(',').reduce((a, b) => {
@@ -56,7 +49,7 @@ export const initUtils = () => {
                 }
             });
         });
-        phpVersionsList.sort().reverse();
+        phpVersionsList = sortSemver(phpVersionsList).reverse();
     }).catch(err => {
         console.error('error fetching PHP releases', err);
     });
@@ -69,7 +62,7 @@ export const initUtils = () => {
                 rubyVersionsList.push(match[1]);
             }
         }
-        rubyVersionsList.sort().reverse();
+        rubyVersionsList = sortSemver(rubyVersionsList).reverse();
     }).catch(err => {
         console.error('error fetching Ruby releases', err);
     });
@@ -82,8 +75,7 @@ export const initUtils = () => {
                 pythonVersionsList.push(match[1]);
             }
         }
-        pythonVersionsList.sort().reverse();
-        console.log('pythonVersionsList', pythonVersionsMap);
+        pythonVersionsList = sortSemver(pythonVersionsList).reverse();
     }).catch(err => {
         console.error('error fetching Python releases', err);
     });
@@ -127,7 +119,7 @@ export const getPythonVersion = (/** @type {string} */ status) => {
     switch (status) {
         case 'lts':
         case 'security':
-            var security = rubyVersionsList.find(x => {
+            var security = pythonVersionsList.find(x => {
                 return !x.startsWith(stable.substring(0, stable.lastIndexOf('.')));
             });
             return expand(security || stable);
@@ -453,4 +445,13 @@ export function splitLimit(/** @type {string} */ input,/** @type {string|RegExp}
     output.push(input.slice(finalIndex));
 
     return output;
+}
+
+// https://stackoverflow.com/a/40201629/3908409
+/**
+ * @param {string[]} arr
+ */
+export function sortSemver(arr) {
+    return arr.map(a => a.split('.').map(n => +n + 100000).join('.')).sort()
+        .map(a => a.split('.').map(n => +n - 100000).join('.'));
 }

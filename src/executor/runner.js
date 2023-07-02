@@ -391,7 +391,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash) && source ~/.bash_profile");
                             if (parg.binary) {
                                 await sshExec("cd ~/tmp", false);
-                                await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axvf python.tar.zst && rm $_`);
+                                await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
                                 await sshExec(`mv python/install ~/.pyenv/versions/${parg.version} && rm -rf python`);
                                 await sshExec("cd ~/public_html", false);
                             } else {
