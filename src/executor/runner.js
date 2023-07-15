@@ -406,13 +406,13 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         if (value == 'off') {
                             await writeLog("$> removing Python engine");
                             await sshExec("rm -rf ~/.pyenv");
-                            await sshExec("pathman remove ~/.pyenv/bin && pathman remove ~/.pyenv/shims && source ~/.bash_profile");
+                            await sshExec("pathman remove ~/.pyenv/bin && pathman remove ~/.pyenv/shims; source ~/.bashrc");
                             await sshExec("sed -i '/pyenv/d' ~/.bashrc");
                         } else {
                             const parg = getPythonVersion(value);
                             await writeLog("$> changing Python engine to " + parg.version);
-                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
-                            await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash) && source ~/.bash_profile");
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash); source ~/.bashrc");
+                            await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash); source ~/.bashrc");
                             if (parg.binary) {
                                 await sshExec(`cd ~/tmp && mkdir -p ~/.pyenv/versions/${parg.version}`);
                                 await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
@@ -432,7 +432,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await writeLog("$> removing Node engine");
                             await sshExec("rm -rf ~/.local/opt/node-* ~/.local/opt/node ~/Downloads/webi/node");
                             await sshExec("rm -rf ~/.cache/yarn ~/.cache/node ~/.config/yarn ~/.npm");
-                            await sshExec("pathman remove ~/.local/opt/node/bin && source ~/.bash_profile");
+                            await sshExec("pathman remove ~/.local/opt/node/bin ; source ~/.bashrc");
                         } else {
                             if (value == "latest" || value == "current") {
                                 arg = ""
@@ -442,8 +442,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                 arg = "@" + value
                             }
                             await writeLog("$> changing Node engine to " + (value || 'lts'));
-                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
-                            await sshExec("pathman add .local/opt/node/bin && source ~/.bash_profile");
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
+                            await sshExec("pathman add .local/opt/node/bin ; source ~/.bashrc");
                             await sshExec(`curl -sS https://webinstall.dev/node${arg} | bash`);
                             await sshExec("command -v corepack &> /dev/null || npm i -g corepack && corepack enable");
                             await sshExec("node --version");
@@ -454,7 +454,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         if (arg == 'off') {
                             await writeLog("$> removing Deno engine");
                             await sshExec("rm -rf ~/.local/opt/deno-* ~/.deno ~/.local/bin/deno ~/Downloads/webi/deno");
-                            await sshExec("pathman remove ~/.deno/bin/ && source ~/.bash_profile");
+                            await sshExec("pathman remove ~/.deno/bin/ ; source ~/.bashrc");
                         } else {
                             if (value == "latest" || value == "current") {
                                 arg = ""
@@ -464,9 +464,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                 arg = "@" + value
                             }
                             await writeLog("$> changing Deno engine to " + (value || 'stable'));
-                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`curl -sS https://webinstall.dev/deno${arg} | bash`);
-                            await sshExec("mkdir -p ~/.deno/bin/ && pathman add $_ && source ~/.bash_profile");
+                            await sshExec("mkdir -p ~/.deno/bin/ && pathman add $_ ; source ~/.bashrc");
                             await sshExec("deno --version");
                         }
                         break;
@@ -477,7 +477,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await writeLog("$> removing Golang engine");
                             await sshExec("chmod -R 0700 ~/.local/opt/go-*");
                             await sshExec("rm -rf ~/.local/opt/go-* ~/.cache/go-build ~/.local/opt/go ~/go ~/Downloads/webi/golang");
-                            await sshExec("pathman remove .local/opt/go/bin && source ~/.bash_profile");
+                            await sshExec("pathman remove .local/opt/go/bin ; source ~/.bashrc");
                         } else {
                             if (value == "latest" || value == "current") {
                                 arg = ""
@@ -487,8 +487,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                 arg = "@" + value
                             }
                             await writeLog("$> changing Golang engine to " + (value || 'stable'));
-                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
-                            await sshExec(`curl -sS https://webinstall.dev/golang${arg} | WEBI__GO_ESSENTIALS=true bash && source ~/.bash_profile`);
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
+                            await sshExec(`curl -sS https://webinstall.dev/golang${arg} | WEBI__GO_ESSENTIALS=true bash ; source ~/.bashrc`);
                             await sshExec("go version");
                         }
                         break;
@@ -497,13 +497,13 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         if (value == 'off') {
                             await writeLog("$> removing Rust engine");
                             await sshExec("rustup self uninstall -y");
-                            await sshExec("pathman remove $HOME/.cargo/bin && source ~/.bash_profile");
+                            await sshExec("pathman remove $HOME/.cargo/bin ; source ~/.bashrc");
                             break;
                         } else {
                             await writeLog(value ? "$> changing Rust engine to " + value : "$> installing Rust engine");
-                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal)`);
-                            await sshExec(`pathman add $HOME/.cargo/bin && source ~/.bash_profile`);
+                            await sshExec(`pathman add $HOME/.cargo/bin ; source ~/.bashrc`);
                             if (value) {
                                 await sshExec(`rustup toolchain install ${value} && rustup default ${value}`);
                             }
