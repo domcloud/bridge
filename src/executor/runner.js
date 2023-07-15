@@ -363,6 +363,30 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             }
                         }
                         break;
+                    case 'ftp':
+                        enabled = isFeatureEnabled('ftp');
+                        if (value === "off") {
+                            await writeLog("$> Disabling FTP");
+                            if (enabled) {
+                                await virtExec("disable-feature", value, {
+                                    domain,
+                                    ftp: true,
+                                });
+                            } else {
+                                await writeLog("Already disabled");
+                            }
+                        } else {
+                            if (!enabled) {
+                                await writeLog("$> Enabling FTP");
+                                await virtExec("enable-feature", value, {
+                                    domain,
+                                    ftp: true,
+                                });
+                            } else {
+                                await writeLog("FTP is already enabled");
+                            }
+                        }
+                        break;
                     case 'firewall':
                         if (process.env.MODE === 'dev') {
                             break;
@@ -390,9 +414,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) && source ~/.bash_profile");
                             await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash) && source ~/.bash_profile");
                             if (parg.binary) {
-                                await sshExec("cd ~/tmp", false);
+                                await sshExec(`cd ~/tmp && mkdir -p ~/.pyenv/versions/${parg.version}`);
                                 await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
-                                await sshExec(`mv python/install ~/.pyenv/versions/${parg.version} && rm -rf python`);
+                                await sshExec(`mv ~/tmp/python/install ~/.pyenv/versions/${parg.version} && rm -rf ~/tmp/python`);
                                 await sshExec(`(cd ~/.pyenv/versions/${parg.version}/bin && ln -s python3 python)`);
                                 await sshExec("cd ~/public_html", false);
                             } else {
