@@ -416,13 +416,13 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             if (parg.binary) {
                                 await sshExec(`cd ~/tmp && mkdir -p ~/.pyenv/versions/${parg.version}`);
                                 await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
-                                await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} && rm -rf ~/tmp/python`);
-                                await sshExec(`(cd ~/.pyenv/versions/${parg.version}/bin && ln -s python3 python)`);
+                                await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} || true ; rm -rf ~/tmp/python`);
+                                await sshExec(`(cd ~/.pyenv/versions/${parg.version}/bin && ln -s python3 python) || true`);
                                 await sshExec("cd ~/public_html", false);
                             } else {
                                 await sshExec(`pyenv install ${parg.version} -s`);
                             }
-                            await sshExec(`pyenv global ${parg.version.replace(":latest", "")}`);
+                            await sshExec(`pyenv global ${parg.version.replace(":latest", "")} ; source ~/.bashrc`);
                             await sshExec("python --version");
                         }
                         break;
@@ -529,7 +529,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
         }
         await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
-        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
+        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PIP_PROGRESS_BAR=off`, false);
         await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         if (config.subdomain) {
             await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, virtExec, await firewallStatus());
