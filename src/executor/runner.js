@@ -504,7 +504,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal)`);
                             await sshExec(`pathman add $HOME/.cargo/bin ; source ~/.bashrc`);
-                            if (value) {
+                            if (value && value != "stable" && value != "current" && value != "latest") {
                                 await sshExec(`rustup toolchain install ${value} && rustup default ${value}`);
                             }
                             await sshExec("rustc --version");
