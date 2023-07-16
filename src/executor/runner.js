@@ -523,6 +523,43 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec("ruby --version");
                         }
                         break;
+                    case 'bun':
+                        arg = value;
+                        if (arg == 'off') {
+                            await writeLog("$> removing Bun engine");
+                            await sshExec("chmod -R 0700 ~/.local/opt/bun-*");
+                            await sshExec("rm -rf ~/.local/opt/bun-* ~/.local/opt/bun ~/Downloads/webi/bun");
+                            await sshExec("pathman remove .local/opt/bun/bin ; source ~/.bashrc");
+                        } else {
+                            if (value == "latest" || value == "current" || !value || value == "lts") {
+                                arg = ""
+                            } else {
+                                arg = "@" + value
+                            }
+                            await writeLog("$> changing Bun engine to " + (value || 'latest'));
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
+                            await sshExec(`curl -sS https://webinstall.dev/bun${arg} | bash ; source ~/.bashrc`);
+                            await sshExec("bun --version");
+                        }
+                        break;
+                    case 'zig':
+                        arg = value;
+                        if (arg == 'off') {
+                            await writeLog("$> removing Zig engine");
+                            await sshExec("rm -rf ~/.local/opt/zig ~/Downloads/webi/zig");
+                            await sshExec("pathman remove .local/opt/zig/bin ; source ~/.bashrc");
+                        } else {
+                            if (value == "latest" || value == "current" || !value || value == "lts") {
+                                arg = ""
+                            } else {
+                                arg = "@" + value
+                            }
+                            await writeLog("$> changing Zig engine to " + (value || 'latest'));
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
+                            await sshExec(`curl -sS https://webinstall.dev/zig${arg} | bash ; source ~/.bashrc`);
+                            await sshExec("zig --version");
+                        }
+                        break;
                     default:
                         break;
                 }
