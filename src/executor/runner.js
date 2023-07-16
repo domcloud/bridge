@@ -560,6 +560,27 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec("zig --version");
                         }
                         break;
+                    case 'dotnet':
+                        arg = value;
+                        if (arg == 'off') {
+                            await writeLog("$> removing Dotnet engine");
+                            await sshExec("rm -rf ~/.dotnet");
+                            await sshExec("pathman remove .dotnet ; source ~/.bashrc");
+                        } else {
+                            if (value == "latest" || value == "current") {
+                                arg = "-- --version latest"
+                            } else if ( !value || value == "lts" || value == "stable") {
+                                arg = ""
+                            } else {
+                                arg = ''
+                            }
+                            await writeLog("$> changing Dotnet engine to " + (value || 'lts'));
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
+                            await sshExec(`curl -sS https://dot.net/v1/dotnet-install.sh | bash -s ${arg}`);
+                            await sshExec(`pathman add ~/.dotnet ; source ~/.bashrc`);
+                            await sshExec("dotnet --version");
+                        }
+                        break;
                     default:
                         break;
                 }
