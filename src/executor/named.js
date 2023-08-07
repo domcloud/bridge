@@ -81,7 +81,7 @@ const mapKey = {
 
 const getArrayOf = ( /** @type {any} */ file, /** @type {string} */ type) => {
     if (!arrayKey[type])
-        throw new Error('Unknown type');
+        throw new Error('Unknown type ' + type);
     return file[arrayKey[type]] || (file[arrayKey[type]] = []);
 }
 

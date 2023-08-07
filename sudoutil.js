@@ -207,8 +207,6 @@ switch (cli.args.shift()) {
         var services = [
             'nginx',
             ...[...fpmlist.map((f) => f + '-php-fpm')],
-            'iptables',
-            'ip6tables',
             'named',
             'webmin',
             'sshd',
