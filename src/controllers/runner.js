@@ -79,6 +79,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
                     signal: cancelController.signal,
                 });
             }
+        } catch (e) {
         } finally {
             if (!cancelController.signal.aborted)
                 periodicAbort = setTimeout(periodicSender, delay);
@@ -94,10 +95,13 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         cancelController.abort()
         periodicAbort && clearTimeout(periodicAbort);
         // and finish message with full log
-        if (callback)
+        if (callback) {
             axios.post(callback, trimPayload(normalizeShellOutput(fullLogData)), {
                 headers
+            }).catch(e => {
+                console.error(e);
             });
+        }
     });
     try {
         await runConfig(body || {}, domain + "", async (s) => {
