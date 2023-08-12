@@ -22,7 +22,7 @@ export default function () {
     });
     router.get('/list-all-domains', checkAuth, async function (req, res, next) {
         try {
-            let proc = await virtualminExec.execFormatted('list-domains', { 'name-only': true });
+            let proc = await virtualminExec.execFormatted('list-domains', { 'name-only': true, 'toplevel': true });
             res.send(proc.stdout.trim().split('\n'));
         } catch (error) {
             next(error);
