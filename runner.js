@@ -11,8 +11,11 @@ initUtils();
 
 const payload = JSON.parse(process.env.RUNNER_PAYLOAD);
 console.log(`Executing`, payload);
-const cleanUpServer = ( /** @type {any} */ code) => {
+const cleanUpServer = ( /** @type {any} */ code, msg) => {
     console.log(`Exiting runner node ${process.pid} with code ${code}`);
+    if (msg) {
+        console.log('Additional context: ' + JSON.stringify(msg, Object.getOwnPropertyNames(msg)));
+    }
 };
 [`exit`, `SIGINT`, `SIGUSR1`, `SIGUSR2`, `uncaughtException`, `SIGTERM`].forEach((eventType) => {
     process.on(eventType, cleanUpServer.bind(null, eventType));
