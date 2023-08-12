@@ -129,9 +129,9 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     }
 }
 
-const __filename = fileURLToPath(
-    import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+fs.mkdirSync(path.join(__dirname, '../../logs'), { recursive: true });
 const childLogger = fs.openSync(path.join(__dirname, `../../logs/${new Date().toISOString().substr(0, 10)}.log`), 'a');
 export async function runConfigInBackgroundSingleton(payload) {
     spawn('node', [path.join(process.cwd(), '/runner.js')], {

@@ -20,6 +20,14 @@ export default function () {
             next(error);
         }
     });
+    router.get('/list-all-domains', checkAuth, async function (req, res, next) {
+        try {
+            let proc = await virtualminExec.execFormatted('list-domains', 'name-only');
+            res.send(proc.stdout.trim().split('\n'));
+        } catch (error) {
+            next(error);
+        }
+    });
     router.get('/list-bandwidth', checkAuth, checkGet(['domain']), async function (req, res, next) {
         try {
             res.send(await virtualminExec.getBandwidthInfo(req.query.domain.toString().split(',')));
