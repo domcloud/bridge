@@ -73,9 +73,9 @@ class VirtualminExecutor {
         for (let line of data) {
             line = line.trimEnd();
             if (line.length >= 4 && line[0] === ' ') {
-                let pair = splitLimit(line.trimStart(), /:/g, 3);
-                if (pair.length === 3) {
-                    nesval[pair[0]] = parseInt(pair[2].trim());
+                let pair = /([\d-]+):.*web:(\d+)/.exec(line.trimStart());
+                if (pair && pair.length === 3) {
+                    nesval[pair[1]] = parseInt(pair[2]);
                 }
             } else if (line.length >= 1 && !line.includes(' ')) {
                 if (neskey) {
