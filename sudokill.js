@@ -11,7 +11,10 @@ const opts = cli.parse({
     ignore: ['i', 'Ignore user list', 'string', ''],
 });
 
-const output = exec('ps -eo user:20,pid,command --forest --no-headers').stdout.trim().split('\n');
+const output = exec('ps -eo user:20,pid,command --forest --no-headers', {
+    silent: true,
+    fatal: true,
+}).stdout.trim().split('\n');
 
 const ignoreUsers = opts.ignore.split(',')
     .map(x => x.trim())
