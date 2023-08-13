@@ -2,11 +2,12 @@
 
 // kill all processes that outside SSH and root
 
-import { exec } from "shelljs";
-import cli, { exit } from 'cli';
+import shelljs from 'shelljs';
+import cli from 'cli'
+const { exec } = shelljs;
 
 const opts = cli.parse({
-    dry: ['d', 'Dry run', 'bool', false],
+    test: ['t', 'Test mode', 'bool', false],
     ignore: ['i', 'Ignore user list', 'string', ''],
 });
 
@@ -41,11 +42,10 @@ let candidates = output
     .map(x => ({ user: x[1], pid: x[2], proc: x[0] }))
     .filter(x => !ignoreUsers[x.user]);
 
-if (opts.dry) {
+if (opts.test) {
     console.log(candidates.map(x => x.proc).join('\n'));
-    exit(0);
-}
-
-for (let x of candidates) {
-    exec(`kill -9 ${x.pid}`);
+} else {
+    for (let x of candidates) {
+        exec(`kill -9 ${x.pid}`);
+    }
 }
