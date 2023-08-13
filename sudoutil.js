@@ -213,6 +213,10 @@ switch (cli.args.shift()) {
             'crond',
             'mariadb',
             'postgresql',
+            'iptables',
+            'ip6tables',
+            'fail2ban',
+            'earlyoom',
         ]
         var statutes = exec(`systemctl is-failed ${services.join(' ')}`, { silent: true }).split('\n').filter((s) => s !== '');
 
