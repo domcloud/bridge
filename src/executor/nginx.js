@@ -60,12 +60,8 @@ class NginxExecutor {
                                 // expand home path
                                 vall = path.join(`/home/${info.user}`, config.passenger[key]);
                                 break;
-                            case "app_start_command":
-                                // add quote strings
-                                vall = escapeNginx(config.passenger[key]);
-                                break;
                             default:
-                                vall = config.passenger[key];
+                                vall = escapeNginx(config.passenger[key]);
                                 break;
                         }
                         node._add("passenger_" + key, vall);
@@ -159,20 +155,28 @@ class NginxExecutor {
                     const ke = k.slice("passenger_".length);
                     const ve = node[k][0]._value + '';
                     r.passenger = r.passenger || {};
-                    if (ke === "document_root" || ke === "app_root") {
-                        r.passenger[ke] = ve.slice(basepath.length);
-                    } else if (ke === "app_start_command") {
-                        r.passenger[ke] = unescapeNginx(ve);
-                    } else if (ke === "env_var") {
-                        r.passenger["env_var_list"] = r.passenger["env_var_list"] || [];
-                        for (const env of node[k]) {
-                            var splt = splitLimit(env._value, / /g, 2);
-                            if (splt.length == 2) {
-                                r.passenger["env_var_list"].push(splt[0] + '=' + unescapeNginx(splt[1]));
+                    switch (ke) {
+                        case "env_var":
+                            r.passenger["env_var_list"] = r.passenger["env_var_list"] || [];
+                            for (const env of node[k]) {
+                                var splt = splitLimit(env._value, / /g, 2);
+                                if (splt.length == 2) {
+                                    r.passenger["env_var_list"].push(splt[0] + '=' + unescapeNginx(splt[1]));
+                                }
                             }
-                        }
-                    } else {
-                        r.passenger[ke] = ve;
+                            break;
+                        case "document_root":
+                        case "app_root":
+                        case "ruby":
+                        case "nodejs":
+                        case "python":
+                        case "meteor_app_settings":
+                            // expand home path
+                            r.passenger[ke] = ve.slice(basepath.length);
+                            break;
+                        default:
+                            r.passenger[ke] = unescapeNginx(ve);
+                            break;
                     }
                 }
                 if (locationKeys.includes(k)) {
@@ -289,6 +293,8 @@ class NginxExecutor {
                     spawnSudoUtil('NGINX_SET', [domain]).then(() => {
                         resolve("Done updated\n" + node.toString());
                     }).catch((err) => {
+                        if (err && err.stderr && err.stderr.includes('nginx: [emerg]')) {
+                        }
                         reject(err);
                     })
                 });
@@ -316,9 +322,15 @@ class NginxExecutor {
                     }
                     const info = this.extractInfo(node, domain);
                     if (ssl) {
+                        if (!["off", "always", "on"].includes(ssl)) {
+                            return reject(new Error(`Invalid ssl value ${ssl}`));
+                        }
                         info.config.ssl = ssl;
                     }
                     if (http) {
+                        if (!["1", "2"].includes(http)) {
+                            return reject(new Error(`Invalid http value ${http}`));
+                        }
                         info.config.http = http;
                     }
                     this.applyInfo(node, info);

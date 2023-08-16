@@ -57,7 +57,7 @@ function trimPayload(payload) {
 }
 export async function runConfigInBackground(body, domain, sandbox, callback) {
     let fullLogData = [],
-        chunkedLogData = ['Running runner... Please wait...\n'],
+        chunkedLogData = ['Running deployment script... Please wait...\n'],
         delay = 5000,
         startTime = Date.now();
     const write = new PassThrough();

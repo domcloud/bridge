@@ -414,6 +414,8 @@ export const unescapeNginx = function ( /** @type {string} */ str) {
     try {
         if (/^".*"$/.test(str)) {
             return JSON.parse(str);
+        } else if (/'.*'/.test(str)) {
+            return str.substring(1, str.length - 1);
         } else {
             return str;
         }
