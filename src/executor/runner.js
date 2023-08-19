@@ -732,14 +732,15 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 source.branch = decodeURI(url.hash.substring(1));
                 url.hash = '';
             }
-            if (!source.credential && config.envs) {
-                for (const HOST of ['GITHUB', 'GITLAB', 'BITBUCKET']) {
-                    if (url.hostname.includes(HOST.toLowerCase()) && config.envs[`${HOST}_USER`] && config.envs[`${HOST}_TOKEN`]) {
-                        await sshExec(`export ${HOST}_USER=${config.envs[`${HOST}_USER`]} ${HOST}_TOKEN=${config.envs[`${HOST}_TOKEN`]}`, false);
-                        executedCMD.push(`printf '#!/bin/bash\\necho username=$${HOST}_USER\\necho password=$${HOST}_TOKEN' > ~/.git-credential-helper.sh`);
-                        executedCMD.push(`git config --global credential.helper "/bin/bash ~/.git-credential-helper.sh"`);
-                    }
-                }
+            if (source.credential.github.ssh) {
+                const filename = '~/.ssh/id_github_com';
+                const configFileContent = `Host github.com\n\tStrictHostKeyChecking no\n\tIdentityFile ${filename}\n`;
+                await writeLog("$> writing SSH private key for cloning github.com repository");
+                await sshExec(`echo "${Buffer.from(source.credential.github.ssh).toString('base64')}" | base64 --decode > "${filename}"`, false);
+                // delete old config https://stackoverflow.com/a/36111659/3908409
+                await sshExec(`sed 's/^Host/\\n&/' file | sed '/^Host '"github.com"'$/,/^$/d;/^$/d' > ~/.ssh/config`, false);
+                await sshExec(`echo "${Buffer.from(configFileContent).toString('base64')}" | base64 --decode >> ~/.ssh/config`, false);
+                await sshExec(`chmod 0600 "${filename}" "~/.ssh/config"`, false);
             }
             executedCMD.push(`git clone ${escapeShell(url.toString())}` +
                 `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
