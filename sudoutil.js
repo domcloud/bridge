@@ -260,7 +260,7 @@ switch (cli.args.shift()) {
             },
             logs: {
                 cpuinfo: chkcpu.stdout.trim().split('\n'),
-                meminfo: chkmem.stdout.trim().split('\n'),
+                meminfo: chkmem.stdout.trimEnd().split('\n'),
                 storage: storage.stdout.trim().split('\n'),
                 inodes: inodes.stdout.trim().split('\n'),
                 nginx: nginx.stderr.trim().split('\n'),
