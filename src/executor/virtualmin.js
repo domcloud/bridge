@@ -1,13 +1,10 @@
-import shelljs from "shelljs";
 import {
+    cat,
     escapeShell,
     spawnSudoUtil,
     spawnSudoUtilAsync,
     splitLimit
 } from "../util.js";
-const {
-    cat
-} = shelljs;
 
 class VirtualminExecutor {
     /**

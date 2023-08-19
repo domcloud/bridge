@@ -1,13 +1,12 @@
 root: public_html/public
 nginx:
   locations:
-    match: /phpmyadmin/
-    root: public_html
-    fastcgi: on
-  locations:
-    match: /phppgadmin/
-    root: public_html
-    fastcgi: on
+    - match: /phpmyadmin/
+      root: public_html
+      fastcgi: on
+    - match: /phppgadmin/
+      root: public_html
+      fastcgi: on
   webssh:
     match: /webssh/
     root: public_html/webssh/webssh/static

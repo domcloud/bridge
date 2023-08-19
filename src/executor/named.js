@@ -1,20 +1,16 @@
 import {
     appendIfNotExist,
+    cat,
     deleteIfNotExist,
     executeLock,
-    spawnSudoUtil
+    spawnSudoUtil,
+    writeTo
 } from '../util.js';
 import {
     generate,
     parse
 } from '../parsers/named.js';
-import shelljs from 'shelljs';
 import path from 'path';
-
-const {
-    cat,
-    ShellString
-} = shelljs;
 
 const tmpFile = path.join(process.cwd(), '/.tmp/named')
 
@@ -121,7 +117,7 @@ class NamedExecutor {
                 return "Done unchanged";
             }
             file.soa.serial++;
-            ShellString(generate(file)).to(tmpFile);
+            writeTo(tmpFile, generate(file));
             await spawnSudoUtil('NAMED_SET', [zone]);
             return "Done updated";
         });
@@ -142,7 +138,7 @@ class NamedExecutor {
                 return "Done unchanged";
             }
             file.soa.serial++;
-            ShellString(generate(file)).to(tmpFile);
+            writeTo(tmpFile, generate(file));
             await spawnSudoUtil('NAMED_SET', ["" + zone]);
             return "Done updated";
         });
@@ -182,7 +178,7 @@ class NamedExecutor {
             }
             file.soa.serial++;
             var result = generate(file);
-            ShellString(result).to(tmpFile);
+            writeTo(tmpFile, result);
             await spawnSudoUtil('NAMED_SET', ["" + zone]);
             return `Done updating ${changecount} records\n${result}`;
         });

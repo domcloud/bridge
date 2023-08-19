@@ -1,4 +1,5 @@
 import {
+    cat,
     getRevision,
     getSupportVersions,
     getVersion,
@@ -6,12 +7,6 @@ import {
 } from '../util.js';
 import express from 'express';
 import path from 'path';
-import shelljs from 'shelljs';
-
-const {
-    cat,
-    ShellString
-} = shelljs;
 
 const tmpCheck = path.join(process.cwd(), '/.tmp/check')
 const tmpTest = path.join(process.cwd(), '/.tmp/test')

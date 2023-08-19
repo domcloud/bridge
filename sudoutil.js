@@ -240,6 +240,8 @@ switch (cli.args.shift()) {
         var storagefull = /\b(9[5-9]|100)%/.test(storage.stdout);
         var inodes = exec(`df -i | grep ^/dev`, { silent: true });
         var inodesfull = /\b(9[5-9]|100)%/.test(inodes.stdout);
+        var chkmem = exec(`free -h`, { silent: true });
+        var chkcpu = exec(`uptime`, { silent: true })
 
         var exitcode = 0;
         if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
@@ -257,9 +259,11 @@ switch (cli.args.shift()) {
                 inodes: inodesfull ? 1 : 0,
             },
             logs: {
-                nginx: nginx.stderr.trim().split('\n'),
+                cpuinfo: chkcpu.stdout.trim().split('\n'),
+                meminfo: chkmem.stdout.trim().split('\n'),
                 storage: storage.stdout.trim().split('\n'),
                 inodes: inodes.stdout.trim().split('\n'),
+                nginx: nginx.stderr.trim().split('\n'),
                 fpms: fpms.map((f) => f.stderr.trim()),
                 iptables: iptables.stderr.trim().split('\n'),
                 ip6tables: ip6tables.stderr.trim().split('\n'),

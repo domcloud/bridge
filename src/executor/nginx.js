@@ -1,20 +1,18 @@
 import {
+    cat,
     escapeNginx,
     executeLock,
     spawnSudoUtil,
     splitLimit,
-    unescapeNginx
+    unescapeNginx,
+    writeTo
 } from '../util.js';
 import path from 'path';
-import shelljs from 'shelljs';
 import {
     NginxConfFile
 } from 'nginx-conf';
+
 const tmpFile = path.join(process.cwd(), '/.tmp/nginx')
-const {
-    cat,
-    ShellString
-} = shelljs;
 
 const passengerKeys = [
     'enabled', 'app_env', 'env_var_list', 'app_start_command',
@@ -289,7 +287,7 @@ class NginxExecutor {
                     const info = this.extractInfo(node, domain);
                     info.config = config;
                     this.applyInfo(node, info);
-                    ShellString(conf.toString()).to(tmpFile);
+                    writeTo(tmpFile, conf.toString());
                     spawnSudoUtil('NGINX_SET', [domain]).then(() => {
                         resolve("Done updated\n" + node.toString());
                     }).catch((err) => {
@@ -334,7 +332,7 @@ class NginxExecutor {
                         info.config.http = http;
                     }
                     this.applyInfo(node, info);
-                    ShellString(conf.toString()).to(tmpFile);
+                    writeTo(tmpFile, conf.toString());
                     spawnSudoUtil('NGINX_SET', [domain]).then(() => {
                         resolve("Done updated\n" + node.toString());
                     }).catch((err) => {

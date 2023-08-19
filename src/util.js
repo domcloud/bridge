@@ -43,7 +43,7 @@ export const initUtils = () => {
     revision = revision.substring(0, 7);
     axios.get('https://www.php.net/releases/?json').then(res => {
         Object.values(res.data).forEach(v => {
-            v.supported_versions.forEach(ver => {
+            v.supported_versions.forEach((/** @type {string} */ ver) => {
                 if (!phpVersionsList.includes(ver)) {
                     phpVersionsList.push(ver);
                 }
@@ -317,6 +317,10 @@ export const executeLock = function (
     });
 }
 // Returns whether an object has a given set of `key:value` pairs.
+/**
+ * @param {any} object
+ * @param {Record<string, any>} attrs
+ */
 export function isMatch(object, attrs) {
     var _keys = Object.keys(attrs),
         length = _keys.length;
@@ -456,4 +460,25 @@ export function splitLimit(/** @type {string} */ input,/** @type {string|RegExp}
 export function sortSemver(arr) {
     return arr.map(a => a.split('.').map(n => +n + 100000).join('.')).sort()
         .map(a => a.split('.').map(n => +n - 100000).join('.'));
+}
+
+/**
+ * @param {fs.PathOrFileDescriptor} path
+ * @returns {string}
+ */
+export function cat(path) {
+    return fs.readFileSync(path, {
+        encoding: 'utf-8'
+    });
+}
+
+
+/**
+ * @param {fs.PathOrFileDescriptor} path
+ * @param {string | NodeJS.ArrayBufferView} content
+ */
+export function writeTo(path, content) {
+    fs.writeFileSync(path, content, {
+        encoding: 'utf-8'
+    });
 }

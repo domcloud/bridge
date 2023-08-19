@@ -1,22 +1,18 @@
 import {
+    cat,
     appendIfNotExist,
     deleteIfNotExist,
     executeLock,
-    spawnSudoUtil
+    spawnSudoUtil,
+    writeTo
 } from '../util.js';
 import {
     encodeIPTables,
     parseIptablesDoc
 } from '../parsers/iptables.js';
-import shelljs from 'shelljs';
 import path from 'path';
 const tmpFile = path.join(process.cwd(), '/.tmp/iptables')
 const tmpFile6 = path.join(process.cwd(), '/.tmp/ip6tables')
-
-const {
-    cat,
-    ShellString
-} = shelljs;
 
 class IptablesExecutor {
     getRaw(parsed) {
@@ -50,7 +46,7 @@ class IptablesExecutor {
                 })) {
                 return "Done unchanged for iptables";
             }
-            ShellString(encodeIPTables(p)).to(tmpFile);
+            writeTo(tmpFile, encodeIPTables(p));
             await spawnSudoUtil('IPTABLES_SET');
             return "Updated for iptables";
         });
@@ -66,7 +62,7 @@ class IptablesExecutor {
                 })) {
                 return "Done unchanged for ip6tables";
             }
-            ShellString(encodeIPTables(p)).to(tmpFile6);
+            writeTo(tmpFile6, encodeIPTables(p));
             await spawnSudoUtil('IP6TABLES_SET');
             return "Updated for ip6tables";
         });
@@ -85,7 +81,7 @@ class IptablesExecutor {
                 })) {
                 return "Done unchanged for iptables";
             }
-            ShellString(encodeIPTables(p)).to(tmpFile);
+            writeTo(tmpFile, encodeIPTables(p));
             await spawnSudoUtil('IPTABLES_SET');
             return "Updated for iptables";
         });
@@ -101,7 +97,7 @@ class IptablesExecutor {
                 })) {
                 return "Done unchanged for ip6tables";
             }
-            ShellString(encodeIPTables(p)).to(tmpFile6);
+            writeTo(tmpFile6, encodeIPTables(p));
             await spawnSudoUtil('IP6TABLES_SET');
             return "Updated for ip6tables";
         });
