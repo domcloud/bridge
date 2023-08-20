@@ -740,7 +740,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 // delete old config https://stackoverflow.com/a/36111659/3908409
                 await sshExec(`sed 's/^Host/\\n&/' file | sed '/^Host '"github.com"'$/,/^$/d;/^$/d' > ~/.ssh/config`, false);
                 await sshExec(`echo "${Buffer.from(configFileContent).toString('base64')}" | base64 --decode >> ~/.ssh/config`, false);
-                await sshExec(`chmod 0600 "${filename}" "~/.ssh/config"`, false);
+                await sshExec(`chmod 0600 $HOME/.ssh/{id_github_com,config}`, false);
             }
             executedCMD.push(`git clone ${escapeShell(url.toString())}` +
                 `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
