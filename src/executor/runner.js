@@ -702,7 +702,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             };
         }
         const source = config.source;
-        if (source.url !== 'clear' && !source.url.match(/^(?:(?:https?|ftp):\/\/)?([^\/]+)/)) {
+        if (source.url !== 'clear' && !source.url.match(/^(?:(?:https?|ftp|ssh):\/\/)?([^\/]+)/)) {
             throw new Error("Invalid source URL");
         }
         if (config.directory && !source.directory) {
@@ -713,7 +713,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         if (source.url !== 'clear') {
             url = new URL(source.url);
             if (!source.type || !['clone', 'extract'].includes(source.type)) {
-                if (url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip'))) {
+                if (url.protocol == 'ssh' || url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip'))) {
                     source.type = 'clone';
                 } else {
                     source.type = 'extract';
@@ -732,11 +732,11 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 source.branch = decodeURI(url.hash.substring(1));
                 url.hash = '';
             }
-            if (source.credential.github.ssh) {
+            if (source.credentials?.github?.ssh) {
                 const filename = '~/.ssh/id_github_com';
                 const configFileContent = `Host github.com\n\tStrictHostKeyChecking no\n\tIdentityFile ${filename}\n`;
                 await writeLog("$> writing SSH private key for cloning github.com repository");
-                await sshExec(`echo "${Buffer.from(source.credential.github.ssh).toString('base64')}" | base64 --decode > "${filename}"`, false);
+                await sshExec(`echo "${Buffer.from(source.credentials.github.ssh).toString('base64')}" | base64 --decode > "${filename}"`, false);
                 // delete old config https://stackoverflow.com/a/36111659/3908409
                 await sshExec(`sed 's/^Host/\\n&/' file | sed '/^Host '"github.com"'$/,/^$/d;/^$/d' > ~/.ssh/config`, false);
                 await sshExec(`echo "${Buffer.from(configFileContent).toString('base64')}" | base64 --decode >> ~/.ssh/config`, false);
