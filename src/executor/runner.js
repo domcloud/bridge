@@ -736,11 +736,12 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 const filename = '~/.ssh/id_github_com';
                 const configFileContent = `Host github.com\n\tStrictHostKeyChecking no\n\tIdentityFile ${filename}\n`;
                 await writeLog("$> writing SSH private key for cloning github.com repository");
-                await sshExec(`echo "${Buffer.from(source.credentials.github.ssh).toString('base64')}" | base64 --decode > "${filename}"`, false);
+                await sshExec(`mkdir -p ~/.ssh`);
+                await sshExec(`echo "${Buffer.from(source.credentials.github.ssh).toString('base64')}" | base64 --decode > "${filename}"`, true);
                 // delete old config https://stackoverflow.com/a/36111659/3908409
-                await sshExec(`sed 's/^Host/\\n&/' file | sed '/^Host '"github.com"'$/,/^$/d;/^$/d' > ~/.ssh/config`, false);
-                await sshExec(`echo "${Buffer.from(configFileContent).toString('base64')}" | base64 --decode >> ~/.ssh/config`, false);
-                await sshExec(`chmod 0600 $HOME/.ssh/{id_github_com,config}`, false);
+                await sshExec(`sed 's/^Host/\\n&/' ~/.ssh/config | sed '/^Host '"github.com"'$/,/^$/d;/^$/d' > ~/.ssh/config`, true);
+                await sshExec(`echo "${Buffer.from(configFileContent).toString('base64')}" | base64 --decode >> ~/.ssh/config`, true);
+                await sshExec(`chmod 0600 $HOME/.ssh/{id_github_com,config}`, true);
             }
             executedCMD.push(`git clone ${escapeShell(url.toString())}` +
                 `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
