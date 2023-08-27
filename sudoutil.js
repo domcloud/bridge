@@ -185,7 +185,7 @@ switch (cli.args.shift()) {
         setTimeout(() => {
             // just in case
             if (!sudo.killed)
-            sudo.kill();
+                sudo.kill();
         }, 1000 * 60 * 60).unref();
         break;
     case 'SHELL_INTERACTIVE':
@@ -230,6 +230,20 @@ switch (cli.args.shift()) {
         })).to(env.SHELLCHECK_TMP);
         exit(0);
     case 'SHELL_TEST':
+        var isDfFull = function (df) {
+            var r = /([\d\.]+[GMK]?)\s+\d+%/g;
+            var m;
+            while (m = r.exec(df)) {
+                if (!m) return false;
+                var size = parseFloat(m[1].slice(0, -1));
+                var unit = m[1].slice(-1);
+                size = size * (unit === 'T' ? 1024 * 1024 : unit === 'G' ? 1024 : unit === 'M' ? 1 : 0.001);
+                if (size < 1536) {
+                    return true;
+                }
+            }
+            return false;
+        }
         var nginx = exec(`${env.NGINX_BIN} -t`, { silent: true });
         var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
         var fpmpaths = fpmlist.map((f) => env.PHPFPM_REMILOC.replace('$', f));
@@ -237,9 +251,8 @@ switch (cli.args.shift()) {
         var iptables = exec(`${env.IPTABLES_LOAD} -t ${env.IPTABLES_PATH}`, { silent: true });
         var ip6tables = exec(`${env.IP6TABLES_LOAD} -t ${env.IP6TABLES_PATH}`, { silent: true });
         var storage = exec(`df -h | grep ^/dev`, { silent: true });
-        var storagefull = /\b(9[5-9]|100)%/.test(storage.stdout);
         var inodes = exec(`df -i | grep ^/dev`, { silent: true });
-        var inodesfull = /\b(9[5-9]|100)%/.test(inodes.stdout);
+        var storagefull = isDfFull(storage.stdout);
         var chkmem = exec(`free -h`, { silent: true });
         var chkcpu = exec(`uptime`, { silent: true })
 
@@ -256,7 +269,6 @@ switch (cli.args.shift()) {
                 iptables: iptables.code,
                 ip6tables: ip6tables.code,
                 storage: storagefull ? 1 : 0,
-                inodes: inodesfull ? 1 : 0,
             },
             logs: {
                 cpuinfo: chkcpu.stdout.trim().split('\n'),
