@@ -228,6 +228,21 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                 domain,
                             });
                             break;
+                        case 'backup':
+                            await writeLog("$> virtualmin backup-domain");
+                            await virtExec("backup-domain", value, {
+                                domain,
+                                'all-features': !value.features,
+                                'as-owner': true,
+                            });
+                            break;
+                        case 'restore':
+                            await writeLog("$> virtualmin restore-domain");
+                            await virtExec("restore-domain", value, {
+                                domain,
+                                'reuid': true,
+                            });
+                            break;
                         case 'delete':
                             await writeLog("$> virtualmin delete-domain");
                             await virtExec("delete-domain", value, {
