@@ -25,7 +25,7 @@ import {
 } from "./virtualmin.js";
 
 // TODO: Need to able to customize this
-const maxExecutionTime = 600000;
+const maxExecutionTime = 900000;
 
 /**
  * @param {any} config
