@@ -708,8 +708,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             return;
         }
     }
-    await sshExec(`export DOMAIN='${subdomain}'`, false);
-    await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);
+    if (config.source || config.commands) {
+        await sshExec(`export DOMAIN='${subdomain}'`, false);
+        await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);    
+    }
     if (config.source) {
         if (typeof config.source === 'string') {
             config.source = {
@@ -728,7 +730,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         if (source.url !== 'clear') {
             url = new URL(source.url);
             if (!source.type || !['clone', 'extract'].includes(source.type)) {
-                if (url.protocol == 'ssh' || url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip'))) {
+                if (url.protocol == 'ssh' || url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip') && !url.pathname.endsWith('.tar.gz'))) {
                     source.type = 'clone';
                 } else {
                     source.type = 'extract';
@@ -766,8 +768,13 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 source.directory = decodeURI(url.hash.substring(1));
                 url.hash = '';
             }
-            executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
-            executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);
+            if (url.pathname.endsWith('.tar.gz')) {
+                executedCMD.push(`wget -O _.tar.gz ` + escapeShell(url.toString()));
+                executedCMD.push(`tar –xvzf _.tar.gz ; rm _.tar.gz ; chmod -R 0750 *`);
+            } else {
+                executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
+                executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);    
+            }
             if (source.directory) {
                 executedCMD.push(`mv ${escapeShell(source.directory)}/* .`);
                 executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);

@@ -1,6 +1,6 @@
 {
   "name": "domcloud-bridge",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "description": "Deployment runner for DOM Cloud",
   "main": "app.js",
   "engines": {
