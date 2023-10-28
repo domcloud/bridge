@@ -770,7 +770,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             }
             if (url.pathname.endsWith('.tar.gz')) {
                 executedCMD.push(`wget -O _.tar.gz ` + escapeShell(url.toString()));
-                executedCMD.push(`tar –xvzf _.tar.gz ; rm _.tar.gz ; chmod -R 0750 *`);
+                executedCMD.push(`tar -xvzf _.tar.gz ; rm _.tar.gz ; chmod -R 0750 *`);
             } else {
                 executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
                 executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);    
