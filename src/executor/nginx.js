@@ -275,8 +275,6 @@ class NginxExecutor {
             await spawnSudoUtil('NGINX_GET', [domain]);
             return await new Promise((resolve, reject) => {
                 var src = cat(tmpFile).toString();
-                // https://github.com/virtualmin/virtualmin-nginx/issues/18
-                src = src.replace(/ default_server/g, '');
                 NginxConfFile.createFromSource(src, (err, conf) => {
                     if (err)
                         return reject(err);
@@ -291,8 +289,33 @@ class NginxExecutor {
                     spawnSudoUtil('NGINX_SET', [domain]).then(() => {
                         resolve("Done updated\n" + node.toString());
                     }).catch((err) => {
-                        if (err && err.stderr && err.stderr.includes('nginx: [emerg]')) {
-                        }
+                        reject(err);
+                    })
+                });
+            });
+        })
+    }
+    /**
+     * @param {string} domain
+     * @param {any} info
+     */
+    async setDirect(domain, info) {
+        return await executeLock('nginx', async () => {
+            await spawnSudoUtil('NGINX_GET', [domain]);
+            return await new Promise((resolve, reject) => {
+                var src = cat(tmpFile).toString();
+                NginxConfFile.createFromSource(src, (err, conf) => {
+                    if (err)
+                        return reject(err);
+                    const node = conf.nginx.server[0];
+                    if (!node) {
+                        return reject(new Error(`Cannot find domain ${domain}`));
+                    }
+                    this.applyInfo(node, info);
+                    writeTo(tmpFile, conf.toString());
+                    spawnSudoUtil('NGINX_SET', [domain]).then(() => {
+                        resolve("Done updated\n" + node.toString());
+                    }).catch((err) => {
                         reject(err);
                     })
                 });

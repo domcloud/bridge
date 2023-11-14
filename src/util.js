@@ -15,6 +15,10 @@ let pythonVersionsList = [];
  * @type {Record<string, string>}
  */
 let pythonVersionsMap = {};
+/**
+ * @type {Record<string, string>}
+ */
+let sslWildcardsMap = {};
 const pythonConstants = {
     // https://raw.githubusercontent.com/indygreg/python-build-standalone/latest-release/latest-release.json
     tag: "20230507",
@@ -41,6 +45,13 @@ export const initUtils = () => {
     const rev = fs.readFileSync('.git/HEAD').toString().trim();
     revision = rev.indexOf(':') === -1 ? rev : fs.readFileSync('.git/' + rev.substring(5)).toString().trim();
     revision = revision.substring(0, 7);
+    sslWildcardsMap = process.env.SSL_WILDCARDS ? process.env.SSL_WILDCARDS.split(',').reduce((a, b) => {
+        var splits = b.split(':');
+        if (splits.length == 2) {
+            a[splits[0].toLowerCase()] = splits[1];
+        }
+        return a;
+    }, {}) : {};
     axios.get('https://www.php.net/releases/?json').then(res => {
         Object.values(res.data).forEach(v => {
             v.supported_versions.forEach((/** @type {string} */ ver) => {
@@ -481,4 +492,20 @@ export function writeTo(path, content) {
     fs.writeFileSync(path, content, {
         encoding: 'utf-8'
     });
+}
+
+export function detectCanShareSSL(subdomain) {
+    const subdomainParts = subdomain.split('.');
+    for (const domain of Object.keys(sslWildcardsMap)) {
+
+        // Split the domain strings into arrays of subdomains
+        const domainParts = domain.split('.');
+
+        // Check if the subdomain has exactly one more part than the domain
+        if (subdomainParts.length === domainParts.length + 1 &&
+            subdomain.endsWith(`.${domain}`)) {
+            return sslWildcardsMap[domain]
+        }
+    }
+    return null;
 }

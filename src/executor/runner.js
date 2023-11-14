@@ -1,5 +1,6 @@
 import path from "path";
 import {
+    detectCanShareSSL,
     escapeShell,
     getDbName,
     getLtsPhp,
@@ -661,13 +662,47 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);
                 break;
             case 'ssl':
+                // ssl now also fix any misconfigurations
                 if (process.env.MODE === 'dev') {
                     break;
                 }
-                if (['off', 'always', 'enforce', 'on'].includes(value)) {
+                let regenerateSsl = false;
+                let expectedSslMode = null;
+                if (['off', 'always', 'on'].includes(value)) {
+                    expectedSslMode = expectedSslMode;
+                } else if (value == 'letsencrypt') {
+                    regenerateSsl = true;
+                }
+                var nginxNodes = await nginxExec.get(subdomain);
+                var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
+                var sharedSSL = regenerateSsl ? null : detectCanShareSSL(subdomain);
+                var changed = false;
+                var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.cert') : domaindata['SSL cert file'];
+                var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : domaindata['SSL key file'];
+                if (!expectCert || !expectKey) {
+                    expectedSslMode = 'off';
+                }
+                if (expectCert != nginxInfos.ssl_certificate) {
+                    nginxInfos.ssl_certificate = expectCert
+                    changed = true;
+                }
+                if (expectKey != nginxInfos.ssl_certificate_key) {
+                    nginxInfos.ssl_certificate_key = expectKey
+                    changed = true;
+                }
+                if (domaindata['HTML directory'] != nginxInfos.root) {
+                    nginxInfos.root = domaindata['HTML directory']
+                    changed = true;
+                }
+                if (expectedSslMode && expectedSslMode != ["", "off", "always", "on"][nginxInfos.ssl]) {
+                    nginxInfos.config.ssl = expectedSslMode
+                    changed = true;
+                }
+                if (changed) {
                     await writeLog("$> Applying nginx ssl config on " + subdomain);
-                    await writeLog(await nginxExec.setSsl(subdomain, value, ""));
-                } else if (value == 'letsencrypt' || !value) {
+                    await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
+                }
+                if (regenerateSsl || (!expectedSslMode && !sharedSSL)) {
                     await writeLog("$> generating ssl cert with let's encrypt");
                     await spawnSudoUtil('OPENSSL_CLEAN');
                     await virtExec("generate-letsencrypt-cert", {

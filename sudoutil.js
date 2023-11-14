@@ -174,6 +174,14 @@ switch (cli.args.shift()) {
         arg = cli.args.shift();
         exec(`${env.BASH_KILL} ${arg}`, { shell: '' }).code;
         exit(0);
+    case 'SHELL_EXISTS':
+        arg = cli.args.shift();
+        for (const path of cli.args) {
+            if (!existsSync(path)) {
+                exit(1);
+            }
+        }
+        exit(0);
     case 'SHELL_SUDO':
         arg = cli.args.shift();
         var sudo = spawn(env.BASH_SUDO, ['-u', arg, '-i', ...cli.args], {
