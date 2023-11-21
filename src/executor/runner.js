@@ -667,17 +667,20 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     break;
                 }
                 let regenerateSsl = false;
+                let selfSignSsl = false;
                 let expectedSslMode = null;
                 if (['off', 'always', 'on'].includes(value)) {
                     expectedSslMode = value;
-                } else if (value == 'letsencrypt') {
+                } else if (value == 'letsencrypt' || value == 'lets-encrypt') {
                     regenerateSsl = true;
+                } else if (value == 'selfsign' || value == 'self-sign') {
+                    selfSignSsl = true;
                 }
                 var nginxNodes = await nginxExec.get(subdomain);
                 var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
                 var sharedSSL = regenerateSsl ? null : detectCanShareSSL(subdomain);
                 var changed = false;
-                var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.cert') : domaindata['SSL cert file'];
+                var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : domaindata['SSL cert and CA file'];
                 var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : domaindata['SSL key file'];
                 if (!expectCert || !expectKey) {
                     expectedSslMode = 'off';
@@ -702,7 +705,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog("$> Applying nginx ssl config on " + subdomain);
                     await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
                 }
-                if (regenerateSsl || (!expectedSslMode && !sharedSSL)) {
+                if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
                     await writeLog("$> Generating ssl cert with let's encrypt");
                     await spawnSudoUtil('OPENSSL_CLEAN');
                     await virtExec("generate-letsencrypt-cert", {
@@ -710,7 +713,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         'renew': 2,
                         'web': true,
                     });
-                } else if (sharedSSL && domaindata['Lets Encrypt renewal'] == 'Enabled') {
+                } else if ((selfSignSsl || sharedSSL) && domaindata['Lets Encrypt renewal'] == 'Enabled') {
                     await writeLog("$> Generating self signed cert and turning off let's encrypt renewal");
                     await virtExec("generate-cert", {
                         domain: subdomain,
