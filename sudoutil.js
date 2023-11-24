@@ -238,11 +238,12 @@ switch (cli.args.shift()) {
         })).to(env.SHELLCHECK_TMP);
         exit(0);
     case 'SHELL_TEST':
-        var isDfFull = function (df) {
-            var r = /([\d\.]+[GMK]?)\s+\d+%/g;
+        var isDfFull = function (/** @type {string} */ df) {
+            var r = /([\d\.]+[GMK]?)\s+\d+% +(.+)/g;
             var m;
             while (m = r.exec(df)) {
                 if (!m) return false;
+                if ((m[2] || '').startsWith('/boot')) return false;
                 var size = parseFloat(m[1].slice(0, -1));
                 var unit = m[1].slice(-1);
                 size = size * (unit === 'T' ? 1024 * 1024 : unit === 'G' ? 1024 : unit === 'M' ? 1 : 0.001);
