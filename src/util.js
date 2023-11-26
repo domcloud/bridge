@@ -535,8 +535,8 @@ export function splitLimit(/** @type {string} */ input,/** @type {string|RegExp}
  * @param {string[]} arr
  */
 export function sortSemver(arr) {
-    return arr.map(a => a.split('.').map(n => +n + 100000).join('.')).sort()
-        .map(a => a.split('.').map(n => +n - 100000).join('.'));
+    return arr.map(a => a.replace(/\d+/g, n => +n+100000+'')).sort()
+        .map(a => a.replace(/\d+/g, n => +n-100000+''));
 }
 
 /**
