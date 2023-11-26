@@ -3,6 +3,7 @@ import {
     detectCanShareSSL,
     escapeShell,
     getDbName,
+    getJavaVersion,
     getLtsPhp,
     getPythonVersion,
     getRevision,
@@ -560,17 +561,42 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await sshExec("pathman remove ~/.dotnet");
                         } else {
                             if (value == "latest" || value == "current") {
-                                arg = "-- --version latest"
+                                arg = "--version latest"
                             } else if ( !value || value == "lts" || value == "stable") {
-                                arg = ""
+                                arg = "--channel LTS"
+                            } else if ( value == "sts") {
+                                arg = "--channel STS"
                             } else {
-                                arg = ''
+                                arg = '--channel ' + value;
                             }
                             await writeLog("$> changing Dotnet engine to " + (value || 'lts'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
-                            await sshExec(`curl -sS https://dot.net/v1/dotnet-install.sh | bash -s ${arg}`);
+                            await sshExec(`wget https://dot.net/v1/dotnet-install.sh -O ~/tmp/dotnet-install.sh && bash ~/tmp/dotnet-install.sh ${arg}`);
                             await sshExec(`pathman add ~/.dotnet ; source ~/.config/envman/PATH.env`);
                             await sshExec("dotnet --version");
+                        }
+                        break;
+                    case 'jdk':
+                    case 'java':
+                        arg = value;
+                        if (value == 'off') {
+                            await writeLog("$> removing Java engine");
+                            await sshExec("rm -rf ~/.local/java");
+                            await sshExec("pathman remove ~/.local/java/jdk/bin");
+                        } else {
+                            const jarg = getJavaVersion(value);
+                            if (!jarg.binary) {
+                                throw new Error(`No Java with version ${value} is available to install`);
+                            }
+                            await writeLog("$> changing Java engine to " + jarg.version);
+                            await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash); source ~/.bashrc");
+                            await sshExec(`cd ~/tmp && mkdir -p ~/.local/java/jdk-${jarg.version}`);
+                            await sshExec(`wget "${jarg.binary}" -O ~/tmp/jdk.tar.gz && tar -axf jdk.tar.gz && rm $_`);
+                            await sshExec(`mv ~/tmp/jdk-*/* ~/.local/java/jdk-${jarg.version} || true ; rm -rf ~/tmp/jdk-*`);
+                            await sshExec(`ln -sfn ~/.local/java/jdk-${jarg.version} ~/.local/java/jdk`);
+                            await sshExec(`pathman add ~/.local/java/jdk/bin ; source ~/.config/envman/PATH.env`);
+                            await sshExec("cd ~/public_html", false);
+                            await sshExec("java --version");
                         }
                         break;
                     default:

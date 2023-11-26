@@ -11,10 +11,15 @@ let tokenSecret, allowIps, sudoutil, version, revision;
 let phpVersionsList = ['7.4'];
 let rubyVersionsList = [];
 let pythonVersionsList = [];
+let javaVersionsList = [];
 /**
  * @type {Record<string, string>}
  */
 let pythonVersionsMap = {};
+/**
+ * @type {Record<string, string>}
+ */
+let javaVersionsMap = {};
 /**
  * @type {Record<string, string>}
  */
@@ -27,6 +32,9 @@ const pythonConstants = {
     index() {
         return `https://github.com/indygreg/python-build-standalone/releases/expanded_assets/${this.tag}`
     },
+    latestTagUrl() {
+        return 'https://raw.githubusercontent.com/indygreg/python-build-standalone/latest-release/latest-release.json';
+    },
     /**
      * @param {string} filename
      */
@@ -34,7 +42,7 @@ const pythonConstants = {
         return `https://github.com/indygreg/python-build-standalone/releases/download/${this.tag}/${filename}`;
     },
 }
-export const initUtils = () => {
+export const initUtils = async () => {
     tokenSecret = `Bearer ${process.env.SECRET}`;
     allowIps = process.env.ALLOW_IP ? process.env.ALLOW_IP.split(',').reduce((a, b) => {
         a[b] = true;
@@ -52,7 +60,7 @@ export const initUtils = () => {
         }
         return a;
     }, {}) : {};
-    axios.get('https://www.php.net/releases/?json').then(res => {
+    await axios.get('https://www.php.net/releases/?json').then(res => {
         Object.values(res.data).forEach(v => {
             v.supported_versions.forEach((/** @type {string} */ ver) => {
                 if (!phpVersionsList.includes(ver)) {
@@ -65,7 +73,7 @@ export const initUtils = () => {
         console.error('error fetching PHP releases', err);
     });
     // TODO: detect OS/arch?
-    axios.get('https://rvm.io/binaries/centos/9/x86_64/').then(res => {
+    await axios.get('https://rvm.io/binaries/centos/9/x86_64/').then(res => {
         // @ts-ignore
         var matches = [...("" + res.data).matchAll(/href="ruby-([.\d]+).tar.bz2"/g)]
         for (const match of matches) {
@@ -77,7 +85,15 @@ export const initUtils = () => {
     }).catch(err => {
         console.error('error fetching Ruby releases', err);
     });
-    axios.get(pythonConstants.index()).then(res => {
+
+    await axios.get(pythonConstants.latestTagUrl()).then(res => {
+        if (res.data && res.data.tag) {
+            pythonConstants.tag = res.data.tag;
+        } else {
+            console.warn('unable get latest python tag');
+        }
+    })
+    await axios.get(pythonConstants.index()).then(res => {
         // @ts-ignore
         var matches = [...("" + res.data).matchAll(pythonConstants.match)]
         for (const match of matches) {
@@ -90,6 +106,18 @@ export const initUtils = () => {
     }).catch(err => {
         console.error('error fetching Python releases', err);
     });
+    await axios.get('https://raw.githubusercontent.com/actions/setup-java/main/src/distributions/microsoft/microsoft-openjdk-versions.json').then(res => {
+        for (const verItem of res.data) {
+            if (verItem.version && verItem.files) {
+                var iPlatform = verItem.files.findIndex(x => x.filename.endsWith('-linux-x64.tar.gz'))
+                if (iPlatform >= 0) {
+                    javaVersionsList.push(verItem.version);
+                    javaVersionsMap[verItem.version] = verItem.files[iPlatform].download_url;
+                }
+            }
+        }
+        javaVersionsList = sortSemver(javaVersionsList).reverse();
+    })
 }
 
 export const getLtsPhp = (/** @type {string} */ major) => {
@@ -121,7 +149,7 @@ export const getPythonVersion = (/** @type {string} */ status) => {
         if (m) {
             return expand(m);
         } else {
-            return expand(m + ":latest");
+            return expand(status + ":latest");
         }
     }
     if (/^\d+\.\d+\.\d+$/.test(status)) {
@@ -175,6 +203,43 @@ export const getRubyVersion = (/** @type {string} */ status) => {
     }
 }
 
+export const getJavaVersion = (/** @type {string} */ status) => {
+    const expand = (/** @type {string} */ version) => ({
+        version,
+        binary: javaVersionsMap[version] || null,
+    })
+    // get latest stable version
+    var stable = javaVersionsList[0];
+    if (!status) {
+        return expand(stable);
+    }
+    if (/^\d+(\.\d+)?$/.test(status)) {
+        var m = javaVersionsList.find(x => {
+            return x.startsWith(status);
+        });
+        if (m) {
+            return expand(m);
+        } else {
+            return expand(status + ":latest");
+        }
+    }
+    if (/^\d+\.\d+\.\d+$/.test(status)) {
+        return expand(status);
+    }
+    switch (status) {
+        case 'lts':
+        case 'security':
+            var security = javaVersionsList.find(x => {
+                return !x.startsWith(stable.substring(0, stable.lastIndexOf('.')));
+            });
+            return expand(security || stable);
+        case 'latest':
+        case 'stable':
+        default:
+            return expand(stable);
+    }
+}
+
 export const getVersion = () => {
     return version;
 }
@@ -205,6 +270,7 @@ export const getSupportVersions = () => {
         php: phpVersionsList,
         python: pythonVersionsList,
         ruby: rubyVersionsList,
+        java: javaVersionsList,
     }
 }
 
