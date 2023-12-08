@@ -707,6 +707,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     if (domaindata['SSL shared with']) {
                         await writeLog("$> Breaking ssl cert sharing with the global domain");
                         await virtExec("modify-web", {
+                            domain: subdomain,
                             'break-ssl-cert': true,
                         });
                     }
