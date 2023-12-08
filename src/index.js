@@ -30,10 +30,7 @@ app.use(function (err, req, res, next) {
     res.json(err);
 });
 const port = process.env.PORT ? parseInt(process.env.PORT) : 2223;
-app.listen(port);
+app.listen(port, function () {
+    console.log(`Listening on ${port}`);
+})
 
-console.log(`Starting main node on ${port}`);
-
-const cleanUpServer = (code) => {
-    console.log(`Exiting main node ${port} with code ${code}`);
-};

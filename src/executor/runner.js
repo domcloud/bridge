@@ -704,6 +704,12 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     changed = true;
                 }
                 if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
+                    if (domaindata['SSL shared with']) {
+                        await writeLog("$> Breaking ssl cert sharing with the global domain");
+                        await virtExec("modify-web", {
+                            'break-ssl-cert': true,
+                        });
+                    }
                     await writeLog("$> Generating ssl cert with let's encrypt");
                     await spawnSudoUtil('OPENSSL_CLEAN');
                     await virtExec("generate-letsencrypt-cert", {
