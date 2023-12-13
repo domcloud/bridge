@@ -246,9 +246,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             });
                             break;
                         case 'delete':
+                            const user = domaindata['Username'];
                             await writeLog("$> virtualmin delete-domain");
+                            await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u' , user]);        
                             await virtExec("delete-domain", value, {
-                                user: domaindata['Username'],
+                                user,
                             });
                             await spawnSudoUtil('PHPFPM_CLEAN', domaindata['ID']);
                             // no need to do other stuff
