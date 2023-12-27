@@ -6,7 +6,7 @@ import shelljs from 'shelljs';
 const { exec, ShellString, cat } = shelljs;
 
 // | DOMAIN NAME | PATH TO CERTIFICATE FILE | VALID UNTIL | EXPIRES IN | STATUS |
-const certsExpiryRegexp = /^\| (\S+)\s+\| (\/.+?)\s+\| (.+?)\s+\| (.*?)\s+\| (\S+)\s+\|$/gm;
+const certsExpiryRegexp = /^\| (\S+)\s+\| (\/.+?)\s+\| (.+?)\s+\| (.*?)\s+\| (\S+)\s+\|$/m;
 const cmdListCertsExpiry = 'virtualmin list-certs-expiry --all-domains';
 const cmdListCertsRenewals = 'virtualmin list-domains --name-only --with-feature letsencrypt_renew';
 const askDomainDetailPrefix = 'virtualmin list-domains --simple-multiline --domain ';
