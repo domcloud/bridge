@@ -22,7 +22,7 @@ function cmd(str) {
 }
 
 const listCertsExpiry = cmd(cmdListCertsExpiry).split('\n')
-    .slice(5).map(x => x.match(certsExpiryRegexp)).filter(x => x);
+    .slice(5).map(x => certsExpiryRegexp.exec(x)).filter(x => x);
 const listCertsRenewals = cmd(cmdListCertsRenewals).split('\n');
 
 console.log(`Certs currently active: ${listCertsExpiry.length}, domains in active renewal: ${listCertsRenewals.length}`);
@@ -44,7 +44,7 @@ for (const domain of listCertsRenewals) {
             const domainFile = domainFileExp[1];
             if (Date.now() - lastIssuedDate < 86400000) {
                 console.log(`Disabling renewal for ${domain}`);
-                var c = cat(domainFile).replace('/\nletsencrypt_renew=1/', '');
+                var c = cat(domainFile).replace(/\nletsencrypt_renew=1/, '');
                 new ShellString(c).to(domainFile);
                 count++;
             }
