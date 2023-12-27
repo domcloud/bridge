@@ -58,11 +58,12 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         // create new domain
         await writeLog("$> virtualmin create-domain");
         await writeLog("Creating virtual domain. This will take a moment...");
-        await virtExec("create-domain", config.features[0].create, process.env.MODE === 'dev' ? {
-            dir: true,
-            webmin: true,
-            unix: true,
-        } : {
+        await virtExec("create-domain", config.features[0].create, 
+            // process.env.MODE === 'dev' ? {
+            // dir: true,
+            // webmin: true,
+            // unix: true, } : 
+        {
             dir: true,
             'virtualmin-nginx': true,
             'virtualmin-nginx-ssl': true,
@@ -337,9 +338,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         break;
                     case 'dns':
-                        if (process.env.MODE === 'dev') {
-                            break;
-                        }
+                        // if (process.env.MODE === 'dev') {
+                        //     break;
+                        // }
                         enabled = isFeatureEnabled('dns');
                         if (value === "off") {
                             await writeLog("$> Disabling DNS");
@@ -383,9 +384,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         break;
                     case 'firewall':
-                        if (process.env.MODE === 'dev') {
-                            break;
-                        }
+                        // if (process.env.MODE === 'dev') {
+                        //     break;
+                        // }
                         if (value === '' || value === 'on') {
                             await writeLog("$> changing firewall protection to " + (value || 'on'));
                             await writeLog(await iptablesExec.setAddUser(domaindata['Username']));
@@ -667,12 +668,13 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 break;
             case 'ssl':
                 // ssl now also fix any misconfigurations
-                if (process.env.MODE === 'dev') {
-                    break;
-                }
+                // if (process.env.MODE === 'dev') {
+                //     break;
+                // }
                 let regenerateSsl = false;
                 let selfSignSsl = false;
                 let expectedSslMode = null;
+                let wasBreaking = false;
                 if (['off', 'always', 'on'].includes(value)) {
                     expectedSslMode = value;
                 } else if (value == 'letsencrypt' || value == 'lets-encrypt') {
@@ -680,20 +682,30 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 } else if (value == 'selfsign' || value == 'self-sign') {
                     selfSignSsl = true;
                 }
+                var sharedSSL = regenerateSsl ? null : detectCanShareSSL(subdomain);
+                if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
+                    if (domaindata['SSL shared with']) {
+                        await writeLog("$> Breaking ssl cert sharing with the global domain");
+                        await virtExec("modify-web", {
+                            domain: subdomain,
+                            'break-ssl-cert': true,
+                        });
+                        wasBreaking = true;
+                    }
+                }
                 var nginxNodes = await nginxExec.get(subdomain);
                 var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
-                var sharedSSL = regenerateSsl ? null : detectCanShareSSL(subdomain);
                 var changed = false;
                 var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (domaindata['SSL cert and CA file'] || domaindata['SSL cert file']);
                 var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : domaindata['SSL key file'];
                 if (!expectCert || !expectKey) {
                     expectedSslMode = 'off';
                 }
-                if (expectCert != nginxInfos.ssl_certificate) {
+                if (!wasBreaking && expectCert != nginxInfos.ssl_certificate) {
                     nginxInfos.ssl_certificate = expectCert
                     changed = true;
                 }
-                if (expectKey != nginxInfos.ssl_certificate_key) {
+                if (!wasBreaking && expectKey != nginxInfos.ssl_certificate_key) {
                     nginxInfos.ssl_certificate_key = expectKey
                     changed = true;
                 }
@@ -706,13 +718,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     changed = true;
                 }
                 if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
-                    if (domaindata['SSL shared with']) {
-                        await writeLog("$> Breaking ssl cert sharing with the global domain");
-                        await virtExec("modify-web", {
-                            domain: subdomain,
-                            'break-ssl-cert': true,
-                        });
-                    }
                     await writeLog("$> Generating ssl cert with let's encrypt");
                     await spawnSudoUtil('OPENSSL_CLEAN');
                     await virtExec("generate-letsencrypt-cert", {
@@ -720,13 +725,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         'renew': 2,
                         'web': true,
                     });
-                    var nginxInfos2 = nginxExec.extractInfo(nginxNodes, subdomain);
-                    if (nginxInfos2.ssl_certificate != nginxInfos.ssl_certificate) {
-                        // data is invalid!
-                        nginxInfos.ssl_certificate = nginxInfos2.ssl_certificate;
-                        nginxInfos.ssl_certificate_key = nginxInfos2.ssl_certificate_key;
-                        changed = true;
-                    }
                 } else if ((selfSignSsl || sharedSSL) && domaindata['Lets Encrypt renewal'] == 'Enabled') {
                     await writeLog("$> Generating self signed cert and turning off let's encrypt renewal");
                     await virtExec("generate-cert", {
@@ -742,9 +740,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 break;
             case 'root':
-                if (process.env.MODE === 'dev') {
-                    break;
-                }
+                // if (process.env.MODE === 'dev') {
+                //     break;
+                // }
                 // remove prefix and trailing slash
                 value = value.replace(/^\/+/, '').replace(/\/+$/, '');
                 var absolutePath = path.join(subdomaindata['Home directory'], value);
