@@ -2,8 +2,8 @@
 
 // stop renewing failed SSL certs if found
 
-import shelljs, { ShellString, cat } from 'shelljs';
-const { exec } = shelljs;
+import shelljs from 'shelljs';
+const { exec, ShellString, cat } = shelljs;
 
 // | DOMAIN NAME | PATH TO CERTIFICATE FILE | VALID UNTIL | EXPIRES IN | STATUS |
 const certsExpiryRegexp = /^\| (\S+)\s+\| (\/.+?)\s+\| (.+?)\s+\| (.*?)\s+\| (\S+)\s+\|$/gm;
