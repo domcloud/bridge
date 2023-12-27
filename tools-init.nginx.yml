@@ -1,27 +1,32 @@
-root: public_html/public
 nginx:
   locations:
-    - match: /phpmyadmin/
-      root: public_html
-      fastcgi: on
-    - match: /phppgadmin/
-      root: public_html
-      fastcgi: on
-  webssh:
-    match: /webssh/
-    root: public_html/webssh/webssh/static
-    rewrite: ^/webssh/(.*)$ /$1 break
-    passenger:
-      enabled: on
-      app_start_command: python run.py --port=$PORT
-      base_uri: /webssh
-      document_root: public_html/webssh/webssh/static
-  webssh2:
-    match: /webssh2/
-    root: public_html/webssh2/app/client/public
-    rewrite: ^/webssh/(.*)$ /$1 break
-    passenger:
-      enabled: on
-      base_uri: /webssh2
-      document_root: public_html/webssh2/app/client/public
-      app_root: public_html/webssh2/app
+    - fastcgi: 'on'
+      root: public_html/
+      passenger:
+        enabled: 'off'
+      match: /phpmyadmin/
+    - fastcgi: 'on'
+      root: public_html/
+      passenger:
+        enabled: 'off'
+      match: /phppgadmin/
+    - root: public_html/webssh/webssh/static
+      passenger:
+        app_root: public_html/webssh
+        enabled: 'on'
+        app_start_command: python run.py --port=$PORT
+        document_root: public_html/webssh/webssh/static
+      rewrite: ^/webssh/(.*)$ /$1 break
+      match: /webssh/
+    - root: public_html/webssh2/app/client/public
+      passenger:
+        app_root: public_html/webssh2/app
+        app_start_command: env PORT=$PORT node app.js
+        enabled: 'on'
+        document_root: public_html/webssh2/app/client/public
+      match: /ssh/
+    - match: /
+  fastcgi: 'on'
+  index: index.html index.php
+  root: public_html/public
+  ssl: 'on'

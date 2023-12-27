@@ -28,6 +28,7 @@ else
     git pull
     cd ..
 fi
+
 if [ ! -d "./webssh" ]; then
     git clone https://github.com/huashengdun/webssh.git webssh --filter=tree:0
     cd ./webssh
@@ -40,11 +41,10 @@ else
     cd ..
 fi
 
-: <<'DISABLED'
 if [ ! -d "./webssh2" ]; then
     git clone https://github.com/billchurch/webssh2.git webssh2 --filter=tree:0
     cd ./webssh2/app
-    npm install --production
+    npm install --omit=dev
     cp config.json.sample config.json
     hash=`node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"`
     sed -i "s/\"host\": null/\"host\": \"localhost\"/g" config.json
@@ -54,7 +54,6 @@ if [ ! -d "./webssh2" ]; then
     echo "require('.');" > app.js
     cd ../..
 fi
-DISABLED
 
 npm i
 chmod +x sudoutil.js
