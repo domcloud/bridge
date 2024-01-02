@@ -1,5 +1,4 @@
 import {
-    checkAuth,
     checkGet,
     checkPost,
 } from '../util.js';
@@ -9,7 +8,7 @@ import {
 } from '../executor/nginx.js';
 export default function () {
     var router = express.Router();
-    router.get('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
+    router.get('/', checkGet(['domain']), async function (req, res, next) {
         try {
             const node = await executor.get(req.query.domain + "");
             const raw = node.toString();
@@ -21,7 +20,7 @@ export default function () {
             next(error);
         }
     });
-    router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
+    router.post('/', checkGet(['domain']), async function (req, res, next) {
         try {
             res.contentType('text/plain');
             return res.send(await executor.set("" + req.query.domain, req.body || {}));
@@ -29,7 +28,7 @@ export default function () {
             next(error);
         }
     });
-    router.post('/ssl', checkAuth, checkGet(['domain']), checkPost(['ssl']), async function (req, res, next) {
+    router.post('/ssl', checkGet(['domain']), checkPost(['ssl']), async function (req, res, next) {
         try {
             res.contentType('text/plain');
             return res.send(await executor.setSsl("" + req.query.domain, req.body.ssl, req.body.http + ""));

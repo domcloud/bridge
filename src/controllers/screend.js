@@ -2,7 +2,6 @@ import express from 'express';
 import {
     checkGet,
     checkPost,
-    spawnSudoUtil
 } from '../util.js';
 import { screendExecutor } from '../executor/screend.js';
 

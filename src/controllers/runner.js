@@ -1,5 +1,4 @@
 import {
-    checkAuth,
     checkGet,
     normalizeShellOutput,
 } from '../util.js';
@@ -148,7 +147,7 @@ export async function runConfigInBackgroundSingleton(payload) {
 
 export default function () {
     var router = express.Router();
-    router.post('/', checkAuth, checkGet(['domain']), async function (req, res, next) {
+    router.post('/', checkGet(['domain']), async function (req, res, next) {
         runConfigInBackgroundSingleton({
             body: req.body,
             domain: req.query.domain + "",

@@ -1,5 +1,4 @@
 import {
-    checkAuth,
     checkGet,
     checkPost,
 } from '../util.js';
@@ -9,7 +8,7 @@ import {
 } from '../executor/named.js';
 export default function () {
     var router = express.Router();
-    router.post('/resync', checkAuth, checkGet(['zone']), async function (req, res, next) {
+    router.post('/resync', checkGet(['zone']), async function (req, res, next) {
         try {
             await executor.resync(req.query.zone.toString());
             res.json("OK");
@@ -17,14 +16,14 @@ export default function () {
             next(error);
         }
     });
-    router.get('/show', checkAuth, checkGet(['zone']), async function (req, res, next) {
+    router.get('/show', checkGet(['zone']), async function (req, res, next) {
         try {
             res.json(await executor.show(req.query.zone.toString()));
         } catch (error) {
             next(error);
         }
     });
-    router.post('/modify', checkAuth, checkGet(['zone']), async function (req, res, next) {
+    router.post('/modify', checkGet(['zone']), async function (req, res, next) {
         try {
             res.json(await executor.set(req.query.zone.toString(), req.body));
         } catch (error) {

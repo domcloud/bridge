@@ -769,6 +769,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 break;
         }
     }
+
     if (stillroot) {
         subdomaindata = domaindata
     } else {
@@ -779,11 +780,42 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             return;
         }
     }
+
     if (config.source || config.commands) {
         await sshExec(`shopt -s dotglob`, false);
         await sshExec(`export DOMAIN='${subdomain}'`, false);
         await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);
     }
+
+    if (config.nginx && config.nginx.root) {
+        // moved to config.features
+        config.features = (config.features || []).concat([{
+            root: config.nginx.root
+        }]);
+        delete config.nginx.root;
+    } else if (config.root) {
+        // moved to config.features
+        config.features = (config.features || []).concat([{
+            root: config.root
+        }]);
+        delete config.root;
+    }
+
+    if (Array.isArray(config.features)) {
+        await writeLog("$> Applying features");
+        for (const feature of config.features) {
+            if (typeof feature === 'string' && feature.match(/^ssl/)) {
+                continue;
+            }
+            await featureRunner(feature);
+        }
+    }
+
+    if (config.nginx) {
+        await writeLog("$> Applying nginx config on " + subdomain);
+        await writeLog(await nginxExec.set(subdomain, config.nginx));
+    }
+
     if (config.source) {
         if (typeof config.source === 'string') {
             config.source = {
@@ -864,6 +896,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             await iptablesExec.setAddUser(domaindata['Username']);
         }
     }
+
     if (config.commands) {
         if (config.envs) {
             let entries = Object.entries(config.envs);
@@ -886,43 +919,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
     }
 
-
-    if (config.nginx && config.nginx.root) {
-        // moved to config.features
-        config.features = (config.features || []).concat([{
-            root: config.nginx.root
-        }]);
-        delete config.nginx.root;
-    } else if (config.root) {
-        // moved to config.features
-        config.features = (config.features || []).concat([{
-            root: config.root
-        }]);
-        delete config.root;
-    }
-
     if (Array.isArray(config.features)) {
-        await writeLog("$> Applying features");
         for (const feature of config.features) {
             if (typeof feature === 'string' && feature.match(/^ssl/)) {
-                continue;
-            }
-            await featureRunner(feature);
-        }
-    }
-
-
-    if (process.env.MODE !== 'dev') {
-        if (config.nginx) {
-            await writeLog("$> Applying nginx config on " + subdomain);
-            await writeLog(await nginxExec.set(subdomain, config.nginx));
-        }
-
-        if (Array.isArray(config.features)) {
-            for (const feature of config.features) {
-                if (typeof feature === 'string' && feature.match(/^ssl/)) {
-                    await featureRunner(feature);
-                }
+                await featureRunner(feature);
             }
         }
     }
