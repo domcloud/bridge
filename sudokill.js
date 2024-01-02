@@ -36,7 +36,10 @@ const ignoreUsers = opts.ignore.split(',')
 if (existsSync(__dirname + '/.killignore')) {
     Object.assign(ignoreUsers, readFileSync(__dirname + '/.killignore', {
         encoding: 'utf-8'
-    }).split('\n').map(x => x.trim()).filter(x => x))
+    }).split('\n').map(x => x.trim()).filter(x => x).reduce((acc, cur) => {
+        acc[cur] = true;
+        return acc;
+    }, {}))
 }
 
 ignoreUsers.root = true;
