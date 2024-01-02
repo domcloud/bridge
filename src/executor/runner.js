@@ -25,6 +25,9 @@ import {
 import {
     virtualminExec
 } from "./virtualmin.js";
+import { 
+    podmanExec 
+} from "./podman.js";
 
 // TODO: Need to able to customize this
 const maxExecutionTime = 900000;
@@ -58,18 +61,14 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         // create new domain
         await writeLog("$> virtualmin create-domain");
         await writeLog("Creating virtual domain. This will take a moment...");
-        await virtExec("create-domain", config.features[0].create, 
-            // process.env.MODE === 'dev' ? {
-            // dir: true,
-            // webmin: true,
-            // unix: true, } : 
-        {
-            dir: true,
-            'virtualmin-nginx': true,
-            'virtualmin-nginx-ssl': true,
-            webmin: !config.features[0].create.parent,
-            unix: !config.features[0].create.parent,
-        });
+        await virtExec("create-domain", config.features[0].create,
+            {
+                dir: true,
+                'virtualmin-nginx': true,
+                'virtualmin-nginx-ssl': true,
+                webmin: !config.features[0].create.parent,
+                unix: !config.features[0].create.parent,
+            });
         // sometimes we need to wait for the domain to be created
         await writeLog("$> virtualmin list-domains");
         await new Promise((resolve, reject) => {
@@ -249,7 +248,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         case 'delete':
                             const user = domaindata['Username'];
                             await writeLog("$> virtualmin delete-domain");
-                            await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u' , user]);        
+                            await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u', user]);
                             await virtExec("delete-domain", value, {
                                 user,
                             });
@@ -388,25 +387,35 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         //     break;
                         // }
                         if (value === '' || value === 'on') {
-                            await writeLog("$> changing firewall protection to " + (value || 'on'));
+                            await writeLog("$> Changing firewall protection to " + (value || 'on'));
                             await writeLog(await iptablesExec.setAddUser(domaindata['Username']));
                             firewallStatusCache = true;
                         } else if (value === 'off') {
-                            await writeLog("$> changing firewall protection to " + value);
+                            await writeLog("$> Changing firewall protection to " + value);
                             await writeLog(await iptablesExec.setDelUser(domaindata['Username']));
                             firewallStatusCache = false;
+                        }
+                        break;
+                    case 'docker':
+                    case 'podman':
+                        if (value === '' || value === 'on') {
+                            await writeLog("$> Enabling podman features");
+                            await writeLog(await podmanExec.enablePodman(domaindata['Username']));
+                        } else if (value === 'off') {
+                            await writeLog("$> Disabling podman features");
+                            await writeLog(await podmanExec.disablePodman(domaindata['Username']));
                         }
                         break;
                     case 'python':
                         arg = value;
                         if (value == 'off') {
-                            await writeLog("$> removing Python engine");
+                            await writeLog("$> Removing Python engine");
                             await sshExec("rm -rf ~/.pyenv");
                             await sshExec("pathman remove ~/.pyenv/bin && pathman remove ~/.pyenv/shims");
                             await sshExec("sed -i '/pyenv/d' ~/.bashrc");
                         } else {
                             const parg = getPythonVersion(value);
-                            await writeLog("$> changing Python engine to " + parg.version);
+                            await writeLog("$> Changing Python engine to " + parg.version);
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash); source ~/.bashrc");
                             await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash); source  ~/.config/envman/PATH.env");
                             if (parg.binary) {
@@ -425,7 +434,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'node':
                         arg = value;
                         if (arg == 'off') {
-                            await writeLog("$> removing Node engine");
+                            await writeLog("$> Removing Node engine");
                             await sshExec("rm -rf ~/.local/opt/node-* ~/.local/opt/node ~/Downloads/webi/node");
                             await sshExec("rm -rf ~/.cache/yarn ~/.cache/node ~/.config/yarn ~/.npm");
                             await sshExec("pathman remove ~/.local/opt/node/bin");
@@ -437,7 +446,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             } else {
                                 arg = "@" + value
                             }
-                            await writeLog("$> changing Node engine to " + (value || 'lts'));
+                            await writeLog("$> Changing Node engine to " + (value || 'lts'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec("pathman add .local/opt/node/bin ; source ~/.config/envman/PATH.env");
                             await sshExec(`curl -sS https://webinstall.dev/node${arg} | bash`);
@@ -448,7 +457,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'deno':
                         arg = value;
                         if (arg == 'off') {
-                            await writeLog("$> removing Deno engine");
+                            await writeLog("$> Removing Deno engine");
                             await sshExec("rm -rf ~/.local/opt/deno-* ~/.deno ~/.local/bin/deno ~/Downloads/webi/deno");
                             await sshExec("pathman remove ~/.deno/bin/");
                         } else {
@@ -459,7 +468,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             } else {
                                 arg = "@" + value
                             }
-                            await writeLog("$> changing Deno engine to " + (value || 'stable'));
+                            await writeLog("$> Changing Deno engine to " + (value || 'stable'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`curl -sS https://webinstall.dev/deno${arg} | bash`);
                             await sshExec("mkdir -p ~/.deno/bin/ && pathman add ~/.deno/bin/ ; source ~/.config/envman/PATH.env");
@@ -470,7 +479,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'golang':
                         arg = value;
                         if (arg == 'off') {
-                            await writeLog("$> removing Golang engine");
+                            await writeLog("$> Removing Golang engine");
                             await sshExec("chmod -R 0700 ~/.local/opt/go-*");
                             await sshExec("rm -rf ~/.local/opt/go-* ~/.cache/go-build ~/.local/opt/go ~/go ~/Downloads/webi/golang");
                             await sshExec("pathman remove .local/opt/go/bin");
@@ -482,7 +491,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             } else {
                                 arg = "@" + value
                             }
-                            await writeLog("$> changing Golang engine to " + (value || 'stable'));
+                            await writeLog("$> Changing Golang engine to " + (value || 'stable'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`curl -sS https://webinstall.dev/golang${arg} | WEBI__GO_ESSENTIALS=true bash ; source ~/.config/envman/PATH.env`);
                             await sshExec("go version");
@@ -491,12 +500,12 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'rust':
                     case 'rustlang':
                         if (value == 'off') {
-                            await writeLog("$> removing Rust engine");
+                            await writeLog("$> Removing Rust engine");
                             await sshExec("rustup self uninstall -y");
                             await sshExec("pathman remove $HOME/.cargo/bin");
                             break;
                         } else {
-                            await writeLog(value ? "$> changing Rust engine to " + value : "$> installing Rust engine");
+                            await writeLog(value ? "$> Changing Rust engine to " + value : "$> installing Rust engine");
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal)`);
                             await sshExec(`pathman add $HOME/.cargo/bin ; source ~/.config/envman/PATH.env`);
@@ -508,11 +517,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         break;
                     case 'ruby':
                         if (value == 'off') {
-                            await writeLog("$> removing Ruby engine");
+                            await writeLog("$> Removing Ruby engine");
                             await sshExec(`rm -rf ~/.rvm`);
                             await sshExec("sed -i '/rvm\\|RVM/d' ~/.bashrc");
                         } else {
-                            await writeLog(value ? "$> changing Ruby engine to " + value : "$> installing Ruby engine");
+                            await writeLog(value ? "$> Changing Ruby engine to " + value : "$> installing Ruby engine");
                             await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://rvm.io/mpapis.asc | gpg --import -; curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -; }`);
                             await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://get.rvm.io | bash -s stable; source ~/.rvm/scripts/rvm; rvm autolibs disable; }`);
                             await sshExec(`rvm install ${getRubyVersion(value)} --no-docs`);
@@ -522,7 +531,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'bun':
                         arg = value;
                         if (arg == 'off') {
-                            await writeLog("$> removing Bun engine");
+                            await writeLog("$> Removing Bun engine");
                             await sshExec("chmod -R 0700 ~/.local/opt/bun-*");
                             await sshExec("rm -rf ~/.local/opt/bun-* ~/.local/opt/bun ~/Downloads/webi/bun");
                             await sshExec("pathman remove .local/opt/bun/bin");
@@ -532,7 +541,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             } else {
                                 arg = "@" + value
                             }
-                            await writeLog("$> changing Bun engine to " + (value || 'latest'));
+                            await writeLog("$> Changing Bun engine to " + (value || 'latest'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`curl -sS https://webinstall.dev/bun${arg} | bash ; source ~/.config/envman/PATH.env`);
                             await sshExec("bun --version");
@@ -541,7 +550,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'zig':
                         arg = value;
                         if (arg == 'off') {
-                            await writeLog("$> removing Zig engine");
+                            await writeLog("$> Removing Zig engine");
                             await sshExec("rm -rf ~/.local/opt/zig ~/Downloads/webi/zig");
                             await sshExec("pathman remove .local/opt/zig/bin");
                         } else {
@@ -550,7 +559,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             } else {
                                 arg = "@" + value
                             }
-                            await writeLog("$> changing Zig engine to " + (value || 'latest'));
+                            await writeLog("$> Changing Zig engine to " + (value || 'latest'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`curl -sS https://webinstall.dev/zig${arg} | bash ; source ~/.config/envman/PATH.env`);
                             await sshExec("zig --version");
@@ -559,20 +568,20 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'dotnet':
                         arg = value;
                         if (arg == 'off') {
-                            await writeLog("$> removing Dotnet engine");
+                            await writeLog("$> Removing Dotnet engine");
                             await sshExec("rm -rf ~/.dotnet");
                             await sshExec("pathman remove ~/.dotnet");
                         } else {
                             if (value == "latest" || value == "current") {
                                 arg = "--version latest"
-                            } else if ( !value || value == "lts" || value == "stable") {
+                            } else if (!value || value == "lts" || value == "stable") {
                                 arg = "--channel LTS"
-                            } else if ( value == "sts") {
+                            } else if (value == "sts") {
                                 arg = "--channel STS"
                             } else {
                                 arg = '--channel ' + value;
                             }
-                            await writeLog("$> changing Dotnet engine to " + (value || 'lts'));
+                            await writeLog("$> Changing Dotnet engine to " + (value || 'lts'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`wget https://dot.net/v1/dotnet-install.sh -O ~/tmp/dotnet-install.sh && bash ~/tmp/dotnet-install.sh ${arg}`);
                             await sshExec(`pathman add ~/.dotnet ; source ~/.config/envman/PATH.env`);
@@ -583,7 +592,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'java':
                         arg = value;
                         if (value == 'off') {
-                            await writeLog("$> removing Java engine");
+                            await writeLog("$> Removing Java engine");
                             await sshExec("rm -rf ~/.local/java");
                             await sshExec("pathman remove ~/.local/java/jdk/bin");
                         } else {
@@ -591,7 +600,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             if (!jarg.binary) {
                                 throw new Error(`No Java with version ${value} is available to install`);
                             }
-                            await writeLog("$> changing Java engine to " + jarg.version);
+                            await writeLog("$> Changing Java engine to " + jarg.version);
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash); source ~/.bashrc");
                             await sshExec(`cd ~/tmp && mkdir -p ~/.local/java/jdk-${jarg.version}`);
                             await sshExec(`wget "${jarg.binary}" -O ~/tmp/jdk.tar.gz && tar -axf jdk.tar.gz && rm $_`);
@@ -655,7 +664,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     throw new Error(`php version ${value} not found`);
                 }
 
-                await writeLog("$> changing PHP engine to " + value);
+                await writeLog("$> Changing PHP engine to " + value);
                 if (process.env.MODE !== 'dev') {
                     await virtExec("modify-web", {
                         domain: subdomain,
@@ -747,7 +756,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 value = value.replace(/^\/+/, '').replace(/\/+$/, '');
                 var absolutePath = path.join(subdomaindata['Home directory'], value);
                 if (absolutePath !== subdomaindata['HTML directory']) {
-                    await writeLog("$> changing root folder");
+                    await writeLog("$> Changing root folder");
                     await sshExec(`mkdir -p ${absolutePath}`);
                     await virtExec("modify-web", {
                         domain: subdomain,
@@ -773,7 +782,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     if (config.source || config.commands) {
         await sshExec(`shopt -s dotglob`, false);
         await sshExec(`export DOMAIN='${subdomain}'`, false);
-        await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);    
+        await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);
     }
     if (config.source) {
         if (typeof config.source === 'string') {
@@ -836,7 +845,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 executedCMD.push(`tar -xzf _.tar.gz ; rm _.tar.gz ; chmod -R 0750 *`);
             } else {
                 executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
-                executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);    
+                executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);
             }
             if (source.directory) {
                 executedCMD.push(`mv ${escapeShell(source.directory)}/* .`);

@@ -17,7 +17,7 @@ else
     cd ..
 fi
 if [ ! -d "./phppgadmin" ]; then
-    git clone https://github.com/phpPgAdmin2/phpPgAdmin.git phppgadmin --filter=tree:0
+    git clone https://github.com/ReimuHakurei/phpPgAdmin.git phppgadmin --filter=tree:0
     cd ./phppgadmin
     cp conf/config.inc.php-dist conf/config.inc.php
     sed -i "s/['host'] = ''/['host'] = 'localhost'/" conf/config.inc.php

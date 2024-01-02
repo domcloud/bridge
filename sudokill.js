@@ -4,6 +4,12 @@
 
 import shelljs from 'shelljs';
 import cli from 'cli'
+import { existsSync, readFileSync } from 'fs';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 const { exec } = shelljs;
 
 const opts = cli.parse({
@@ -26,6 +32,12 @@ const ignoreUsers = opts.ignore.split(',')
         acc[cur] = true;
         return acc;
     }, {});
+
+if (existsSync(__dirname + '/.killignore')) {
+    Object.assign(ignoreUsers, readFileSync(__dirname + '/.killignore', {
+        encoding: 'utf-8'
+    }).split('\n').map(x => x.trim()).filter(x => x))
+}
 
 ignoreUsers.root = true;
 

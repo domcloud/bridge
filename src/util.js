@@ -6,9 +6,8 @@ import fs from 'fs';
 
 
 let tokenSecret, allowIps, sudoutil, version, revision;
-// PHP for <= 7.4 is around ~25% of the market share as of 2023
 // https://packagist.org/php-statistics
-let phpVersionsList = ['7.4'];
+let phpVersionsList = [];
 let rubyVersionsList = [];
 let pythonVersionsList = [];
 let javaVersionsList = [];
@@ -26,7 +25,7 @@ let javaVersionsMap = {};
 let sslWildcardsMap = {};
 const pythonConstants = {
     // https://raw.githubusercontent.com/indygreg/python-build-standalone/latest-release/latest-release.json
-    tag: "20230507",
+    tag: "20231002",
     // NOTE: x86_64_v3 requires AVX2 CPU support
     match: /cpython-(\d+\.\d+\.\d+)\+\d+-x86_64_v3-unknown-linux-gnu-pgo\+lto-full\.tar\.zst/g,
     index() {
@@ -49,31 +48,25 @@ export const initUtils = async () => {
         return a;
     }, {}) : null
     sudoutil = path.join(process.cwd(), '/sudoutil.js');
-    version = JSON.parse(fs.readFileSync(path.join(process.cwd(), '/package.json')).toString('utf-8')).version;
-    const rev = fs.readFileSync('.git/HEAD').toString().trim();
-    revision = rev.indexOf(':') === -1 ? rev : fs.readFileSync('.git/' + rev.substring(5)).toString().trim();
+    version = JSON.parse(cat('package.json')).version;
+    const rev = cat('.git/HEAD').trim();
+    revision = rev.indexOf(':') === -1 ? rev : cat('.git/' + rev.substring(5)).trim();
     revision = revision.substring(0, 7);
-    sslWildcardsMap = process.env.SSL_WILDCARDS ? process.env.SSL_WILDCARDS.split(',').reduce((a, b) => {
+    sslWildcardsMap = (process.env.SSL_WILDCARDS || '').split(',').reduce((a, b) => {
         var splits = b.split(':');
         if (splits.length == 2) {
             a[splits[0].toLowerCase()] = splits[1];
         }
         return a;
-    }, {}) : {};
-    await axios.get('https://www.php.net/releases/?json').then(res => {
-        Object.values(res.data).forEach(v => {
-            v.supported_versions.forEach((/** @type {string} */ ver) => {
-                if (!phpVersionsList.includes(ver)) {
-                    phpVersionsList.push(ver);
-                }
-            });
-        });
-        phpVersionsList = sortSemver(phpVersionsList).reverse();
-    }).catch(err => {
-        console.error('error fetching PHP releases', err);
-    });
+    }, {});
+    const phpPath = process.env.PHPFPM_REMILIST || '/etc/opt/remi/';
+    const phpFiles = fs.readdirSync(phpPath, { withFileTypes: true });
+    phpVersionsList = phpFiles
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name.replace(/php(\d)(\d+)/, '$1.$2'))
+    phpVersionsList = sortSemver(phpVersionsList).reverse();
     // TODO: detect OS/arch?
-    await axios.get('https://rvm.io/binaries/centos/9/x86_64/').then(res => {
+    await axios.get('https://rvm_io.global.ssl.fastly.net/binaries/centos/9/x86_64/').then(res => {
         // @ts-ignore
         var matches = [...("" + res.data).matchAll(/href="ruby-([.\d]+).tar.bz2"/g)]
         for (const match of matches) {
@@ -535,8 +528,8 @@ export function splitLimit(/** @type {string} */ input,/** @type {string|RegExp}
  * @param {string[]} arr
  */
 export function sortSemver(arr) {
-    return arr.map(a => a.replace(/\d+/g, n => +n+100000+'')).sort()
-        .map(a => a.replace(/\d+/g, n => +n-100000+''));
+    return arr.map(a => a.replace(/\d+/g, n => +n + 100000 + '')).sort()
+        .map(a => a.replace(/\d+/g, n => +n - 100000 + ''));
 }
 
 /**
