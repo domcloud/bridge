@@ -4,27 +4,20 @@ import {
     spawnSudoUtil,
     writeTo
 } from '../util.js';
-import { writeFile } from 'fs/promises';
-
-const killIgnoreFile = '.killignore'
+import { existsSync } from 'fs';
 
 class PodmanExecutor {
+    LOGINLINGERDIR =  '/var/lib/systemd/linger';
     constructor() {
+        if (process.env.LOGINLINGERDIR) {
+            this.LOGINLINGERDIR = '/var/lib/systemd/linger';
+        }
     }
     /**
      * @param {string} user
      */
     checkPodmanEnabled(user) {
-        try {
-            return cat(killIgnoreFile).split('\n').includes(user);
-        } catch (err) {
-            if (err.code === 'ENOENT') {
-                writeTo(killIgnoreFile, "root\n");
-            } else {
-                throw err;
-            }
-            return false;
-        }
+        return existsSync(this.LOGINLINGERDIR + '/' + user);
     }
     /**
      * @param {string} user
@@ -34,13 +27,11 @@ class PodmanExecutor {
             return "Done unchanged";
         }
         return await executeLock('podman', async () => {
-            const content = cat(killIgnoreFile).trim() + `\n${user}\n`;
-            await writeFile(killIgnoreFile, content, {
-                encoding: 'utf-8'
-            });
             await spawnSudoUtil("SHELL_SUDO", ["root",
                 "usermod", "--add-subuids", "100000-165535",
                 "--add-subgids", "100000-165535", user]);
+            await spawnSudoUtil("SHELL_SUDO", ["root",
+                "loginctl", "enable-linger", user]);
             return "Updated for podman";
         });
     }
@@ -52,13 +43,11 @@ class PodmanExecutor {
             return "Done unchanged";
         }
         return await executeLock('podman', async () => {
-            var content = cat(killIgnoreFile).trim().split('\n').filter(x => x !== user);
-            await writeFile(killIgnoreFile, content.join("\n") + "\n", {
-                encoding: 'utf-8'
-            });
             await spawnSudoUtil("SHELL_SUDO", ["root",
                 "usermod", "--del-subuids", "100000-165535",
                 "--del-subgids", "100000-165535", user]);
+            await spawnSudoUtil("SHELL_SUDO", ["root",
+                "loginctl", "disable-linger", user]);
             return "Updated for podman";
         });
     }

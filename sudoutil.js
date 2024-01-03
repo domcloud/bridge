@@ -64,6 +64,7 @@ const env = Object.assign({}, {
     OPENSSL_PATH: '/etc/pki/tls/openssl.cnf',
     OPENSSL_OUT: '/etc/pki/tls/openssl.cnf',
     VIRTUALMIN: 'virtualmin',
+    LOGINLINGERDIR: '/var/lib/systemd/linger',
     PHPFPM_REMILIST: '/etc/opt/remi/',
     PHPFPM_REMICONF: '/etc/opt/remi/$/php-fpm.d',
     PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',

@@ -2,19 +2,18 @@
 
 // kill all processes that outside SSH and root
 
-import shelljs from 'shelljs';
 import cli from 'cli'
-import { existsSync, readFileSync } from 'fs';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import shelljs from 'shelljs';
+import { existsSync, readdirSync } from 'fs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const LOGINLINGERDIR = process.env.LOGINLINGERDIR || '/var/lib/systemd/linger';
 
 const { exec } = shelljs;
 
 const opts = cli.parse({
     test: ['t', 'Test mode', 'bool', false],
     ignore: ['i', 'Ignore user list', 'string', ''],
+    verbose: ['v', 'verbose', 'bool', false],
 });
 
 const psOutput = exec('ps -eo user:20,pid,etimes,command --forest --no-headers', {
@@ -33,16 +32,19 @@ const ignoreUsers = opts.ignore.split(',')
         return acc;
     }, {});
 
-if (existsSync(__dirname + '/.killignore')) {
-    Object.assign(ignoreUsers, readFileSync(__dirname + '/.killignore', {
-        encoding: 'utf-8'
-    }).split('\n').map(x => x.trim()).filter(x => x).reduce((acc, cur) => {
+if (existsSync(LOGINLINGERDIR)) {
+    const lingerFiles = readdirSync(LOGINLINGERDIR, { withFileTypes: true });
+    Object.assign(ignoreUsers, lingerFiles.map(x => x.name).filter(x => x).reduce((acc, cur) => {
         acc[cur] = true;
         return acc;
     }, {}))
 }
 
 ignoreUsers.root = true;
+
+if (opts.verbose) {
+    console.log('Ignoring users: ' + Object.keys(ignoreUsers).join(','));
+}
 
 // process and filter output
 const splitTest = /^([\w.-]+\+?) +(\d+) +(\d+) (.+)$/;
@@ -67,6 +69,9 @@ if (opts.test) {
     console.log(candidates.map(x => x.raw).join('\n'));
 } else {
     for (let x of candidates) {
+        if (opts.verbose) {
+            console.log(`Killing ${x.user}: ${x.pid} (${x.command})`);
+        }
         exec(`kill -9 ${x.pid}`);
     }
 }

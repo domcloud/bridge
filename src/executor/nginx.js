@@ -15,7 +15,7 @@ import {
 const tmpFile = path.join(process.cwd(), '/.tmp/nginx')
 
 const passengerKeys = [
-    'enabled', 'app_env', 'env_var_list', 'app_start_command',
+    'enabled', 'app_env', 'env_var_list', 'set_header_list', 'app_start_command',
     'app_type', 'startup_file', 'ruby', 'nodejs', 'python',
     'meteor_app_settings', 'friendly_error_pages',
     'document_root', 'base_uri', 'app_root', 'sticky_sessions'
@@ -46,6 +46,14 @@ class NginxExecutor {
                                     var splt = splitLimit(v, /=/g, 2);
                                     if (splt.length == 2) {
                                         node._add("passenger_env_var", splt[0] + ' ' + escapeNginx(splt[1]));
+                                    }
+                                });
+                                continue;
+                            case "set_header_list":
+                                config.passenger[key].forEach((/** @type {String} */ v) => {
+                                    var splt = splitLimit(v, /=/g, 2);
+                                    if (splt.length == 2) {
+                                        node._add("passenger_set_header", splt[0] + ' ' + escapeNginx(splt[1]));
                                     }
                                 });
                                 continue;
@@ -160,6 +168,15 @@ class NginxExecutor {
                                 var splt = splitLimit(env._value, / /g, 2);
                                 if (splt.length == 2) {
                                     r.passenger["env_var_list"].push(splt[0] + '=' + unescapeNginx(splt[1]));
+                                }
+                            }
+                            break;
+                        case "set_header":
+                            r.passenger["set_header_list"] = r.passenger["set_header_list"] || [];
+                            for (const env of node[k]) {
+                                var splt = splitLimit(env._value, / /g, 2);
+                                if (splt.length == 2) {
+                                    r.passenger["set_header_list"].push(splt[0] + '=' + unescapeNginx(splt[1]));
                                 }
                             }
                             break;
