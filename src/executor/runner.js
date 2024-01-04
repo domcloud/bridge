@@ -629,7 +629,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog("$> Disabling DNS feature");
                     if (subenabled) {
                         await virtExec("disable-feature", value, {
-                            subdomain,
+                            domain: subdomain,
                             dns: true,
                         });
                     } else {
@@ -639,7 +639,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     if (!subenabled) {
                         await writeLog("$> Enabling DNS feature");
                         await virtExec("enable-feature", value, {
-                            subdomain,
+                            domain: subdomain,
                             dns: true,
                         });
                     }
@@ -742,11 +742,11 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     changed = true;
                 }
                 if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
-                    const remaining = subdomaindata['SSL cert expiry'] ? (Date.now() - Date.parse(subdomaindata['SSL cert expiry'])) / 86400000 : 0;
+                    const remaining = subdomaindata['SSL cert expiry'] ? (Date.parse(subdomaindata['SSL cert expiry']) - Date.now()) / 86400000 : 0;
                     if (subdomaindata['Lets Encrypt renewal'] == 'Enabled' && (remaining > 30)) {
                         await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away so skipping renewal");
                     } else {
-                        await writeLog("$> Generating ssl cert with let's encrypt");
+                        await writeLog("$> Generating SSL cert with Let's Encrypt");
                         await spawnSudoUtil('OPENSSL_CLEAN');
                         await virtExec("generate-letsencrypt-cert", {
                             domain: subdomain,
