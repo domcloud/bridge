@@ -63,9 +63,6 @@ else
     cd ../..
 fi
 
-# temporary bugfix
-wget -O ./webssh2/app/server/socket.js https://raw.githubusercontent.com/Fhwang0926/webssh2-custom/0172c9218c4668f6a775ff08076fba8152598d73/app/server/socket.js
-
 npm i
 chmod +x sudoutil.js sudokill.js sudocleanssl.js
 echo Done! don\'t forget add sudoutil.js to sudoers

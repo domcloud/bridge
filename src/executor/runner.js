@@ -25,8 +25,8 @@ import {
 import {
     virtualminExec
 } from "./virtualmin.js";
-import { 
-    podmanExec 
+import {
+    podmanExec
 } from "./podman.js";
 
 // TODO: Need to able to customize this
@@ -336,56 +336,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             });
                         }
                         break;
-                    case 'dns':
-                        // if (process.env.MODE === 'dev') {
-                        //     break;
-                        // }
-                        enabled = isFeatureEnabled('dns');
-                        if (value === "off") {
-                            await writeLog("$> Disabling DNS");
-                            if (enabled) {
-                                await virtExec("disable-feature", value, {
-                                    domain,
-                                    dns: true,
-                                });
-                            } else {
-                                await writeLog("Already disabled");
-                            }
-                        } else {
-                            if (!enabled) {
-                                await writeLog("$> Enabling DNS and applying records");
-                                await virtExec("enable-feature", value, {
-                                    domain,
-                                    dns: true,
-                                });
-                            } else {
-                                await writeLog("$> Applying DNS records");
-                            }
-                            if (Array.isArray(value)) {
-                                for (let i = 0; i < value.length; i++) {
-                                    if (typeof value[i] === 'string') {
-                                        if (!value[i].startsWith("add ") && !value[i].startsWith("del ")) {
-                                            value[i] = `add ${value[i]}`;
-                                        }
-                                        const values = splitLimit(value[i] + '', / /g, 4);
-                                        if (values.length == 4) {
-                                            value[i] = {
-                                                action: values[0].toLowerCase() === 'del' ? 'del' : 'add',
-                                                type: values[1].toLowerCase(),
-                                                domain: values[2].toLowerCase(),
-                                                value: values[3],
-                                            }
-                                        }
-                                    }
-                                }
-                                await writeLog(await namedExec.set(domain, value));
-                            }
-                        }
-                        break;
                     case 'firewall':
-                        // if (process.env.MODE === 'dev') {
-                        //     break;
-                        // }
                         if (value === '' || value === 'on') {
                             await writeLog("$> Changing firewall protection to " + (value || 'on'));
                             await writeLog(await iptablesExec.setAddUser(domaindata['Username']));
@@ -619,13 +570,14 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PIP_PROGRESS_BAR=off`, false);
         await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
+        const firewallOn = await firewallStatus();
         if (config.subdomain) {
-            await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, virtExec, await firewallStatus());
+            await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, virtExec, firewallOn);
         } else {
-            await runConfigSubdomain(config, domaindata, domain, sshExec, writeLog, virtExec, await firewallStatus(), true);
+            await runConfigSubdomain(config, domaindata, domain, sshExec, writeLog, virtExec, firewallOn, true);
             if (Array.isArray(config.subdomains)) {
                 for (const sub of config.subdomains) {
-                    await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog, virtExec, await firewallStatus());
+                    await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog, virtExec, firewallOn);
                 }
             }
         }
@@ -646,14 +598,77 @@ export default async function runConfig(config, domain, writer, sandbox = false)
  * @param {{(s: string): Promise<void>}} writeLog
  * @param {{ (program: any, ...opts: any[]): Promise<any> }} virtExec
  * @param {boolean} firewallOn
- * @param {stillroot} firewallOn
+ * @param {boolean} stillroot
  */
 export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallOn, stillroot = false) {
     var subdomaindata;
+
+    if (stillroot) {
+        subdomaindata = domaindata
+    } else {
+        try {
+            subdomaindata = await virtualminExec.getDomainInfo(subdomain);
+        } catch {
+            await writeLog("\n$> Server is not exist. Finishing execution for " + subdomain + " domain\n");
+            return;
+        }
+    }
+
     const featureRunner = async (/** @type {object|string} */ feature) => {
         const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
         let value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
         switch (key) {
+            case 'dns':
+                let enabled = domaindata['Features'].includes('dns');
+                let subenabled = subdomaindata['Features'].includes('dns');
+                if (!stillroot && !enabled) {
+                    await writeLog("Problem: Can't manage DNS while parent domain DNS is disabled");
+                    break;
+                }
+                if (value === "off") {
+                    await writeLog("$> Disabling DNS feature");
+                    if (subenabled) {
+                        await virtExec("disable-feature", value, {
+                            subdomain,
+                            dns: true,
+                        });
+                    } else {
+                        await writeLog("Already disabled");
+                    }
+                } else {
+                    if (!subenabled) {
+                        await writeLog("$> Enabling DNS feature");
+                        await virtExec("enable-feature", value, {
+                            subdomain,
+                            dns: true,
+                        });
+                    }
+                    if (Array.isArray(value)) {
+                        if (stillroot) {
+                            await writeLog("$> Applying DNS records");
+                            for (let i = 0; i < value.length; i++) {
+                                if (typeof value[i] === 'string') {
+                                    if (!value[i].startsWith("add ") && !value[i].startsWith("del ")) {
+                                        value[i] = `add ${value[i]}`;
+                                    }
+                                    const values = splitLimit(value[i] + '', / /g, 4);
+                                    if (values.length == 4) {
+                                        value[i] = {
+                                            action: values[0].toLowerCase() === 'del' ? 'del' : 'add',
+                                            type: values[1].toLowerCase(),
+                                            domain: values[2].toLowerCase(),
+                                            value: values[3],
+                                        }
+                                    }
+                                }
+                            }
+                            await writeLog(await namedExec.set(subdomain, value));
+                        } else {
+                            await writeLog("Problem: Can't manage DNS records on subdomain");
+                        }
+                    }
+                }
+                break;
             case 'php':
                 if (value == 'lts' || value == 'latest') {
                     value = getLtsPhp();
@@ -693,7 +708,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 var sharedSSL = regenerateSsl ? null : detectCanShareSSL(subdomain);
                 if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
-                    if (domaindata['SSL shared with']) {
+                    if (subdomaindata['SSL shared with']) {
                         await writeLog("$> Breaking ssl cert sharing with the global domain");
                         await virtExec("modify-web", {
                             domain: subdomain,
@@ -705,8 +720,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 var nginxNodes = await nginxExec.get(subdomain);
                 var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
                 var changed = false;
-                var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (domaindata['SSL cert and CA file'] || domaindata['SSL cert file']);
-                var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : domaindata['SSL key file'];
+                var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
+                var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : subdomaindata['SSL key file'];
                 if (!expectCert || !expectKey) {
                     expectedSslMode = 'off';
                 }
@@ -718,8 +733,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     nginxInfos.ssl_certificate_key = expectKey
                     changed = true;
                 }
-                if (domaindata['HTML directory'] != nginxInfos.root) {
-                    nginxInfos.root = domaindata['HTML directory']
+                if (subdomaindata['HTML directory'] != nginxInfos.root) {
+                    nginxInfos.root = subdomaindata['HTML directory']
                     changed = true;
                 }
                 if (expectedSslMode && expectedSslMode != ["", "off", "always", "on"][nginxInfos.ssl]) {
@@ -727,14 +742,19 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     changed = true;
                 }
                 if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
-                    await writeLog("$> Generating ssl cert with let's encrypt");
-                    await spawnSudoUtil('OPENSSL_CLEAN');
-                    await virtExec("generate-letsencrypt-cert", {
-                        domain: subdomain,
-                        'renew': 2,
-                        'web': true,
-                    });
-                } else if ((selfSignSsl || sharedSSL) && domaindata['Lets Encrypt renewal'] == 'Enabled') {
+                    const remaining = subdomaindata['SSL cert expiry'] ? (Date.now() - Date.parse(subdomaindata['SSL cert expiry'])) / 86400000 : 0;
+                    if (subdomaindata['Lets Encrypt renewal'] == 'Enabled' && (remaining > 30)) {
+                        await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away so skipping renewal");
+                    } else {
+                        await writeLog("$> Generating ssl cert with let's encrypt");
+                        await spawnSudoUtil('OPENSSL_CLEAN');
+                        await virtExec("generate-letsencrypt-cert", {
+                            domain: subdomain,
+                            'renew': 2,
+                            'web': true,
+                        });
+                    }
+                } else if ((selfSignSsl || sharedSSL) && subdomaindata['Lets Encrypt renewal'] == 'Enabled') {
                     await writeLog("$> Generating self signed cert and turning off let's encrypt renewal");
                     await virtExec("generate-cert", {
                         domain: subdomain,
@@ -749,9 +769,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 break;
             case 'root':
-                // if (process.env.MODE === 'dev') {
-                //     break;
-                // }
                 // remove prefix and trailing slash
                 value = value.replace(/^\/+/, '').replace(/\/+$/, '');
                 var absolutePath = path.join(subdomaindata['Home directory'], value);
@@ -767,17 +784,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog("$> root folder is set unchanged");
                 }
                 break;
-        }
-    }
-
-    if (stillroot) {
-        subdomaindata = domaindata
-    } else {
-        try {
-            subdomaindata = await virtualminExec.getDomainInfo(subdomain);
-        } catch {
-            await writeLog("\n$> Server is not exist. Finishing execution for " + subdomain + " domain\n");
-            return;
         }
     }
 
