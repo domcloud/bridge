@@ -771,6 +771,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             case 'root':
                 // remove prefix and trailing slash
                 value = value.replace(/^\/+/, '').replace(/\/+$/, '');
+                if (!stillroot && value.startsWith('domains/' + subdomain + '/')) {
+                    // confusion with nginx generator
+                    value = value.substring(('domains/' + subdomain + '/').length);
+                }
                 var absolutePath = path.join(subdomaindata['Home directory'], value);
                 if (absolutePath !== subdomaindata['HTML directory']) {
                     await writeLog("$> Changing root folder");
