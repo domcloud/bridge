@@ -5,6 +5,7 @@ if [ ! -d "./phpmyadmin" ]; then
     cd ./phpmyadmin
     composer install -o
     yarn install
+    yarn build
     cp config.sample.inc.php config.inc.php
     hash=`node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"`
     sed -ri "s/\['blowfish_secret'\] = '';/['blowfish_secret'] = '${hash}';/g" config.inc.php
@@ -14,6 +15,7 @@ else
     git pull
     composer install -o
     yarn install
+    yarn build
     cd ..
 fi
 if [ ! -d "./phppgadmin" ]; then
@@ -29,17 +31,18 @@ else
     cd ..
 fi
 
-if [ ! -d "./webssh" ]; then
-    git clone https://github.com/huashengdun/webssh.git webssh --filter=tree:0
-    cd ./webssh
-    pip install --user -r requirements.txt
-    cd ..
-else
-    cd ./webssh
-    git pull
-    pip install --user -r requirements.txt
-    cd ..
-fi
+# if [ ! -d "./webssh" ]; then
+#     git clone https://github.com/huashengdun/webssh.git webssh --filter=tree:0
+#     cd ./webssh
+#     pip install --user -r requirements.txt
+#     cd ..
+# else
+#     cd ./webssh
+#     git pull
+#     pip install --user -r requirements.txt
+#     cd ..
+# fi
+rm -rf webssh
 
 if [ ! -d "./webssh2" ]; then
     git clone https://github.com/billchurch/webssh2.git webssh2 --filter=tree:0
@@ -53,9 +56,17 @@ if [ ! -d "./webssh2" ]; then
     sed -i "s/config.listen.port/process.env.PORT/g" index.js
     echo "require('.');" > app.js
     cd ../..
+else
+    cd ./webssh2/app
+    git pull
+    npm install --omit=dev
+    cd ../..
 fi
 
+# temporary bugfix
+wget -O ./webssh2/app/server/socket.js https://raw.githubusercontent.com/Fhwang0926/webssh2-custom/0172c9218c4668f6a775ff08076fba8152598d73/app/server/socket.js
+
 npm i
-chmod +x sudoutil.js
-echo You need to add sudoutil.js to sudoers
+chmod +x sudoutil.js sudokill.js sudocleanssl.js
+echo Done! don't forget add sudoutil.js to sudoers
 echo "echo '`whoami` ALL = (root) NOPASSWD: `echo $PWD`/sudoutil.js' | sudo EDITOR='tee' visudo /etc/sudoers.d/`whoami`"
