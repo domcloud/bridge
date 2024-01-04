@@ -501,7 +501,9 @@ export const unescapeNginx = function ( /** @type {string} */ str) {
 // https://stackoverflow.com/a/64296576
 export function splitLimit(/** @type {string} */ input,/** @type {string|RegExp} */  separator, /** @type {Number} */  limit) {
     // Ensure the separator is global
-    separator = new RegExp(separator, 'g');
+    if (!(separator instanceof RegExp) || !separator.global) {
+        separator = new RegExp(separator, 'g');
+    }
     // Allow the limit argument to be excluded
     limit = limit ?? -1;
 

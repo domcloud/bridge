@@ -43,7 +43,7 @@ class NginxExecutor {
                         switch (key) {
                             case "env_var_list":
                                 config.passenger[key].forEach((/** @type {String} */ v) => {
-                                    var splt = splitLimit(v, /=/g, 2);
+                                    var splt = splitLimit(v, /[= ]/g, 2);
                                     if (splt.length == 2) {
                                         node._add("passenger_env_var", splt[0] + ' ' + escapeNginx(splt[1]));
                                     }
@@ -51,7 +51,7 @@ class NginxExecutor {
                                 continue;
                             case "set_header_list":
                                 config.passenger[key].forEach((/** @type {String} */ v) => {
-                                    var splt = splitLimit(v, /=/g, 2);
+                                    var splt = splitLimit(v, /[= ]/g, 2);
                                     if (splt.length == 2) {
                                         node._add("passenger_set_header", splt[0] + ' ' + escapeNginx(splt[1]));
                                     }
@@ -176,7 +176,7 @@ class NginxExecutor {
                             for (const env of node[k]) {
                                 var splt = splitLimit(env._value, / /g, 2);
                                 if (splt.length == 2) {
-                                    r.passenger["set_header_list"].push(splt[0] + '=' + unescapeNginx(splt[1]));
+                                    r.passenger["set_header_list"].push(splt[0] + ' ' + unescapeNginx(splt[1]));
                                 }
                             }
                             break;

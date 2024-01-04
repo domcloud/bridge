@@ -13,6 +13,7 @@ import runner from './controllers/runner.js';
 import virtualmin from './controllers/virtualmin.js';
 import podman from './controllers/podman.js';
 
+const startTime = Date.now();
 dotenv.config();
 initUtils();
 
@@ -36,5 +37,6 @@ app.use(function (err, req, res, next) {
 const port = process.env.PORT ? parseInt(process.env.PORT) : 2223;
 app.listen(port, function () {
     console.log(`Listening on ${port}`);
+    console.log(`Start time takes ` + (Date.now() - startTime) / 1000 + ` s`)
 })
 
