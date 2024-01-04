@@ -68,5 +68,5 @@ wget -O ./webssh2/app/server/socket.js https://raw.githubusercontent.com/Fhwang0
 
 npm i
 chmod +x sudoutil.js sudokill.js sudocleanssl.js
-echo Done! don't forget add sudoutil.js to sudoers
+echo Done! don\'t forget add sudoutil.js to sudoers
 echo "echo '`whoami` ALL = (root) NOPASSWD: `echo $PWD`/sudoutil.js' | sudo EDITOR='tee' visudo /etc/sudoers.d/`whoami`"
