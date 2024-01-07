@@ -15,11 +15,11 @@ export default function () {
         try {
             let domain = await virtualminExec.getDomainInfo(req.query.domain.toString());
             let type = req.query.type.toString()
-            let n = parseInt(req.query.n.toString()) || 100;
+            let n = parseInt((req.query.n  || 100).toString()) || 100;
             let output = await logmanExec.getLog(domain, type, n);
             return res.json(output);
-        } catch (error) {
-            next(error);
+        } catch (err) {
+            next(JSON.stringify(err, Object.getOwnPropertyNames(err)));
         }
     });
     return router;

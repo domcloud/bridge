@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<info version="3">
+   <passenger_version>6.0.19</passenger_version>
+   <group_count>5</group_count>
+   <process_count>5</process_count>
+   <max>20</max>
+   <capacity_used>5</capacity_used>
+   <get_wait_list_size>0</get_wait_list_size>
+   <supergroups>
+      <supergroup>
+         <name>/home/bridge/public_html/webssh2/app (production)</name>
+         <state>READY</state>
+         <get_wait_list_size>0</get_wait_list_size>
+         <capacity_used>1</capacity_used>
+         <group default="true">
+            <name>/home/bridge/public_html/webssh2/app (production)</name>
+            <component_name>/home/bridge/public_html/webssh2/app (production)</component_name>
+            <app_root>/home/bridge/public_html/webssh2/app</app_root>
+            <app_type/>
+            <environment>production</environment>
+            <uuid>U8CALDqmahQomxukXAXm</uuid>
+            <enabled_process_count>1</enabled_process_count>
+            <disabling_process_count>0</disabling_process_count>
+            <disabled_process_count>0</disabled_process_count>
+            <capacity_used>1</capacity_used>
+            <get_wait_list_size>0</get_wait_list_size>
+            <disable_wait_list_size>0</disable_wait_list_size>
+            <processes_being_spawned>0</processes_being_spawned>
+            <life_status>ALIVE</life_status>
+            <user>bridge</user>
+            <uid>1036</uid>
+            <group>bridge</group>
+            <gid>1036</gid>
+            <options>
+               <app_root>/home/bridge/public_html/webssh2/app</app_root>
+               <app_group_name>/home/bridge/public_html/webssh2/app (production)</app_group_name>
+               <start_command>env PORT=$PORT node app.js</start_command>
+               <startup_file>/home/bridge/public_html/webssh2/app</startup_file>
+               <log_level>3</log_level>
+               <start_timeout>90000</start_timeout>
+               <environment>production</environment>
+               <base_uri>/</base_uri>
+               <spawn_method>smart</spawn_method>
+               <bind_address>127.0.0.1</bind_address>
+               <default_user>nobody</default_user>
+               <default_group>nobody</default_group>
+               <restart_dir>tmp</restart_dir>
+               <integration_mode>nginx</integration_mode>
+               <ruby>/usr/bin/ruby</ruby>
+               <python>/usr/bin/python3</python>
+               <nodejs>/usr/bin/node</nodejs>
+               <debugger>false</debugger>
+               <api_key>LcZ3a5palXtc</api_key>
+               <min_processes>0</min_processes>
+               <max_processes>1</max_processes>
+               <max_preloader_idle_time>300</max_preloader_idle_time>
+               <max_out_of_band_work_instances>1</max_out_of_band_work_instances>
+               <sticky_sessions_cookie_attributes>SameSite=Lax; Secure;</sticky_sessions_cookie_attributes>
+            </options>
+            <processes>
+               <process>
+                  <pid>2238686</pid>
+                  <sticky_session_id>592161411</sticky_session_id>
+                  <gupid>1b17ce1-YJRaByfnLl</gupid>
+                  <concurrency>-1</concurrency>
+                  <sessions>2</sessions>
+                  <busyness>2</busyness>
+                  <processed>29</processed>
+                  <spawner_creation_time>1704543452738301</spawner_creation_time>
+                  <spawn_start_time>1704543452745389</spawn_start_time>
+                  <spawn_end_time>1704543454007375</spawn_end_time>
+                  <last_used>1704543625386216</last_used>
+                  <last_used_desc>10m 55s ago</last_used_desc>
+                  <uptime>13m 46s</uptime>
+                  <life_status>ALIVE</life_status>
+                  <enabled>ENABLED</enabled>
+                  <has_metrics>true</has_metrics>
+                  <cpu>0</cpu>
+                  <rss>24056</rss>
+                  <pss>16813</pss>
+                  <private_dirty>13056</private_dirty>
+                  <swap>14568</swap>
+                  <real_memory>27624</real_memory>
+                  <vmsize>11280320</vmsize>
+                  <process_group_id>2238536</process_group_id>
+                  <command>node app.js</command>
+               </process>
+            </processes>
+         </group>
+      </supergroup>
+   </supergroups>
+</info>
