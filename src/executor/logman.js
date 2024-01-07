@@ -23,7 +23,7 @@ class LogmanExecutor {
                 if (!domain['Access log']) {
                     return {
                         code: 255,
-                        stdout: 'No access log found',
+                        stderr: 'No access log found',
                     }
                 }
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
@@ -32,7 +32,7 @@ class LogmanExecutor {
                 if (!domain['Error log']) {
                     return {
                         code: 255,
-                        stdout: 'No error log found',
+                        stderr: 'No error log found',
                     }
                 }
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
@@ -45,7 +45,7 @@ class LogmanExecutor {
                 if (!peo) {
                     return {
                         code: 255,
-                        stdout: 'Passenger instance is not set here',
+                        stderr: 'Passenger instance is not set here',
                     }
                 }
                 const parser = new XMLParser();
@@ -70,7 +70,7 @@ class LogmanExecutor {
                 let procs = peomaps.reduce((a, b) => {
                     let x = (Array.isArray(b.process) ? b.process : [b.process]);
                     a[b.group.name] = x.map(y => y.pid).filter(y => typeof y === "number");
-                }, {});
+                }, peomaps);
                 let head = `List of passenger processes running:\n`;
                 head += JSON.stringify(procs, null, 2);
                 head += `\n------------------------\n`;
@@ -85,7 +85,7 @@ class LogmanExecutor {
             default:
                 return {
                     code: 255,
-                    stdout: 'Unknown log type ' + type
+                    stderr: 'Unknown log type ' + type
                 }
         }
     }
