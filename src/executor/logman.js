@@ -41,15 +41,19 @@ class LogmanExecutor {
                     "tail", "-n", n, domain['Error log']]);
             case 'passenger':
                 const user = domain['Username'];
-                const pe = process.env.NODE_ENV === 'development' ?
-                    { stdout: await readFile('./test/passenger-status', {encoding: 'utf-8'}) } :
-                    await spawnSudoUtil("SHELL_SUDO", [user,
-                        "passenger-status", "--show=xml"]);
-                const peo = pe.stdout.trim();
+                let peo;
+                try {
+                    const pe = process.env.NODE_ENV === 'development' ?
+                        { stdout: await readFile('./test/passenger-status', { encoding: 'utf-8' }) } :
+                        await spawnSudoUtil("SHELL_SUDO", [user,
+                            "passenger-status", "--show=xml"]);
+                    peo = pe.stdout.trim();
+                } catch (error) {
+                }
                 if (!peo) {
                     return {
                         code: 255,
-                        stderr: 'Passenger instance is not set here',
+                        stderr: 'No passenger app is found or it\'s not initialized yet',
                     }
                 }
                 const parser = new XMLParser();
