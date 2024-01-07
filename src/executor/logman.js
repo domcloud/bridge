@@ -76,16 +76,13 @@ class LogmanExecutor {
                     a[b.name] = x.map(y => y.pid).filter(y => typeof y === "number");
                     return a;
                 }, {});
-                let head = `List of passenger processes running:\n`;
-                head += JSON.stringify(procs, null, 2);
-                head += `\n------------------------\n`;
-                console.log(head);
                 let pids = Object.values(procs).flatMap(x => x).join('\\|');
-                const pes = await spawnSudoUtil("SHELL_SUDO", ["root",
-                    "bash", "-c", `grep -w "\\^App \\(${pids}\\)" "${this.PASSENGERLOG}" | tail -n ${n}`
+                let pes = await spawnSudoUtil("SHELL_SUDO", ["root",
+                    "bash", "-c", `grep -w "\\(^App\\|process\\) \\(${pids}\\)" "${this.PASSENGERLOG}" | tail -n ${n}`
                 ]);
                 if (pes.code == 0) {
-                    pes.stdout = head + pes.stdout;
+                    // @ts-ignore
+                    pes.processes = procs;
                 }
                 return pes;
             default:
