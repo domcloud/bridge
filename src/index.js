@@ -1,5 +1,6 @@
 import express from 'express'
 import dotenv from 'dotenv'
+import logman from './controllers/logman.js';
 import named from './controllers/named.js';
 import nginx from './controllers/nginx.js';
 import status from './controllers/status.js';
@@ -23,6 +24,7 @@ app.use(express.static('public'));
 app.use(express.json());
 app.use('/status', status());
 app.use(checkAuth);
+app.use('/logman', logman());
 app.use('/named', named());
 app.use('/nginx', nginx());
 app.use('/iptables', iptables());
@@ -35,8 +37,9 @@ app.use(function (err, req, res, next) {
     res.json(err);
 });
 const port = process.env.PORT ? parseInt(process.env.PORT) : 2223;
+
 app.listen(port, function () {
-    console.log(`Listening on ${port}`);
     console.log(`Start time takes ` + (Date.now() - startTime) / 1000 + ` s`)
+    console.log(`Listening on ${port}`);
 })
 

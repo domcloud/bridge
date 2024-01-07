@@ -59,12 +59,16 @@ export const initUtils = async () => {
         }
         return a;
     }, {});
-    const phpPath = process.env.PHPFPM_REMILIST || '/etc/opt/remi/';
-    const phpFiles = fs.readdirSync(phpPath, { withFileTypes: true });
-    phpVersionsList = phpFiles
-        .filter(dirent => dirent.isDirectory())
-        .map(dirent => dirent.name.replace(/php(\d)(\d+)/, '$1.$2'))
-    phpVersionsList = sortSemver(phpVersionsList).reverse();
+    try {
+        const phpPath = process.env.PHPFPM_REMILIST || '/etc/opt/remi/';
+        const phpFiles = fs.readdirSync(phpPath, { withFileTypes: true });
+        phpVersionsList = phpFiles
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name.replace(/php(\d)(\d+)/, '$1.$2'))
+        phpVersionsList = sortSemver(phpVersionsList).reverse();
+    } catch (error) {
+        phpVersionsList = [];
+    }
     // TODO: detect OS/arch?
     await axios.get('https://rvm_io.global.ssl.fastly.net/binaries/centos/9/x86_64/').then(res => {
         // @ts-ignore
