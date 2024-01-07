@@ -8,9 +8,10 @@ import { XMLParser } from "fast-xml-parser";
 import { readFile } from "fs/promises";
 
 class LogmanExecutor {
+    PASSENGERLOG = '/var/log/nginx/passenger.log';
     constructor() {
         if (process.env.PASSENGERLOG) {
-            this.PASSENGERLOG = '/var/log/nginx/passenger.log';
+            this.PASSENGERLOG = process.env.PASSENGERLOG;
         }
     }
     /**

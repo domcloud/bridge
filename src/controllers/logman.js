@@ -19,7 +19,7 @@ export default function () {
             let output = await logmanExec.getLog(domain, type, n);
             return res.json(output);
         } catch (err) {
-            next(JSON.stringify(err, Object.getOwnPropertyNames(err)));
+            next(err);
         }
     });
     return router;
