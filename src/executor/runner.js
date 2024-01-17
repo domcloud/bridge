@@ -743,8 +743,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
                     const remaining = subdomaindata['SSL cert expiry'] ? (Date.parse(subdomaindata['SSL cert expiry']) - Date.now()) / 86400000 : 0;
-                    if (subdomaindata['Lets Encrypt renewal'] == 'Enabled' && (remaining > 30)) {
+                    if (!regenerateSsl && subdomaindata['Lets Encrypt renewal'] == 'Enabled' && (remaining > 30)) {
                         await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away so skipping renewal");
+                        await writeLog("$> To enforce renewal please use 'ssl lets-encrypt'");
                     } else {
                         await writeLog("$> Generating SSL cert with Let's Encrypt");
                         await spawnSudoUtil('OPENSSL_CLEAN');
