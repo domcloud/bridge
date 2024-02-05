@@ -495,7 +495,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await writeLog("$> Changing Bun engine to " + (value || 'latest'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`curl -sS https://webinstall.dev/bun${arg} | bash ; source ~/.config/envman/PATH.env`);
-                            await sshExec(`wget https://github.com/domcloud/proxy-fix/releases/download/v0.0.4/proxyfix-linux-amd64 -O ~/.local/bin/bunfix && chmod +x ~/.local/bin/bunfix || true`);
+                            await sshExec(`wget https://github.com/domcloud/proxy-fix/releases/download/v0.0.5/proxyfix-linux-amd64 -O ~/.local/bin/bunfix && chmod +x ~/.local/bin/bunfix || true`);
                             await sshExec("bun --version");
                         }
                         break;
