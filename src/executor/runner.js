@@ -796,6 +796,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     if (config.source || config.commands) {
         await sshExec(`shopt -s dotglob`, false);
         await sshExec(`export DOMAIN='${subdomain}'`, false);
+        // enable managing systemd for linger user
+        await sshExec(`export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\`id -u\`/bus`, false); 
         await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);
     }
 
