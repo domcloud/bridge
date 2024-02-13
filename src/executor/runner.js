@@ -797,7 +797,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         await sshExec(`shopt -s dotglob`, false);
         await sshExec(`export DOMAIN='${subdomain}'`, false);
         // enable managing systemd for linger user
-        await sshExec(`export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\`id -u\`/bus`, false); 
+        await sshExec(`export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\`id -u\`/bus`, false);
         await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);
     }
 
@@ -830,114 +830,120 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         await writeLog(await nginxExec.set(subdomain, config.nginx));
     }
 
-    if (config.source) {
-        if (typeof config.source === 'string') {
-            config.source = {
-                url: config.source,
-            };
-        }
-        const source = config.source;
-        if (source.url !== 'clear' && !source.url.match(/^(?:(?:https?|ftp|ssh):\/\/)?([^\/]+)/)) {
-            throw new Error("Invalid source URL");
-        }
-        if (config.directory && !source.directory) {
-            source.directory = config.directory;
-            delete config.directory;
-        }
-        var url;
-        if (source.url !== 'clear') {
-            url = new URL(source.url);
-            if (!source.type || !['clone', 'extract'].includes(source.type)) {
-                if (url.protocol == 'ssh' || url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip') && !url.pathname.endsWith('.tar.gz'))) {
-                    source.type = 'clone';
+    try {
+        if (config.source) {
+            if (typeof config.source === 'string') {
+                config.source = {
+                    url: config.source,
+                };
+            }
+            const source = config.source;
+            if (source.url !== 'clear' && !source.url.match(/^(?:(?:https?|ftp|ssh):\/\/)?([^\/]+)/)) {
+                throw new Error("Invalid source URL");
+            }
+            if (config.directory && !source.directory) {
+                source.directory = config.directory;
+                delete config.directory;
+            }
+            var url;
+            if (source.url !== 'clear') {
+                url = new URL(source.url);
+                if (!source.type || !['clone', 'extract'].includes(source.type)) {
+                    if (url.protocol == 'ssh' || url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip') && !url.pathname.endsWith('.tar.gz'))) {
+                        source.type = 'clone';
+                    } else {
+                        source.type = 'extract';
+                    }
+                }
+            }
+            let executedCMD = [`rm -rf *`];
+            let executedCMDNote = '';
+            if (source.url === 'clear') {
+                // we just delete them all
+                executedCMDNote = 'Clearing files';
+            } else if (source.type === 'clone') {
+                if (!source.branch && source.directory) {
+                    source.branch = source.directory;
+                } else if (!source.branch && url.hash) {
+                    source.branch = decodeURI(url.hash.substring(1));
+                    url.hash = '';
+                }
+                if (source.credentials?.github?.ssh) {
+                    const configFileContent = `Host github.com\n\tStrictHostKeyChecking no\n\tIdentityFile ~/.ssh/id_github_com\n`;
+                    await writeLog("$> writing SSH private key for cloning github.com repository");
+                    await sshExec(`mkdir -p ~/.ssh; touch $HOME/.ssh/{id_github_com,config}; chmod 0600 $HOME/.ssh/*`, false);
+                    await sshExec(`echo "${Buffer.from(source.credentials.github.ssh).toString('base64')}" | base64 --decode > $HOME/.ssh/id_github_com`, false);
+                    // delete old config https://stackoverflow.com/a/36111659/3908409
+                    await sshExec(`sed 's/^Host/\\n&/' $HOME/.ssh/config | sed '/^Host '"github.com"'$/,/^$/d;/^$/d' > $HOME/.ssh/config`, false);
+                    await sshExec(`echo "${Buffer.from(configFileContent).toString('base64')}" | base64 --decode >> ~/.ssh/config`, false);
+                }
+                executedCMD.push(`git clone ${escapeShell(url.toString())}` +
+                    `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
+                    `${source.shallow ? ` --depth 1` : ''}` +
+                    `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
+                executedCMDNote = 'Cloning files';
+            } else if (source.type === 'extract') {
+                if (!source.directory && url.hash) {
+                    source.directory = decodeURI(url.hash.substring(1));
+                    url.hash = '';
+                }
+                if (url.pathname.endsWith('.tar.gz')) {
+                    executedCMD.push(`wget -O _.tar.gz ` + escapeShell(url.toString()));
+                    executedCMD.push(`tar -xzf _.tar.gz ; rm _.tar.gz ; chmod -R 0750 *`);
                 } else {
-                    source.type = 'extract';
+                    executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
+                    executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);
+                }
+                if (source.directory) {
+                    executedCMD.push(`mv ${escapeShell(source.directory)}/* .`);
+                    executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
+                }
+                executedCMDNote = 'Downloading files';
+            }
+
+            if (firewallOn) {
+                await iptablesExec.setDelUser(domaindata['Username']);
+            }
+            await writeLog("$> " + executedCMDNote);
+            for (const exec of executedCMD) {
+                await sshExec(exec);
+            }
+        }
+        if (config.commands) {
+            if (config.envs) {
+                let entries = Object.entries(config.envs);
+                if (entries.length > 0)
+                    await sshExec("export " + entries.map(([k, v]) => `${k}='${v}'`).join(' '), false);
+            }
+            for (const cmd of config.commands) {
+                if (typeof cmd === 'string') {
+                    await sshExec(cmd);
+                } else if (typeof cmd === 'object') {
+                    if (cmd.command) {
+                        await sshExec(cmd.command, cmd.write === false ? false : true);
+                    } else if (cmd.feature) {
+                        await featureRunner(cmd.feature);
+                    } else if (cmd.filename && cmd.content) {
+                        await writeLog("$> writing " + cmd.filename);
+                        await sshExec(`echo "${Buffer.from(cmd.content).toString('base64')}" | base64 --decode > "${cmd.filename}"`, false);
+                    }
                 }
             }
         }
-        let executedCMD = [`rm -rf *`];
-        let executedCMDNote = '';
-        if (source.url === 'clear') {
-            // we just delete them all
-            executedCMDNote = 'Clearing files';
-        } else if (source.type === 'clone') {
-            if (!source.branch && source.directory) {
-                source.branch = source.directory;
-            } else if (!source.branch && url.hash) {
-                source.branch = decodeURI(url.hash.substring(1));
-                url.hash = '';
-            }
-            if (source.credentials?.github?.ssh) {
-                const configFileContent = `Host github.com\n\tStrictHostKeyChecking no\n\tIdentityFile ~/.ssh/id_github_com\n`;
-                await writeLog("$> writing SSH private key for cloning github.com repository");
-                await sshExec(`mkdir -p ~/.ssh; touch $HOME/.ssh/{id_github_com,config}; chmod 0600 $HOME/.ssh/*`, false);
-                await sshExec(`echo "${Buffer.from(source.credentials.github.ssh).toString('base64')}" | base64 --decode > $HOME/.ssh/id_github_com`, false);
-                // delete old config https://stackoverflow.com/a/36111659/3908409
-                await sshExec(`sed 's/^Host/\\n&/' $HOME/.ssh/config | sed '/^Host '"github.com"'$/,/^$/d;/^$/d' > $HOME/.ssh/config`, false);
-                await sshExec(`echo "${Buffer.from(configFileContent).toString('base64')}" | base64 --decode >> ~/.ssh/config`, false);
-            }
-            executedCMD.push(`git clone ${escapeShell(url.toString())}` +
-                `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
-                `${source.shallow ? ` --depth 1` : ''}` +
-                `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
-            executedCMDNote = 'Cloning files';
-        } else if (source.type === 'extract') {
-            if (!source.directory && url.hash) {
-                source.directory = decodeURI(url.hash.substring(1));
-                url.hash = '';
-            }
-            if (url.pathname.endsWith('.tar.gz')) {
-                executedCMD.push(`wget -O _.tar.gz ` + escapeShell(url.toString()));
-                executedCMD.push(`tar -xzf _.tar.gz ; rm _.tar.gz ; chmod -R 0750 *`);
-            } else {
-                executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
-                executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);
-            }
-            if (source.directory) {
-                executedCMD.push(`mv ${escapeShell(source.directory)}/* .`);
-                executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
-            }
-            executedCMDNote = 'Downloading files';
-        }
-        if (firewallOn) {
-            await iptablesExec.setDelUser(domaindata['Username']);
-        }
-        await writeLog("$> " + executedCMDNote);
-        for (const exec of executedCMD) {
-            await sshExec(exec);
-        }
-        if (firewallOn) {
+    } catch (error) {
+        throw error
+    } finally {
+        if (config.source && firewallOn) {
             await iptablesExec.setAddUser(domaindata['Username']);
         }
-    }
 
-    if (config.commands) {
-        if (config.envs) {
-            let entries = Object.entries(config.envs);
-            if (entries.length > 0)
-                await sshExec("export " + entries.map(([k, v]) => `${k}='${v}'`).join(' '), false);
-        }
-        for (const cmd of config.commands) {
-            if (typeof cmd === 'string') {
-                await sshExec(cmd);
-            } else if (typeof cmd === 'object') {
-                if (cmd.command) {
-                    await sshExec(cmd.command, cmd.write === false ? false : true);
-                } else if (cmd.feature) {
-                    await featureRunner(cmd.feature);
-                } else if (cmd.filename && cmd.content) {
-                    await writeLog("$> writing " + cmd.filename);
-                    await sshExec(`echo "${Buffer.from(cmd.content).toString('base64')}" | base64 --decode > "${cmd.filename}"`, false);
+        if (Array.isArray(config.features)) {
+            for (const feature of config.features) {
+                if (typeof feature === 'string' && feature.match(/^ssl/)) {
+                    await featureRunner(feature);
                 }
             }
         }
     }
 
-    if (Array.isArray(config.features)) {
-        for (const feature of config.features) {
-            if (typeof feature === 'string' && feature.match(/^ssl/)) {
-                await featureRunner(feature);
-            }
-        }
-    }
 }
