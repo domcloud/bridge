@@ -375,7 +375,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                 await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} || true ; rm -rf ~/tmp/python`);
                                 await sshExec(`(cd ~/.pyenv/versions/${parg.version}/bin && ln -s python3 python) || true`);
                                 await sshExec("cd ~/public_html", false);
-                            } else {
+                            } else if (parg.version !== "system") {
                                 await sshExec(`pyenv install ${parg.version} -s`);
                             }
                             await sshExec(`pyenv global ${parg.version.replace(":latest", "")} ; source ~/.bashrc`);

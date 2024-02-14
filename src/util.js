@@ -153,6 +153,8 @@ export const getPythonVersion = (/** @type {string} */ status) => {
         return expand(status);
     }
     switch (status) {
+        case 'system':
+            return expand(status);
         case 'lts':
         case 'security':
             var security = pythonVersionsList.find(x => {
