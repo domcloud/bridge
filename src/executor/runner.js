@@ -514,7 +514,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await writeLog("$> Changing Zig engine to " + (value || 'latest'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`curl -sS https://webinstall.dev/zig${arg} | bash ; source ~/.config/envman/PATH.env`);
-                            await sshExec("zig --version");
+                            await sshExec("zig version");
                         }
                         break;
                     case 'dotnet':
@@ -535,7 +535,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             }
                             await writeLog("$> Changing Dotnet engine to " + (value || 'lts'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
-                            await sshExec(`wget https://dot.net/v1/dotnet-install.sh -O ~/tmp/dotnet-install.sh && bash ~/tmp/dotnet-install.sh ${arg}`);
+                            await sshExec(`(curl -sS https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh | bash -s -- ${arg})`);
                             await sshExec(`pathman add ~/.dotnet ; source ~/.config/envman/PATH.env`);
                             await sshExec("dotnet --version");
                         }
