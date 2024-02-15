@@ -2,6 +2,7 @@
     "compilerOptions": {
         "module": "ESNext",
         "moduleResolution": "Node",
-        "checkJs": true
+        "checkJs": true,
+        "resolveJsonModule": true
     }
 }
