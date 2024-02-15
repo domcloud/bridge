@@ -175,13 +175,16 @@ export const getRubyVersion = (/** @type {string} */ status) => {
     if (/^ruby-/.test(status)) {
         status = status.substring(5);
     }
-    if (/^\d+(\.\d+){0,2}$/.test(status)) {
+    if (/^\d+(\.\d+)?$/.test(status)) {
         var m = rubyVersionsList.find(x => {
             return x.startsWith(status);
         });
         if (m) {
             return m;
         }
+    }
+    if (/^\d+\.\d+\.\d+$/.test(status)) {
+        return status;
     }
     switch (status) {
         case 'lts':
@@ -207,18 +210,13 @@ export const getJavaVersion = (/** @type {string} */ status) => {
     if (!status) {
         return expand(stable);
     }
-    if (/^\d+(\.\d+)?$/.test(status)) {
+    if (/^\d+(\.\d+){0,2}$/.test(status)) {
         var m = javaVersionsList.find(x => {
             return x.startsWith(status);
         });
         if (m) {
             return expand(m);
-        } else {
-            return expand(status + ":latest");
         }
-    }
-    if (/^\d+\.\d+\.\d+$/.test(status)) {
-        return expand(status);
     }
     switch (status) {
         case 'lts':
