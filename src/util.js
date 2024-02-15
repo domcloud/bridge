@@ -25,7 +25,7 @@ let javaVersionsMap = {};
 let sslWildcardsMap = {};
 const pythonConstants = {
     // https://raw.githubusercontent.com/indygreg/python-build-standalone/latest-release/latest-release.json
-    tag: "20231002",
+    tag: "20240107",
     // NOTE: x86_64_v3 requires AVX2 CPU support
     match: /cpython-(\d+\.\d+\.\d+)\+\d+-x86_64_v3-unknown-linux-gnu-pgo\+lto-full\.tar\.zst/g,
     index() {
@@ -103,17 +103,15 @@ export const initUtils = async () => {
     }).catch(err => {
         console.error('error fetching Python releases', err);
     });
-    await axios.get('https://raw.githubusercontent.com/actions/setup-java/main/src/distributions/microsoft/microsoft-openjdk-versions.json').then(res => {
-        for (const verItem of res.data) {
-            if (verItem.version && verItem.files) {
-                var iPlatform = verItem.files.findIndex(x => x.filename.endsWith('-linux-x64.tar.gz'))
-                if (iPlatform >= 0) {
-                    javaVersionsList.push(verItem.version);
-                    javaVersionsMap[verItem.version] = verItem.files[iPlatform].download_url;
+    await axios.get('https://api.adoptium.net/v3/info/available_releases').then(async res => {
+        for (const ver of res.data.available_releases) {
+            await axios.get(`https://api.adoptium.net/v3/assets/latest/${ver}/hotspot?architecture=x64&image_type=jdk&os=linux&vendor=eclipse`).then(x => {
+                for (const binary of x.data) {
+                    javaVersionsMap[binary.version.semver] = binary.binary.package.link;
                 }
-            }
+            })
         }
-        javaVersionsList = sortSemver(javaVersionsList).reverse();
+        javaVersionsList = sortSemver(Object.keys(javaVersionsMap)).reverse();
     })
 }
 
@@ -177,16 +175,13 @@ export const getRubyVersion = (/** @type {string} */ status) => {
     if (/^ruby-/.test(status)) {
         status = status.substring(5);
     }
-    if (/^\d+(\.\d+)?$/.test(status)) {
+    if (/^\d+(\.\d+){0,2}$/.test(status)) {
         var m = rubyVersionsList.find(x => {
             return x.startsWith(status);
         });
         if (m) {
             return m;
         }
-    }
-    if (/^\d+\.\d+\.\d+$/.test(status)) {
-        return status;
     }
     switch (status) {
         case 'lts':
