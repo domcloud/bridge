@@ -182,7 +182,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         let firewallStatusCache = undefined;
         let firewallStatus = async () => {
             if (firewallStatusCache === undefined)
-                firewallStatusCache = !!iptablesExec.getByUsers(await iptablesExec.getParsed(), domaindata['Username'])[0];
+                firewallStatusCache = !!iptablesExec.getByUser(await iptablesExec.getParsed(), domaindata['Username'], domaindata['User ID']);
             return firewallStatusCache;
         };
         if (Array.isArray(config.features)) {

@@ -12,11 +12,7 @@ export default function () {
     router.get('/show', async function (req, res, next) {
         try {
             const p = await executor.getParsed();
-            if (req.query.user) {
-                res.json(executor.getByUsers(p, ...(req.query.user.toString()).split(',')));
-            } else {
-                res.json((p));
-            }
+            res.json(p);
         } catch (error) {
             next(error);
         }

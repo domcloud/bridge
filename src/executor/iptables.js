@@ -13,12 +13,14 @@ const tmpFile6 = path.join(process.cwd(), '/.tmp/ip6tables')
 class IptablesExecutor {
     /**
      * @param {any} parsed
-     * @param {string[]} users
      */
-    getByUsers(parsed, ...users) {
-        return users.map(u => (
-            parsed.filter?.rules.find(x => x["--uid-owner"] === u)
-        ))
+    getByUser(parsed, userName, userID = "") {
+        const setRules = [
+            `-A OUTPUT -m owner --uid-owner ${userID} -j REJECT -m comment --comment "${userName}"`,
+            `-A OUTPUT -m owner --uid-owner ${userName} -j REJECT`,
+        ]
+
+        return parsed.filter.some((x) => setRules.includes(x));
     }
     /**
      * 
