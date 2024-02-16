@@ -12,7 +12,7 @@ export default function () {
     router.get('/show', async function (req, res, next) {
         try {
             const p = await executor.getParsed();
-            const user = req.body.user.toString();
+            const user = req.query.user?.toString();
             if (user) {
                 if (user.match(/[^\w.-]/)) {
                     throw new Error("invalid username");
