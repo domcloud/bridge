@@ -35,7 +35,12 @@ app.use('/virtualmin', virtualmin());
 app.use(function (err, req, res, next) {
     if (err instanceof Error) {
         res.status(500);
-        res.json(err);    
+        res.json({
+            stack: err.stack,
+            name: err.name,
+            message: err.message,
+            ...err,
+        });    
     } else {
         res.status(403);
         res.json(err);    
