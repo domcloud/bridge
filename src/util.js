@@ -321,8 +321,25 @@ export const executeLock = function (
     });
 }
 
-export const deleteIfExist = ( /** @type {string[]} */ arr, /** @type {string[]} */ record) => {
-    const idx = arr.findIndex((x) => record.includes(x));
+// Returns whether an object has a given set of `key:value` pairs.
+/**
+ * @param {any} object
+ * @param {Record<string, any>} attrs
+ */
+export function isMatch(object, attrs) {
+    var _keys = Object.keys(attrs),
+        length = _keys.length;
+    if (object == null) return !length;
+    var obj = Object(object);
+    for (var i = 0; i < length; i++) {
+        var key = _keys[i];
+        if (attrs[key] !== obj[key] || !(key in obj)) return false;
+    }
+    return true;
+}
+
+export const deleteIfExist = ( /** @type {any[]} */ arr, /** @type {any} */ record) => {
+    const idx = arr.findIndex((x) => isMatch(x, record));
     if (idx === -1) {
         return false;
     } else {
@@ -330,10 +347,10 @@ export const deleteIfExist = ( /** @type {string[]} */ arr, /** @type {string[]}
         return true;
     }
 }
-export const appendIfNotExist = ( /** @type {string[]} */ arr, /** @type {string[]} */ record) => {
-    const idx = arr.findIndex((x) => record.includes(x));
+export const appendIfNotExist = ( /** @type {any[]} */ arr, /** @type {{}} */ record) => {
+    const idx = arr.findIndex((x) => isMatch(x, record));
     if (idx === -1) {
-        arr.splice(arr.length - 1, 0, record[0])
+        arr.push(record);
         return true;
     } else {
         return false;
