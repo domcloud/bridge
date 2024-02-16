@@ -203,7 +203,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             break;
                         case 'rename':
                             if (value && value["new-user"] && await firewallStatus()) {
-                                await iptablesExec.setDelUser(domaindata['Username']);
+                                await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
                             }
                             await writeLog("$> virtualmin rename-domain");
                             await virtExec("rename-domain", value, {
@@ -214,7 +214,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                                 domain = value["new-domain"];
                             await new Promise(r => setTimeout(r, 1000));
                             if (value && value["new-user"] && await firewallStatus()) {
-                                await iptablesExec.setAddUser(value["new-user"]);
+                                await iptablesExec.setAddUser(value["new-user"], domaindata['User ID']);
                             }
                             domaindata = await virtualminExec.getDomainInfo(domain);
                             break;
@@ -339,11 +339,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'firewall':
                         if (value === '' || value === 'on') {
                             await writeLog("$> Changing firewall protection to " + (value || 'on'));
-                            await writeLog(await iptablesExec.setAddUser(domaindata['Username']));
+                            await writeLog(await iptablesExec.setAddUser(domaindata['Username'], domaindata['User ID']));
                             firewallStatusCache = true;
                         } else if (value === 'off') {
                             await writeLog("$> Changing firewall protection to " + value);
-                            await writeLog(await iptablesExec.setDelUser(domaindata['Username']));
+                            await writeLog(await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']));
                             firewallStatusCache = false;
                         }
                         break;
@@ -902,7 +902,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             }
 
             if (firewallOn) {
-                await iptablesExec.setDelUser(domaindata['Username']);
+                await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
             }
             await writeLog("$> " + executedCMDNote);
             for (const exec of executedCMD) {
@@ -934,7 +934,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         throw error
     } finally {
         if (config.source && firewallOn) {
-            await iptablesExec.setAddUser(domaindata['Username']);
+            await iptablesExec.setAddUser(domaindata['Username'], domaindata['User ID']);
         }
 
         if (Array.isArray(config.features)) {

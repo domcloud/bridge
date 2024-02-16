@@ -1,7 +1,7 @@
 import {
     appendIfNotExist,
     cat,
-    deleteIfNotExist,
+    deleteIfExist,
     executeLock,
     spawnSudoUtil,
     writeTo
@@ -134,7 +134,7 @@ class NamedExecutor {
             var file = parse(cat(tmpFile));
             var arr = getArrayOf(file, type);
             var map = mapKey[type](domain, ...("" + value).split(' '));
-            if (!deleteIfNotExist(arr, map)) {
+            if (!deleteIfExist(arr, map)) {
                 return "Done unchanged";
             }
             file.soa.serial++;
@@ -168,7 +168,7 @@ class NamedExecutor {
                     }
                 }
                 if (mod.action === 'del') {
-                    if (deleteIfNotExist(arr, map)) {
+                    if (deleteIfExist(arr, map)) {
                         changecount++;
                     }
                 }

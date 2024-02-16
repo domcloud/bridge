@@ -19,9 +19,6 @@ import {
     dirname
 } from 'path';
 import axios from 'axios';
-import {
-    AbortController
-} from 'node-abort-controller';
 
 /**
  * @param {import('stream').Writable} stream
