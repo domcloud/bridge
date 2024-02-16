@@ -1,8 +1,11 @@
-import { encodeIptablesDoc, genRules, parseIptablesDoc } from '../parsers/iptables.js';
+import {
+    appendIfRecordNotExist,
+    deleteIfRecordExist,
+    encodeIptablesDoc,
+    genRules, parseIptablesDoc
+} from '../parsers/iptables.js';
 import {
     cat,
-    appendIfNotExist,
-    deleteIfExist,
     executeLock,
     spawnSudoUtil,
     writeTo
@@ -32,7 +35,7 @@ class IptablesExecutor {
             const rules = p.filter;
             const setRules = genRules(userName, userID);
 
-            if (!appendIfNotExist(rules, setRules)) {
+            if (!appendIfRecordNotExist(rules, setRules)) {
                 return "Done unchanged for iptables";
             }
             writeTo(tmpFile, encodeIptablesDoc(p));
@@ -45,7 +48,7 @@ class IptablesExecutor {
             const rules = p.filter;
             const setRules = genRules(userName, userID);
 
-            if (!appendIfNotExist(rules, setRules)) {
+            if (!appendIfRecordNotExist(rules, setRules)) {
                 return "Done unchanged for iptables";
             }
             writeTo(tmpFile6, encodeIptablesDoc(p));
@@ -61,7 +64,7 @@ class IptablesExecutor {
             const rules = p.filter;
             const setRules = genRules(userName, userID);
 
-            if (!deleteIfExist(rules, setRules)) {
+            if (!deleteIfRecordExist(rules, setRules)) {
                 return "Done unchanged for iptables";
             }
             writeTo(tmpFile, encodeIptablesDoc(p));
@@ -74,7 +77,7 @@ class IptablesExecutor {
             const rules = p.filter;
             const setRules = genRules(userName, userID);
 
-            if (!deleteIfExist(rules, setRules)) {
+            if (!deleteIfRecordExist(rules, setRules)) {
                 return "Done unchanged for iptables";
             }
             writeTo(tmpFile6, encodeIptablesDoc(p));
