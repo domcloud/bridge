@@ -122,6 +122,10 @@ class VirtualminExecutor {
                     k = "--" + k;
                     if (typeof v === 'boolean')
                         p.push(escapeShell(k));
+                    else if (Array.isArray(v))
+                        v.forEach(e => {
+                            p.push(escapeShell(k), escapeShell(e));
+                        });
                     else
                         p.push(escapeShell(k), escapeShell(v));
                 }

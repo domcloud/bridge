@@ -2,6 +2,7 @@ import path from "path";
 import {
     detectCanShareSSL,
     escapeShell,
+    executeLock,
     getDbName,
     getJavaVersion,
     getLtsPhp,
@@ -42,7 +43,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         await writer(s + "\n");
     }
     const virtExec = (program, ...opts) => {
-        return new Promise((resolve, reject) => {
+        const corePromise = () => new Promise((resolve, reject) => {
             var virt = virtualminExec.execFormattedAsync(program, ...opts);
             virt.stdout.on('data', function (chunk) {
                 writeLog((chunk + '').split('\n').filter(x => x).join('\n').toString());
@@ -55,6 +56,13 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 (code === 0 ? resolve : reject)(code);
             });
         });
+        const optIdx = opts.findIndex(x => !!opts[x].domain)
+        if (optIdx >= 0) {
+            const lockPath = 'virtualmin-' + opts[optIdx].domain;
+            return executeLock(lockPath, corePromise)  
+        } else {
+            return corePromise();
+        }
     }
     await writeLog(`DOM Cloud runner v${getVersion()} ref ${getRevision()} in ${domain} at ${new Date().toISOString()}`);
     if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {

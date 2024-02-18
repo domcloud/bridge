@@ -1,8 +1,6 @@
 import {
-    cat,
     executeLock,
     spawnSudoUtil,
-    writeTo
 } from '../util.js';
 import { existsSync } from 'fs';
 
