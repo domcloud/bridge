@@ -260,7 +260,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await virtExec("delete-domain", value, {
                                 user,
                             });
-                            await spawnSudoUtil('PHPFPM_CLEAN', domaindata['ID']);
+                            await spawnSudoUtil('CLEAN_DOMAIN', [domaindata['ID'], domain]);
                             // no need to do other stuff
                             return;
                         default:

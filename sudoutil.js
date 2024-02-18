@@ -155,20 +155,28 @@ switch (cli.args.shift()) {
         cnf = cnf.replace(/^subjectAltName=DNS.+\n/gm, '');
         ShellString(cnf).to(env.OPENSSL_OUT);
         exit(0);
-    case 'PHPFPM_CLEAN':
-        arg = cli.args.shift();
+    case 'CLEAN_DOMAIN':
+        const id = cli.args.shift();
+        const domain = cli.args.shift();
         var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
-        var cleaned = '';
+        var fpmcleaned = '', nginxcleaned = '';
         for (const f of fpmlist) {
-            var p = `${env.PHPFPM_REMICONF.replace('$', f)}/${arg}.conf`;
+            var p = `${env.PHPFPM_REMICONF.replace('$', f)}/${id}.conf`;
             if (existsSync(p)) {
                 rm(p);
-                cleaned = f;
+                fpmcleaned = f;
                 break;
             }
         }
-        if (cleaned) {
-            exec(`systemctl restart ${cleaned}-php-fpm`, { silent: true })
+        if (existsSync(env.NGINX_PATH.replace('$', domain))) {
+            rm(p);
+            nginxcleaned = '1';
+        }
+        if (fpmcleaned) {
+            exec(`systemctl restart ${fpmcleaned}-php-fpm`)
+        }
+        if (nginxcleaned) {
+            exec(`${env.NGINX_BIN} -s reload`);
         }
         exit(0);
     case 'SHELL_KILL':
