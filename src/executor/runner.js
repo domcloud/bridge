@@ -56,7 +56,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 (code === 0 ? resolve : reject)(code);
             });
         });
-        const optIdx = opts.findIndex(x => !!opts[x].domain)
+        const optIdx = opts.findIndex(x => !!(x && x.domain))
         if (optIdx >= 0) {
             const lockPath = 'virtualmin-' + opts[optIdx].domain;
             return executeLock(lockPath, corePromise)  
