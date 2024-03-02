@@ -8,7 +8,9 @@ HOST_ADDRESSES=""
 for RECORD_TYPE in A AAAA; do
   while read -r p; do
     if [[ $p != "#"* ]]; then
-      printf '\r%s Fetching NS %s of %s' "$(tput el)" $RECORD_TYPE $p
+      if [[ -v TERMINFO ]]; then
+        printf '\r%s Fetching NS %s of %s' "$(tput el)" $RECORD_TYPE $p
+      fi
       FFI=$(dig +short $RECORD_TYPE $(echo "$p" | xargs) | grep -v '\.$' | tail -n1)
       while read -r q; do
         if [[ $q != "" ]]; then
@@ -23,8 +25,6 @@ for RECORD_TYPE in A AAAA; do
     fi
   done <"$SCRIPT_DIR/sites.conf"
 done 
-
-printf '\n'
 
 echo "$IPV4_ADDRESSES" > "$SCRIPT_DIR/ipv4_addresses.txt"
 echo "$IPV6_ADDRESSES" > "$SCRIPT_DIR/ipv6_addresses.txt"
