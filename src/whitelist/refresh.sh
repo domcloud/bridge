@@ -1,29 +1,32 @@
 #!/bin/bash
+set -e 
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+bash "$SCRIPT_DIR/resolve.sh"
 
 ### Create Ipset
 ipset -! create whitelist hash:ip
 ipset -! create whitelist-v6 hash:ip family inet6
-### Clear Ipset, not gonna use it because DNS IPs often changing
-# ipset flush whitelist
-# ipset flush whitelist-v6
+### Clear Ipset
+ipset flush whitelist
+ipset flush whitelist-v6
+
 while read p; do
-  if [[ $p != "#"* ]];
+  if [[ $p != "" ]];
   then
-    FFI=`dig +short A $(echo $p | xargs) | grep -v '\.$'`
-    while read -r q; do
-      if [[ $q != "" ]];
-      then
-        ipset -! add whitelist $q
-      fi
-    done < <(echo $FFI| sed 's/ /\n/g')
-    FFI6=`dig +short AAAA $(echo $p | xargs) | grep -v '\.$'`
-    while read -r q; do
-      if [[ $q != "" ]];
-      then
-        ipset -! add whitelist-v6 $q
-      fi
-    done < <(echo $FFI6| sed 's/ /\n/g')
-  fi
-done <"$SCRIPT_DIR/sites.conf"
+    ipset -! add whitelist $q
+done <"$SCRIPT_DIR/ipv4_addresses.txt"
+
+while read p; do
+  if [[ $p != "" ]];
+  then
+    ipset -! add whitelist_v6 $q
+done <"$SCRIPT_DIR/ipv6_addresses.txt"
+
+if [ ! -f "$SCRIPT_DIR/hosts.txt" ]; then
+    cat /etc/hosts > "$SCRIPT_DIR/hosts.txt"
+fi
+
+cat "$SCRIPT_DIR/hosts.txt" > /etc/hosts
+cat "$SCRIPT_DIR/host_addresses.txt" >> /etc/hosts
