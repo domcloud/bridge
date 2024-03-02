@@ -26,6 +26,6 @@ done
 
 printf '\n'
 
-echo "$IPV4_ADDRESSES" > ipv4_adresses.txt
-echo "$IPV6_ADDRESSES" > ipv6_adresses.txt
-echo "$HOST_ADDRESSES" > host_adresses.txt
+echo "$IPV4_ADDRESSES" > "$SCRIPT_DIR/ipv4_addresses.txt"
+echo "$IPV6_ADDRESSES" > "$SCRIPT_DIR/ipv6_addresses.txt"
+echo "$HOST_ADDRESSES" > "$SCRIPT_DIR/host_addresses.txt"

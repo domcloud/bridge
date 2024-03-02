@@ -15,13 +15,15 @@ ipset flush whitelist-v6
 while read p; do
   if [[ $p != "" ]];
   then
-    ipset -! add whitelist $q
+    ipset -! add whitelist $p
+  fi
 done <"$SCRIPT_DIR/ipv4_addresses.txt"
 
 while read p; do
   if [[ $p != "" ]];
   then
-    ipset -! add whitelist_v6 $q
+    ipset -! add whitelist-v6 $p
+  fi
 done <"$SCRIPT_DIR/ipv6_addresses.txt"
 
 if [ ! -f "$SCRIPT_DIR/hosts.txt" ]; then
