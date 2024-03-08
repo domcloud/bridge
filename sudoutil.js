@@ -253,9 +253,19 @@ switch (cli.args.shift()) {
             while (m = r.exec(df)) {
                 if (!m) return false;
                 if ((m[2] || '').startsWith('/boot')) return false;
+                let bytes_str = m[1];
+                if (bytes_str.match(/^\d+$/)) {
+                    bytes_str += "B";
+                }
                 var size = parseFloat(m[1].slice(0, -1));
                 var unit = m[1].slice(-1);
-                size = size * (unit === 'T' ? 1024 * 1024 : unit === 'G' ? 1024 : unit === 'M' ? 1 : 0.001);
+                size = size * {
+                    T: 1024 * 1024,
+                    G: 1024,
+                    M: 1,
+                    K: 1 / 1024,
+                    B: 1 / (1024 * 1024),
+                }[unit];
                 if (size < 1536) {
                     return true;
                 }
