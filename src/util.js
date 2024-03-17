@@ -86,18 +86,16 @@ export const getPythonVersion = (/** @type {string} */ status) => {
         return expand(status);
     }
     switch (status) {
-        case 'system':
-            return expand(status);
         case 'lts':
         case 'security':
-            var security = pythonVersionsList.find(x => {
-                return !x.startsWith(stable.substring(0, stable.lastIndexOf('.')));
-            });
+            var security = pythonVersionsList[2];
             return expand(security || stable);
         case 'latest':
         case 'stable':
-        default:
             return expand(stable);
+        case 'system':
+        default:
+            return expand(status);
     }
 }
 
@@ -157,7 +155,7 @@ export const getJavaVersion = (/** @type {string} */ status) => {
         case 'lts':
         case 'security':
             var security = javaVersionsList.find(x => {
-                return !x.startsWith(stable.substring(0, stable.lastIndexOf('.')));
+                return x !== stable && parseInt(x.split('.')[0]) % 3 === 0
             });
             return expand(security || stable);
         case 'latest':
