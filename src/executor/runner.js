@@ -59,7 +59,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         const optIdx = opts.findIndex(x => !!(x && x.domain))
         if (optIdx >= 0) {
             const lockPath = 'virtualmin-' + opts[optIdx].domain;
-            return executeLock(lockPath, corePromise)  
+            return executeLock(lockPath, corePromise)
         } else {
             return corePromise();
         }
@@ -503,7 +503,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await writeLog("$> Changing Bun engine to " + (value || 'latest'));
                             await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
                             await sshExec(`curl -sS https://webinstall.dev/bun${arg} | bash ; source ~/.config/envman/PATH.env`);
-                            await sshExec(`(cd ~/.local/bin/; wget -qO- https://github.com/domcloud/proxy-fix/releases/download/v0.1.2/proxy-fix-linux-amd64.tar.gz | tar xz && mv proxy-fix-linux-amd64 bunfix)`);
+                            await sshExec(`(cd ~/.local/bin/; wget -qO- https://github.com/domcloud/proxy-fix/releases/download/v0.1.3/proxy-fix-linux-amd64.tar.gz | tar xz && mv proxy-fix-linux-amd64 bunfix)`);
                             await sshExec("bun --version");
                         }
                         break;
