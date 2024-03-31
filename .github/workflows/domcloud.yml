@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Invoke SGA deployment hook
-        uses: distributhor/workflow-webhook@v2
+        uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGA }}
@@ -17,7 +17,7 @@ jobs:
           data: >-
             {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
       - name: Invoke NYC deployment hook
-        uses: distributhor/workflow-webhook@v2
+        uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_NYC }}
@@ -25,7 +25,7 @@ jobs:
           data: >-
             {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
       - name: Invoke AMS deployment hook
-        uses: distributhor/workflow-webhook@v2
+        uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_AMS }}
@@ -33,7 +33,7 @@ jobs:
           data: >-
             {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
       - name: Invoke TYO deployment hook
-        uses: distributhor/workflow-webhook@v2
+        uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_TYO }}
@@ -41,7 +41,7 @@ jobs:
           data: >-
             {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
       - name: Invoke BLR deployment hook
-        uses: distributhor/workflow-webhook@v2
+        uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_BLR }}
@@ -49,7 +49,7 @@ jobs:
           data: >-
             {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
       - name: Invoke SAO deployment hook
-        uses: distributhor/workflow-webhook@v2
+        uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_SAO }}
