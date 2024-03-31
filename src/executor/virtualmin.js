@@ -23,10 +23,16 @@ class VirtualminExecutor {
             }
         if (r.code === 255)
             throw r;
+        /**
+         * @type {Record<string, Record<string, string>>}
+         */
+        let result = {};
+        /**
+         * @type {Record<string, string>}
+         */
+        let nesval = {};
         let data = r.stdout.split('\n'),
-            result = {},
-            neskey = '',
-            nesval = {};
+            neskey = '';
         for (let line of data) {
             line = line.trimEnd();
             if (line.length >= 4 && line[0] === ' ') {
@@ -44,7 +50,7 @@ class VirtualminExecutor {
         }
         result[neskey] = nesval;
         if (typeof domain === 'string') {
-            result = result[domain];
+            return result[domain];
         }
         return result;
     }
