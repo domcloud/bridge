@@ -114,19 +114,20 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             break;
         case 'rust':
         case 'rustlang':
-            if (value == 'off') {
+            arg = value;
+            if (arg == 'off') {
                 await writeLog("$> Removing Rust engine");
                 await sshExec("rustup self uninstall -y");
                 await sshExec("pathman remove $HOME/.cargo/bin");
-                break;
             } else {
-                await writeLog(value ? "$> Changing Rust engine to " + value : "$> installing Rust engine");
+                await writeLog(arg ? "$> Changing Rust engine to " + arg : "$> installing Rust engine");
                 await sshExec("command -v pathman &> /dev/null || (curl -sS https://webinstall.dev/pathman | bash) ; source ~/.bashrc");
-                await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal)`);
+                await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain none)`);
                 await sshExec(`pathman add $HOME/.cargo/bin ; source ~/.config/envman/PATH.env`);
-                if (value && value != "stable" && value != "current" && value != "latest") {
-                    await sshExec(`rustup toolchain install ${value} && rustup default ${value}`);
+                if (!arg || ["current", "latest", "lts"].includes(arg)) {
+                    arg = "stable"
                 }
+                await sshExec(`rustup toolchain install ${arg} --profile minimal && rustup default ${arg}`);
                 await sshExec("rustc --version");
             }
             break;
