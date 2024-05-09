@@ -116,8 +116,7 @@ switch (cli.args.shift()) {
         exit(0);
     case 'VIRTUAL_SERVER_SET':
         arg = cli.args.shift();
-        DEST = env.VIRTUAL_SERVER_OUT.replace('$', arg);
-        cat(env.VIRTUAL_SERVER_TMP).to(DEST);
+        cat(env.VIRTUAL_SERVER_TMP).to(env.VIRTUAL_SERVER_OUT.replace('$', arg));
         exit(0);
     case 'NGINX_START':
         exec(env.NGINX_START);
