@@ -1,10 +1,14 @@
 import {
     cat,
     escapeShell,
+    executeLock,
     spawnSudoUtil,
     spawnSudoUtilAsync,
-    splitLimit
+    splitLimit,
+    writeTo
 } from "../util.js";
+import path from 'path';
+const tmpFile = path.join(process.cwd(), '/.tmp/virtual-server')
 
 class VirtualminExecutor {
     /**
@@ -154,6 +158,41 @@ class VirtualminExecutor {
      */
     execAsync(...command) {
         return spawnSudoUtilAsync('VIRTUALMIN', command);
+    }
+
+    /**
+     * @param {string} id
+     * @param {{ [s: string]: string; }} props
+     */
+    async pushVirtualServerConfig(id, props) {
+        return await executeLock('virtual-server', () => {
+            return new Promise((resolve, reject) => {
+                spawnSudoUtil('VIRTUAL_SERVER_GET', [id]).then(() => {
+                    const fileConf = cat(tmpFile);
+                    const config = cat(tmpFile).trimEnd().split("\n");
+                    for (const [key, value] of Object.entries(props)) {
+                        let i = config.findIndex(x => x.startsWith(key + '='));
+                        if (i >= 0) {
+                            config[i] = key + '=' + value;
+                        } else {
+                            config.push(key + '=' + value)
+                        }
+                    }
+                    config.push('');
+                    const outConf = config.join("\n");
+                    if (outConf != fileConf) {
+                        writeTo(tmpFile, outConf);
+                        spawnSudoUtil('VIRTUAL_SERVER_SET', [id]).then(() => {
+                            resolve("Done updated\n");
+                        }).catch((err) => {
+                            reject(err);
+                        })
+                    } else {
+                        resolve("Nothing changed\n");
+                    }
+                }).catch(reject);
+            });
+        })
     }
 }
 

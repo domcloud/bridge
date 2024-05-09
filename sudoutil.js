@@ -39,6 +39,9 @@ const env = Object.assign({}, {
     BASH_SU: 'su',
     BASH_SUDO: 'sudo',
     BASH_KILL: 'kill',
+    VIRTUAL_SERVER_PATH: '/etc/webmin/virtual-server/domains/$',
+    VIRTUAL_SERVER_OUT: '/etc/webmin/virtual-server/domains/$',
+    VIRTUAL_SERVER_TMP: path.join(__dirname, '.tmp/virtual-server'),
     NGINX_PATH: '/etc/nginx/conf.d/$.conf',
     NGINX_OUT: '/etc/nginx/conf.d/$.conf',
     NGINX_BIN: 'nginx',
@@ -105,6 +108,16 @@ switch (cli.args.shift()) {
         }
         rm(DEST + '.bak');
         exec(`${env.NGINX_BIN} -s reload`);
+        exit(0);
+    case 'VIRTUAL_SERVER_GET':
+        arg = cli.args.shift();
+        cat(env.VIRTUAL_SERVER_PATH.replace('$', arg)).to(env.VIRTUAL_SERVER_TMP);
+        fixOwner(env.VIRTUAL_SERVER_TMP);
+        exit(0);
+    case 'VIRTUAL_SERVER_SET':
+        arg = cli.args.shift();
+        DEST = env.VIRTUAL_SERVER_OUT.replace('$', arg);
+        cat(env.VIRTUAL_SERVER_TMP).to(DEST);
         exit(0);
     case 'NGINX_START':
         exec(env.NGINX_START);

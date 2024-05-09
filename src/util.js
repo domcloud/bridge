@@ -31,7 +31,7 @@ export const initUtils = () => {
     revision = rev.indexOf(':') === -1 ? rev : cat('.git/' + rev.substring(5)).trim();
     revision = revision.substring(0, 7);
     sslWildcardsMap = (process.env.SSL_WILDCARDS || '').split(',').reduce((a, b) => {
-        var splits = b.split(':');
+        var splits = b.split(':', 2);
         if (splits.length == 2) {
             a[splits[0].toLowerCase()] = splits[1];
         }

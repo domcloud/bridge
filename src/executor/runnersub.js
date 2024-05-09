@@ -110,10 +110,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);
                 break;
             case 'ssl':
-                // ssl now also fix any misconfigurations
-                // if (process.env.MODE === 'dev') {
-                //     break;
-                // }
+                // ssl also fix any misconfigurations
                 let regenerateSsl = false;
                 let selfSignSsl = false;
                 let expectedSslMode = null;
@@ -182,10 +179,19 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     });
                 } else if (!changed) {
                     await writeLog("$> SSL config seems OK, nothing changed");
+                    break;
                 }
-                if (changed) {
-                    await writeLog("$> Applying nginx ssl config on " + subdomain);
-                    await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
+                await writeLog("$> Applying nginx ssl config on " + subdomain);
+                await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
+                if (sharedSSL && sharedSSL.match(/\/(\d{10,})\//)) {
+                    await writeLog("$> Applying SSL links with global domain");
+                    let id = sharedSSL.match(/\/(\d{10,})\//)[1];
+                    await writeLog(await virtualminExec.pushVirtualServerConfig(subdomaindata['ID'], {
+                        'ssl_same': id,
+                        'ssl_key': path.join(sharedSSL, 'ssl.key'),
+                        'ssl_cert': path.join(sharedSSL, 'ssl.cert'),
+                        'ssl_chain': path.join(sharedSSL, 'ssl.ca'),
+                    }));
                 }
                 break;
             case 'root':
