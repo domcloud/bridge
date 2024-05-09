@@ -159,8 +159,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     nginxInfos.config.ssl = expectedSslMode;
                     changed = true;
                 }
+                // if force LE or no explicit command AND not shared, check regeration
                 if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
                     const remaining = subdomaindata['SSL cert expiry'] ? (Date.parse(subdomaindata['SSL cert expiry']) - Date.now()) / 86400000 : 0;
+                    // if force LE or remaining > 30 days, get fresh one
                     if (!regenerateSsl && subdomaindata['Lets Encrypt renewal'] == 'Enabled' && (remaining > 30)) {
                         await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away so skipping renewal");
                         await writeLog("$> To enforce renewal please use 'ssl lets-encrypt'");
@@ -173,7 +175,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             'web': true,
                         });
                     }
-                } else if ((selfSignSsl || sharedSSL) && subdomaindata['Lets Encrypt renewal'] == 'Enabled') {
+                    // if LE ON AND force self-sign / shared on, must turn off
+                    // if it was shared, just assume that's also LE ON
+                } else if ((selfSignSsl || sharedSSL) && ((subdomaindata['SSL shared with'] && changed) || subdomaindata['Lets Encrypt renewal'] == 'Enabled')) {
                     await writeLog("$> Generating self signed cert and turning off let's encrypt renewal");
                     await virtExec("generate-cert", {
                         domain: subdomain,
