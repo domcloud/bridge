@@ -115,7 +115,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 let regenerateSsl = false;
                 let selfSignSsl = false;
                 let expectedSslMode = null;
-                let wasBreaking = false;
                 if (['off', 'always', 'on'].includes(value)) {
                     expectedSslMode = value;
                 } else if (value == 'letsencrypt' || value == 'lets-encrypt') {
@@ -136,17 +135,19 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             domain: subdomain,
                             'break-ssl-cert': true,
                         });
-                        wasBreaking = true;
+                        await new Promise(r => setTimeout(r, 1000));
+                        nginxNodes = await nginxExec.get(subdomain);
+                        nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
                     }
                 }
                 if (!expectCert || !expectKey) {
                     expectedSslMode = 'off';
                 }
-                if (!wasBreaking && expectCert != nginxInfos.ssl_certificate) {
+                if (expectCert != nginxInfos.ssl_certificate) {
                     nginxInfos.ssl_certificate = expectCert;
                     changed = true;
                 }
-                if (!wasBreaking && expectKey != nginxInfos.ssl_certificate_key) {
+                if (expectKey != nginxInfos.ssl_certificate_key) {
                     nginxInfos.ssl_certificate_key = expectKey;
                     changed = true;
                 }
