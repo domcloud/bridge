@@ -136,8 +136,12 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             'break-ssl-cert': true,
                         });
                         await new Promise(r => setTimeout(r, 1000));
+                        // paths changing... need to refresh data
+                        subdomaindata = await virtualminExec.getDomainInfo(subdomain);
                         nginxNodes = await nginxExec.get(subdomain);
                         nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
+                        expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
+                        expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : subdomaindata['SSL key file'];
                     }
                 }
                 if (!expectCert || !expectKey) {
