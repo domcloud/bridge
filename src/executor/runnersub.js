@@ -111,6 +111,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 break;
             case 'ssl':
                 // ssl also fix any misconfigurations
+                var changed = false;
                 let regenerateSsl = false;
                 let selfSignSsl = false;
                 let expectedSslMode = null;
@@ -123,7 +124,12 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     selfSignSsl = true;
                 }
                 var sharedSSL = regenerateSsl ? null : detectCanShareSSL(subdomain);
-                if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
+                var nginxNodes = await nginxExec.get(subdomain);
+                var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
+                var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
+                var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : subdomaindata['SSL key file'];
+                // if (force regenerate or no explicit command or ssl not match) AND it's shared, then must break.
+                if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl) || (expectCert != nginxInfos.ssl_certificate)) {
                     if (subdomaindata['SSL shared with']) {
                         await writeLog("$> Breaking ssl cert sharing with the global domain");
                         await virtExec("modify-web", {
@@ -133,11 +139,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         wasBreaking = true;
                     }
                 }
-                var nginxNodes = await nginxExec.get(subdomain);
-                var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
-                var changed = false;
-                var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
-                var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : subdomaindata['SSL key file'];
                 if (!expectCert || !expectKey) {
                     expectedSslMode = 'off';
                 }
