@@ -1,5 +1,5 @@
 import { getJavaVersion, getPythonVersion, getRubyVersion } from "../util.js";
-import { podmanExec } from "./podman.js";
+import { dockerExec } from "./docker.js";
 
 /**
  * @param {string} key
@@ -12,13 +12,19 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
     let arg;
     switch (key) {
         case 'docker':
-        case 'podman':
             if (value === '' || value === 'on') {
-                await writeLog("$> Enabling podman features");
-                await writeLog(await podmanExec.enablePodman(domaindata['Username']));
+                await writeLog("$> Enabling docker features");
+                await writeLog(await dockerExec.enableDocker(domaindata['Username']));
+                await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`, false);
+                await sshExec(`echo "export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock" >>  ~/.bashrc; source ~/.bashrc`);
+                await sshExec(`mkdir -p ~/.config/docker; echo '{"exec-opts": ["native.cgroupdriver=cgroupfs"]}' > ~/.config/docker/daemon.json`);
+                await sshExec(`dockerd-rootless-setuptool.sh install`);
             } else if (value === 'off') {
-                await writeLog("$> Disabling podman features");
-                await writeLog(await podmanExec.disablePodman(domaindata['Username']));
+                await writeLog("$> Disabling docker features");
+                await sshExec(`dockerd-rootless-setuptool.sh uninstall`);
+                await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`);
+                await sshExec(`rm -rf ~/.config/docker`);
+                await writeLog(await dockerExec.disableDocker(domaindata['Username']));
             }
             break;
         case 'python':

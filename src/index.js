@@ -12,7 +12,7 @@ import {
 } from './util.js';
 import runner from './controllers/runner.js';
 import virtualmin from './controllers/virtualmin.js';
-import podman from './controllers/podman.js';
+import docker from './controllers/docker.js';
 
 const startTime = Date.now();
 dotenv.config();
@@ -29,7 +29,7 @@ app.use('/named', named());
 app.use('/nginx', nginx());
 app.use('/iptables', iptables());
 app.use('/screend', screend());
-app.use('/podman', podman());
+app.use('/docker', docker());
 app.use('/runner', runner());
 app.use('/virtualmin', virtualmin());
 app.use(function (err, req, res, next) {

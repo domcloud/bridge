@@ -4,51 +4,51 @@ import {
 } from '../util.js';
 import { existsSync } from 'fs';
 
-class PodmanExecutor {
+class DockerExecutor {
     LOGINLINGERDIR =  '/var/lib/systemd/linger';
     constructor() {
         if (process.env.LOGINLINGERDIR) {
-            this.LOGINLINGERDIR = '/var/lib/systemd/linger';
+            this.LOGINLINGERDIR = process.env.LOGINLINGERDIR;
         }
     }
     /**
      * @param {string} user
      */
-    checkPodmanEnabled(user) {
+    checkDockerEnabled(user) {
         return existsSync(this.LOGINLINGERDIR + '/' + user);
     }
     /**
      * @param {string} user
      */
-    async enablePodman(user) {
-        if (this.checkPodmanEnabled(user)) {
+    async enableDocker(user) {
+        if (this.checkDockerEnabled(user)) {
             return "Done unchanged";
         }
-        return await executeLock('podman', async () => {
+        return await executeLock('docker', async () => {
             await spawnSudoUtil("SHELL_SUDO", ["root",
                 "usermod", "--add-subuids", "100000-165535",
                 "--add-subgids", "100000-165535", user]);
             await spawnSudoUtil("SHELL_SUDO", ["root",
                 "loginctl", "enable-linger", user]);
-            return "Updated for podman";
+            return "Updated for docker";
         });
     }
     /**
      * @param {string} user
      */
-    async disablePodman(user) {
-        if (!this.checkPodmanEnabled(user)) {
+    async disableDocker(user) {
+        if (!this.checkDockerEnabled(user)) {
             return "Done unchanged";
         }
-        return await executeLock('podman', async () => {
+        return await executeLock('docker', async () => {
             await spawnSudoUtil("SHELL_SUDO", ["root",
                 "usermod", "--del-subuids", "100000-165535",
                 "--del-subgids", "100000-165535", user]);
             await spawnSudoUtil("SHELL_SUDO", ["root",
                 "loginctl", "disable-linger", user]);
-            return "Updated for podman";
+            return "Updated for docker";
         });
     }
 }
 
-export const podmanExec = new PodmanExecutor();
+export const dockerExec = new DockerExecutor();
