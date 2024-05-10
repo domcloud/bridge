@@ -77,7 +77,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         } catch (e) {
         } finally {
             if (!cancelController.signal.aborted)
-                periodicAbort = setTimeout(periodicSender, delay);
+                periodicAbort = setTimeout(periodicSender, delay).unref();
         }
     }
     periodicSender();
