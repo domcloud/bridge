@@ -12,7 +12,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
     let arg;
     switch (key) {
         case 'docker':
-            await sshExec(`export XDG_RUNTIME_DIR=unix:path=/run/user/$(id -u)`, false);
+            await sshExec(`export XDG_RUNTIME_DIR=/run/user/$(id -u)`, false);
             await sshExec(`export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus`, false);
             if (value === '' || value === 'on') {
                 await writeLog("$> Enabling docker features");

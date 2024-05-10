@@ -231,7 +231,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         await sshExec(`shopt -s dotglob`, false);
         await sshExec(`export DOMAIN='${subdomain}'`, false);
         // enable managing systemd for linger user
-        await sshExec(`export XDG_RUNTIME_DIR=unix:path=/run/user/$(id -u)`, false);
+        await sshExec(`export XDG_RUNTIME_DIR=/run/user/$(id -u)`, false);
         await sshExec(`export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus`, false);
         await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);
     }
