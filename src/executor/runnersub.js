@@ -180,8 +180,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         });
                     }
                     // if LE ON AND force self-sign / shared on, must turn off
-                    // if it was shared, just assume that's also LE ON
-                } else if ((selfSignSsl || sharedSSL) && ((subdomaindata['SSL shared with'] && changed) || subdomaindata['Lets Encrypt renewal'] == 'Enabled')) {
+                    // if it was shared or ssl path don't match, just assume that's also LE ON
+                } else if ((selfSignSsl || sharedSSL) && ((subdomaindata['SSL shared with'] && changed && !expectedSslMode) || subdomaindata['Lets Encrypt renewal'] == 'Enabled')) {
                     await writeLog("$> Generating self signed cert and turning off let's encrypt renewal");
                     await virtExec("generate-cert", {
                         domain: subdomain,
