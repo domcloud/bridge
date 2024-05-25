@@ -26,6 +26,7 @@ class LogmanExecutor {
                     return {
                         code: 255,
                         stderr: 'No access log found',
+                        stdout: '',
                     }
                 }
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
@@ -35,6 +36,7 @@ class LogmanExecutor {
                     return {
                         code: 255,
                         stderr: 'No error log found',
+                        stdout: '',
                     }
                 }
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
@@ -42,7 +44,10 @@ class LogmanExecutor {
             case 'passenger':
                 const user = domain['Username'];
                 const procs = await this.getPassengerPids(user);
-                let pids = Object.values(procs).flatMap(x => x).join('\\|');
+                if (procs.code !== 0) {
+                    return procs;
+                }
+                let pids = Object.values(procs.stdout).flatMap(x => x).join('\\|');
                 let pes = await spawnSudoUtil("SHELL_SUDO", ["root",
                     "bash", "-c", `grep -w "\\(^App\\|process\\) \\(${pids}\\)" "${this.PASSENGERLOG}" | tail -n ${n}`
                 ]);
@@ -54,7 +59,8 @@ class LogmanExecutor {
             default:
                 return {
                     code: 255,
-                    stderr: 'Unknown log type ' + type
+                    stderr: 'Unknown log type ' + type,
+                    stdout: '',
                 }
         }
     }
@@ -64,10 +70,13 @@ class LogmanExecutor {
     async restartPassenger(domain) {
         const user = domain['Username'];
         const procs = await this.getPassengerPids(user);
-        let pids = Object.values(procs).flatMap(x => x).join(' ');
+        if (procs.code !== 0) {
+            return procs.stderr;
+        }
+        let pids = Object.values(procs.stdout).flatMap(x => x);
         if (pids) {
             await spawnSudoUtil("SHELL_SUDO", ["root",
-                "bash", "-c", `kill -9 ${pids}`
+                "kill", "-9", ...pids
             ]);
             return "Sent SIGKILL to processes " + pids;
         }
@@ -90,6 +99,7 @@ class LogmanExecutor {
             return {
                 code: 255,
                 stderr: 'No passenger app is found or it\'s not initialized yet',
+                stdout: '',
             }
         }
         const parser = new XMLParser();
@@ -116,7 +126,11 @@ class LogmanExecutor {
             a[b.name] = x.map(y => y.pid).filter(y => typeof y === "number");
             return a;
         }, {});
-        return procs;
+        return {
+            code: 0,
+            stderr: '',
+            stdout: procs
+        };
     }
 }
 
