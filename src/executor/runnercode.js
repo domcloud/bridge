@@ -1,5 +1,6 @@
 import { getJavaVersion, getPythonVersion, getRubyVersion } from "../util.js";
 import { dockerExec } from "./docker.js";
+import { logmanExec } from "./logman.js";
 
 /**
  * @param {string} key
@@ -11,6 +12,10 @@ import { dockerExec } from "./docker.js";
 export async function runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec) {
     let arg;
     switch (key) {
+        case 'restart':
+                await writeLog("$> Restarting passenger processes");
+                await writeLog(await logmanExec.restartPassenger(domaindata));
+            break;
         case 'docker':
             await sshExec(`export XDG_RUNTIME_DIR=/run/user/$(id -u)`, false);
             await sshExec(`export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus`, false);
@@ -58,6 +63,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await writeLog("$> Removing Node engine");
                 await sshExec("rm -rf ~/.local/opt/node-* ~/.local/opt/node ~/Downloads/webi/node");
                 await sshExec("rm -rf ~/.cache/yarn ~/.cache/node ~/.config/yarn ~/.npm");
+                await sshExec("pathman remove .local/opt/node/bin");
             } else {
                 if (value == "latest" || value == "current") {
                     arg = "";
@@ -78,6 +84,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             if (arg == 'off') {
                 await writeLog("$> Removing Deno engine");
                 await sshExec("rm -rf ~/.local/opt/deno-* ~/.deno ~/.local/bin/deno ~/Downloads/webi/deno");
+                await sshExec("pathman remove ~/.deno/bin/");
             } else {
                 if (value == "latest" || value == "current") {
                     arg = "";
@@ -118,6 +125,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             if (arg == 'off') {
                 await writeLog("$> Removing Rust engine");
                 await sshExec("rustup self uninstall -y");
+                await sshExec(`pathman remove $HOME/.cargo/bin`);
             } else {
                 await writeLog(arg ? "$> Changing Rust engine to " + arg : "$> installing Rust engine");
                 await sshExec(`command -v rustup &> /dev/null || (curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain none)`);
@@ -181,6 +189,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             if (arg == 'off') {
                 await writeLog("$> Removing Dotnet engine");
                 await sshExec("rm -rf ~/.dotnet");
+                await sshExec("pathman remove ~/.dotnet");
             } else {
                 if (value == "latest" || value == "current") {
                     arg = "--version latest";

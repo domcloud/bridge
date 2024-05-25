@@ -22,5 +22,14 @@ export default function () {
             next(err);
         }
     });
+    router.post('/restart', checkGet(['domain']), async function (req, res, next) {
+        try {
+            let domain = await virtualminExec.getDomainInfo(req.query.domain.toString());
+            let output = await logmanExec.restartPassenger(domain);
+            return res.json(output);
+        } catch (err) {
+            next(err);
+        }
+    });
     return router;
 }

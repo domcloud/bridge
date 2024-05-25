@@ -41,45 +41,7 @@ class LogmanExecutor {
                     "tail", "-n", n, domain['Error log']]);
             case 'passenger':
                 const user = domain['Username'];
-                let peo;
-                try {
-                    const pe = process.env.NODE_ENV === 'development' ?
-                        { stdout: await readFile('./test/passenger-status', { encoding: 'utf-8' }) } :
-                        await spawnSudoUtil("SHELL_SUDO", [user,
-                            "passenger-status", "--show=xml"]);
-                    peo = pe.stdout.trim();
-                } catch (error) {
-                }
-                if (!peo) {
-                    return {
-                        code: 255,
-                        stderr: 'No passenger app is found or it\'s not initialized yet',
-                    }
-                }
-                const parser = new XMLParser();
-                let peom = parser.parse(peo);
-                let peoma = peom?.info?.supergroups?.supergroup;
-                if (!peoma) {
-                    return {
-                        code: 255,
-                        stderr: 'incomplete response from passenger-status',
-                        stdout: ''
-                    }
-                }
-                let peomaa = Array.isArray(peoma) ? peoma : [peoma];
-                let peomaps = peomaa.map(x => x.group).filter(x => x.processes);
-                if (!peomaps.length) {
-                    return {
-                        code: 255,
-                        stderr: 'No processes reported from passenger-status is running',
-                        stdout: ''
-                    }
-                }
-                let procs = peomaps.reduce((a, b) => {
-                    let x = (Array.isArray(b.processes.process) ? b.processes.process : [b.processes.process]);
-                    a[b.name] = x.map(y => y.pid).filter(y => typeof y === "number");
-                    return a;
-                }, {});
+                const procs = await this.getPassengerPids(user);
                 let pids = Object.values(procs).flatMap(x => x).join('\\|');
                 let pes = await spawnSudoUtil("SHELL_SUDO", ["root",
                     "bash", "-c", `grep -w "\\(^App\\|process\\) \\(${pids}\\)" "${this.PASSENGERLOG}" | tail -n ${n}`
@@ -95,6 +57,66 @@ class LogmanExecutor {
                     stderr: 'Unknown log type ' + type
                 }
         }
+    }
+    /**
+     * @param {any} domain
+     */
+    async restartPassenger(domain) {
+        const user = domain['Username'];
+        const procs = await this.getPassengerPids(user);
+        let pids = Object.values(procs).flatMap(x => x).join(' ');
+        if (pids) {
+            await spawnSudoUtil("SHELL_SUDO", ["root",
+                "bash", "-c", `kill -9 ${pids}`
+            ]);
+            return "Sent SIGKILL to processes " + pids;
+        }
+        return "No processes currently running.";
+    }
+    /**
+     * @param {string} user
+     */
+    async getPassengerPids(user) {
+        let peo;
+        try {
+            const pe = process.env.NODE_ENV === 'development' ?
+                { stdout: await readFile('./test/passenger-status', { encoding: 'utf-8' }) } :
+                await spawnSudoUtil("SHELL_SUDO", [user,
+                    "passenger-status", "--show=xml"]);
+            peo = pe.stdout.trim();
+        } catch (error) {
+        }
+        if (!peo) {
+            return {
+                code: 255,
+                stderr: 'No passenger app is found or it\'s not initialized yet',
+            }
+        }
+        const parser = new XMLParser();
+        let peom = parser.parse(peo);
+        let peoma = peom?.info?.supergroups?.supergroup;
+        if (!peoma) {
+            return {
+                code: 255,
+                stderr: 'incomplete response from passenger-status',
+                stdout: ''
+            }
+        }
+        let peomaa = Array.isArray(peoma) ? peoma : [peoma];
+        let peomaps = peomaa.map(x => x.group).filter(x => x.processes);
+        if (!peomaps.length) {
+            return {
+                code: 255,
+                stderr: 'No processes reported from passenger-status is running',
+                stdout: ''
+            }
+        }
+        let procs = peomaps.reduce((a, b) => {
+            let x = (Array.isArray(b.processes.process) ? b.processes.process : [b.processes.process]);
+            a[b.name] = x.map(y => y.pid).filter(y => typeof y === "number");
+            return a;
+        }, {});
+        return procs;
     }
 }
 
