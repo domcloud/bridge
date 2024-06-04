@@ -7,5 +7,6 @@ do
   if [[ "$d" =~ ^/home/ ]] && ! [[ -d "$d" ]]; then 
     printf 'Directory %q missing for user: %q\n' "$d" "$u"
     userdel -r $u
+    groupdel $u
   fi
 done
