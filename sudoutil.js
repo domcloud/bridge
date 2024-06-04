@@ -291,14 +291,15 @@ switch (cli.args.shift()) {
         var iptables = exec(`${env.IPTABLES_LOAD} -t ${env.IPTABLES_PATH}`, { silent: true });
         var ip6tables = exec(`${env.IP6TABLES_LOAD} -t ${env.IP6TABLES_PATH}`, { silent: true });
         var storage = exec(`df -h | grep ^/dev`, { silent: true });
-        var inodes = exec(`df -i | grep ^/dev`, { silent: true });
+        var quota = exec(`findmnt -r | grep -P '(/ |/home )'`, { silent: true }).stdout.trim().split('\n');
         var storagefull = isDfFull(storage.stdout);
+        var quotaOK = quota.every(x => x.includes('usrquota') && x.includes('grpquota'));
         var chkmem = exec(`free -h`, { silent: true });
         var chkcpu = exec(`uptime`, { silent: true })
 
         var exitcode = 0;
         if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
-            fpms.some((f) => f.code !== 0) || storagefull)
+            fpms.some((f) => f.code !== 0) || storagefull || !quotaOK)
             exitcode = 1;
         ShellString(JSON.stringify({
             timestamp: Date.now(),
@@ -309,12 +310,13 @@ switch (cli.args.shift()) {
                 iptables: iptables.code,
                 ip6tables: ip6tables.code,
                 storage: storagefull ? 1 : 0,
+                quota: quotaOK ? 0 : 1,
             },
             logs: {
                 cpuinfo: chkcpu.stdout.trim().split('\n'),
                 meminfo: chkmem.stdout.trimEnd().split('\n'),
                 storage: storage.stdout.trim().split('\n'),
-                inodes: inodes.stdout.trim().split('\n'),
+                quota,
                 nginx: nginx.stderr.trim().split('\n'),
                 fpms: fpms.map((f) => f.stderr.trim()),
                 iptables: iptables.stderr.trim().split('\n'),
