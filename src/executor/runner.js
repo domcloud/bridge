@@ -1,6 +1,5 @@
 import {
     executeLock,
-    getDbName,
     getRevision,
     getVersion,
     spawnSudoUtil,
@@ -187,10 +186,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             for (const feature of config.features) {
                 const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
                 const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
-                const isFeatureEnabled = ( /** @type {string} */ f) => {
-                    return domaindata['Features'].includes(f);
-                }
-                let enabled;
+                
                 if (!sandbox) {
                     switch (key) {
                         case 'modify':
@@ -259,82 +255,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     }
                 }
                 switch (key) {
-                    case 'mysql':
-                    case 'mariadb':
-                        enabled = isFeatureEnabled('mysql');
-                        if (value === "off") {
-                            await writeLog("$> Disabling MySQL");
-                            if (enabled) {
-                                await virtExec("disable-feature", value, {
-                                    domain,
-                                    mysql: true,
-                                });
-                            } else {
-                                await writeLog("Already disabled");
-                            }
-                        } else {
-                            let dbname = null;
-                            if (!enabled) {
-                                await writeLog("$> Enabling MySQL");
-                                await virtExec("enable-feature", value, {
-                                    domain,
-                                    mysql: true,
-                                });
-                                dbname = config.subdomain || "db";
-                            }
-                            if (value.startsWith("create ")) {
-                                dbname = value.substr("create ".length);
-                            }
-                            if (!dbname) {
-                                break;
-                            }
-                            dbname = getDbName(domaindata['Username'], dbname);
-                            await writeLog(`$> Creating db instance ${dbname} on MySQL`);
-                            await virtExec("create-database", {
-                                domain,
-                                name: dbname,
-                                type: 'mysql',
-                            });
-                        }
-                        break;
-                    case 'postgres':
-                    case 'postgresql':
-                        enabled = isFeatureEnabled('postgres');
-                        if (value === "off") {
-                            await writeLog("$> Disabling PostgreSQL");
-                            if (enabled) {
-                                await virtExec("disable-feature", value, {
-                                    domain,
-                                    postgres: true,
-                                });
-                            } else {
-                                await writeLog("Already disabled");
-                            }
-                        } else {
-                            let dbname = null;
-                            if (!enabled) {
-                                await writeLog("$> Enabling PostgreSQL");
-                                await virtExec("enable-feature", value, {
-                                    domain,
-                                    postgres: true,
-                                });
-                                dbname = config.subdomain || "db";
-                            }
-                            if (value.startsWith("create ")) {
-                                dbname = value.substr("create ".length);
-                            }
-                            if (!dbname) {
-                                break;
-                            }
-                            dbname = getDbName(domaindata['Username'], dbname);
-                            await writeLog(`$> Creating db instance ${dbname} on PostgreSQL`);
-                            await virtExec("create-database", {
-                                domain,
-                                name: dbname,
-                                type: 'postgres',
-                            });
-                        }
-                        break;
                     case 'firewall':
                         if (value === '' || value === 'on') {
                             await writeLog("$> Changing firewall protection to " + (value || 'on'));
@@ -354,7 +274,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         }
         await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PIP_PROGRESS_BAR=off`, false);
-        await sshExec(`DATABASE='${getDbName(domaindata['Username'])}' USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
+        await sshExec(`USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         const firewallOn = await firewallStatus();
         if (config.subdomain) {
             await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, virtExec, firewallOn);

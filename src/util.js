@@ -406,7 +406,7 @@ export const normalizeShellOutput = function ( /** @type {string[]} */ output) {
 }
 
 export const getDbName = function ( /** @type {string} */ user, /** @type {string} */ db = 'db') {
-    return (`${user.replace(/-/g, '_')}_${db}`).replace(/[^a-zA-Z0-9_]/g, '');
+    return (`${user.replace(/-/g, '_')}_${db.replace(/[-.]/g, '_')}`).replace(/[^a-zA-Z0-9_]/g, '');
 }
 
 export const escapeNginx = function ( /** @type {string} */ str) {

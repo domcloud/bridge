@@ -1,7 +1,7 @@
 import path from "path";
 import {
     detectCanShareSSL,
-    escapeShell, getLtsPhp, spawnSudoUtil, splitLimit
+    escapeShell, getDbName, getLtsPhp, spawnSudoUtil, splitLimit
 } from "../util.js";
 import { iptablesExec } from "./iptables.js";
 import { namedExec } from "./named.js";
@@ -33,15 +33,105 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
     }
 
+    let domainprefix = stillroot || !subdomaindata['Parent domain'] ? "db" : subdomain.slice(0, -(subdomaindata['Parent domain'].length + 1));
+    let dbname = getDbName(domaindata['Username'], domainprefix);
+
     const featureRunner = async (/** @type {object|string} */ feature) => {
-        const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
+        let key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
         let value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
+        if (key == 'mariadb') {
+            key = 'mysql';
+        }
+        if (key == 'postgresql') {
+            key = 'postgres';
+        }
+        let enabled = domaindata['Features'].includes(key);
+        let subenabled = subdomaindata['Features'].includes(key);
+        let dbneedcreate = false;
         switch (key) {
-            case 'dns':
-                let enabled = domaindata['Features'].includes('dns');
-                let subenabled = subdomaindata['Features'].includes('dns');
+            case 'mysql':
                 if (!stillroot && !enabled) {
-                    await writeLog("Problem: Can't manage DNS while parent domain DNS is disabled");
+                    await writeLog("Problem: Can't manage MySQL while it is disabled in parent domain");
+                    break;
+                }
+                if (value === "off") {
+                    await writeLog("$> Disabling MySQL");
+                    if (enabled) {
+                        await virtExec("disable-feature", value, {
+                            subdomain,
+                            mysql: true,
+                        });
+                    } else {
+                        await writeLog("Already disabled");
+                    }
+                    break;
+                }
+                if (!enabled) {
+                    await writeLog("$> Enabling MySQL");
+                    await virtExec("enable-feature", value, {
+                        subdomain,
+                        mysql: true,
+                    });
+                    dbneedcreate = true;
+                }
+                if (value.startsWith("create ")) {
+                    let newdb = value.substr("create ".length).trim();
+                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? newdb : domainprefix + '_' + newdb);
+                    dbneedcreate = true;
+                }
+                if (!dbneedcreate) {
+                    break;
+                }
+                await writeLog(`$> Creating db instance ${dbname} on MySQL`);
+                await virtExec("create-database", {
+                    subdomain,
+                    name: dbname,
+                    type: 'mysql',
+                });
+                break;
+            case 'postgres':
+                if (!stillroot && !enabled) {
+                    await writeLog("Problem: Can't manage PostgreSQL while it is disabled in parent domain");
+                    break;
+                }
+                if (value === "off") {
+                    await writeLog("$> Disabling PostgreSQL");
+                    if (enabled) {
+                        await virtExec("disable-feature", value, {
+                            subdomain,
+                            postgres: true,
+                        });
+                    } else {
+                        await writeLog("Already disabled");
+                    }
+                    break;
+                }
+                if (!enabled) {
+                    await writeLog("$> Enabling PostgreSQL");
+                    await virtExec("enable-feature", value, {
+                        subdomain,
+                        postgres: true,
+                    });
+                    dbneedcreate = true;
+                }
+                if (value.startsWith("create ")) {
+                    let newdb = value.substr("create ".length).trim();
+                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? newdb : domainprefix + '_' + newdb);
+                    dbneedcreate = true;
+                }
+                if (!dbneedcreate) {
+                    break;
+                }
+                await writeLog(`$> Creating db instance ${dbname} on PostgreSQL`);
+                await virtExec("create-database", {
+                    subdomain,
+                    name: dbname,
+                    type: 'postgres',
+                });
+                break;
+            case 'dns':
+                if (!stillroot && !enabled) {
+                    await writeLog("Problem: Can't manage DNS while it is disabled in parent domain");
                     break;
                 }
                 if (value === "off") {
@@ -54,39 +144,41 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     } else {
                         await writeLog("Already disabled");
                     }
-                } else {
-                    if (!subenabled) {
-                        await writeLog("$> Enabling DNS feature");
-                        await virtExec("enable-feature", value, {
-                            domain: subdomain,
-                            dns: true,
-                        });
+                    break;
+                }
+                if (!subenabled) {
+                    await writeLog("$> Enabling DNS feature");
+                    await virtExec("enable-feature", value, {
+                        domain: subdomain,
+                        dns: true,
+                    });
+                }
+                if (!Array.isArray(value)) {
+                    break;
+                }
+                if (!stillroot) {
+                    await writeLog("Problem: Can't manage DNS records on subdomain");
+                    break;
+                }
+                await writeLog("$> Applying DNS records");
+                for (let i = 0; i < value.length; i++) {
+                    if (typeof value[i] !== 'string') {
+                        continue;
                     }
-                    if (Array.isArray(value)) {
-                        if (stillroot) {
-                            await writeLog("$> Applying DNS records");
-                            for (let i = 0; i < value.length; i++) {
-                                if (typeof value[i] === 'string') {
-                                    if (!value[i].startsWith("add ") && !value[i].startsWith("del ")) {
-                                        value[i] = `add ${value[i]}`;
-                                    }
-                                    const values = splitLimit(value[i] + '', / /g, 4);
-                                    if (values.length == 4) {
-                                        value[i] = {
-                                            action: values[0].toLowerCase() === 'del' ? 'del' : 'add',
-                                            type: values[1].toLowerCase(),
-                                            domain: values[2].toLowerCase(),
-                                            value: values[3],
-                                        };
-                                    }
-                                }
-                            }
-                            await writeLog(await namedExec.set(subdomain, value));
-                        } else {
-                            await writeLog("Problem: Can't manage DNS records on subdomain");
-                        }
+                    if (!value[i].startsWith("add ") && !value[i].startsWith("del ")) {
+                        value[i] = `add ${value[i]}`;
+                    }
+                    const values = splitLimit(value[i] + '', / /g, 4);
+                    if (values.length == 4) {
+                        value[i] = {
+                            action: values[0].toLowerCase() === 'del' ? 'del' : 'add',
+                            type: values[1].toLowerCase(),
+                            domain: values[2].toLowerCase(),
+                            value: values[3],
+                        };
                     }
                 }
+                await writeLog(await namedExec.set(subdomain, value));
                 break;
             case 'php':
                 if (value == 'lts' || value == 'latest') {
@@ -345,6 +437,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             }
         }
         if (config.commands) {
+            await sshExec(`export DATABASE='${dbname}'`, false);
             if (config.envs) {
                 let entries = Object.entries(config.envs);
                 if (entries.length > 0)
