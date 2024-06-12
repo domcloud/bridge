@@ -58,7 +58,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog("$> Disabling MySQL");
                     if (subenabled) {
                         await virtExec("disable-feature", value, {
-                            subdomain,
+                            domain: subdomain,
                             mysql: true,
                         });
                     } else {
@@ -69,7 +69,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 if (!subenabled) {
                     await writeLog("$> Enabling MySQL");
                     await virtExec("enable-feature", value, {
-                        subdomain,
+                        domain: subdomain,
                         mysql: true,
                     });
                     dbneedcreate = true;
@@ -82,7 +82,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 if (dbneedcreate) {
                     await writeLog(`$> Creating db instance ${dbname} on MySQL`);
                     await virtExec("create-database", {
-                        subdomain,
+                        domain: subdomain,
                         name: dbname,
                         type: 'mysql',
                     });
@@ -97,7 +97,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog("$> Disabling PostgreSQL");
                     if (subenabled) {
                         await virtExec("disable-feature", value, {
-                            subdomain,
+                            domain: subdomain,
                             postgres: true,
                         });
                     } else {
@@ -108,7 +108,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 if (!subenabled) {
                     await writeLog("$> Enabling PostgreSQL");
                     await virtExec("enable-feature", value, {
-                        subdomain,
+                        domain: subdomain,
                         postgres: true,
                     });
                     dbneedcreate = true;
@@ -121,7 +121,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 if (dbneedcreate) {
                     await writeLog(`$> Creating db instance ${dbname} on PostgreSQL`);
                     await virtExec("create-database", {
-                        subdomain,
+                        domain: subdomain,
                         name: dbname,
                         type: 'postgres',
                     }
