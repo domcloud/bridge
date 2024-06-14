@@ -445,7 +445,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             for (const cmd of config.commands) {
                 if (typeof cmd === 'string') {
                     await sshExec(cmd);
-                } else if (typeof cmd === 'object') {
+                } else if (typeof cmd === 'object' && cmd !== null) {
                     if (cmd.command) {
                         await sshExec(cmd.command, cmd.write === false ? false : true);
                     } else if (cmd.feature) {
