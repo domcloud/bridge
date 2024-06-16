@@ -15,7 +15,6 @@ import virtualmin from './controllers/virtualmin.js';
 import docker from './controllers/docker.js';
 import unit from './controllers/unit.js';
 
-const startTime = Date.now();
 dotenv.config();
 initUtils();
 
@@ -48,16 +47,6 @@ app.use(function (err, req, res, next) {
         res.json(err);    
     }
 });
-const port = process.env.PORT ? parseInt(process.env.PORT) : 2223;
-const server = app.listen(port, function () {
-    console.log(`Start time takes ` + (Date.now() - startTime) / 1000 + ` s`)
-    console.log(`Listening on ${port}`);
-})
-server.on('close', () => {
-    console.log(`Server closing`);
-    setTimeout(() => {
-    console.log(`Server force closing`);
-    process.exit(0);
-    }, 2000).unref();
-})
+
+export default app;
 

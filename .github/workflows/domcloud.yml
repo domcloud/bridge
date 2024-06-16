@@ -15,7 +15,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGA }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGA }}
           data: >-
-            {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
+            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
       - name: Invoke NYC deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -23,7 +23,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_NYC }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_NYC }}
           data: >-
-            {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
+            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
       - name: Invoke AMS deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -31,7 +31,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_AMS }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_AMS }}
           data: >-
-            {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
+            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
       - name: Invoke TYO deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -39,7 +39,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_TYO }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_TYO }}
           data: >-
-            {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
+            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
       - name: Invoke BLR deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -47,7 +47,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_BLR }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_BLR }}
           data: >-
-            {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
+            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
       - name: Invoke SAO deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -55,4 +55,4 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_SAO }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_SAO }}
           data: >-
-            {"commands":["git pull","npm i","sudo systemctl restart bridge"]}
+            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}

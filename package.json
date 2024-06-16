@@ -9,7 +9,8 @@
   "scripts": {
     "update-binaries": "node ./src/binaries/update.js",
     "build": "sh ./tools-init.sh",
-    "start": "node app.js"
+    "start": "node app.js",
+    "test": "node src"
   },
   "keywords": [
     "runner"
