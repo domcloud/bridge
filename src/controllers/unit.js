@@ -6,14 +6,18 @@ export default function () {
     var router = express.Router();
     router.get('/*', async function (req, res, next) {
         try {
-            res.json(JSON.parse((await unitExec.get(req.path)).stdout));
+            let result = await unitExec.get(req.path);
+            res.header("content-type", "application/json")
+            res.status(200).send(result.stdout);
         } catch (error) {
             next(error);
         }
     });
     router.post('/*', async function (req, res, next) {
         try {
-            res.json(JSON.parse((await unitExec.set(req.path, JSON.stringify(req.body))).stdout));
+            let result = await unitExec.set(req.path, JSON.stringify(req.body));
+            res.header("content-type", "application/json")
+            res.status(200).send(result.stdout);
         } catch (error) {
             next(error);
         }

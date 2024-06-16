@@ -140,7 +140,7 @@ switch (cli.args.shift()) {
             // just in case
             if (!unit.killed)
                 unit.kill();
-        }, 1000 * 60).unref();
+        }, 1000 * 600).unref();
         break;
     case 'VIRTUAL_SERVER_GET':
         arg = cli.args.shift();
