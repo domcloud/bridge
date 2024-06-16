@@ -129,7 +129,7 @@ switch (cli.args.shift()) {
     case 'UNIT_SET':
         arg = cli.args.shift();
         unit = spawn('curl', ['-X', 'PUT',
-            '-data-binary', '@' + env.UNIT_TMP, '--unix-socket',
+            '--data-binary', '@' + env.UNIT_TMP, '--unix-socket',
             env.UNIT_SOCKET, 'http://localhost/config' + arg], {
             stdio: 'inherit',
         });
