@@ -13,6 +13,7 @@ import {
 import runner from './controllers/runner.js';
 import virtualmin from './controllers/virtualmin.js';
 import docker from './controllers/docker.js';
+import unit from './controllers/unit.js';
 
 const startTime = Date.now();
 dotenv.config();
@@ -32,6 +33,7 @@ app.use('/screend', screend());
 app.use('/docker', docker());
 app.use('/runner', runner());
 app.use('/virtualmin', virtualmin());
+app.use('/unit', unit());
 app.use(function (err, req, res, next) {
     if (err instanceof Error) {
         res.status(500);

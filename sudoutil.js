@@ -4,6 +4,7 @@ import shelljs from 'shelljs'
 import cli from 'cli'
 import dotenv from 'dotenv'
 import path from 'path';
+import http from 'http';
 import {
     chmodSync,
     chownSync,
@@ -47,6 +48,8 @@ const env = Object.assign({}, {
     NGINX_BIN: 'nginx',
     NGINX_START: 'systemctl start nginx',
     NGINX_TMP: path.join(__dirname, '.tmp/nginx'),
+    UNIT_SOCKET: '/var/run/unit/control.sock',
+    UNIT_TMP: path.join(__dirname, '.tmp/unit'),
     IPTABLES_PATH: '/etc/sysconfig/iptables',
     IPTABLES_OUT: '/etc/sysconfig/iptables',
     IPTABLES_SAVE: 'iptables-save',
@@ -108,6 +111,39 @@ switch (cli.args.shift()) {
         }
         rm(DEST + '.bak');
         exec(`${env.NGINX_BIN} -s reload`);
+        exit(0);
+    case 'UNIT_GET':
+        arg = cli.args.shift();
+        http.request({
+            socketPath: env.UNIT_SOCKET,
+            path: '/config' + arg,
+        }, res => {
+            res.setEncoding('utf8');
+            res.on('data', data => process.stdout.write(data));
+            res.on('end', () => exit(0))
+            res.on('error', data => { console.error(data); exit(1); });
+        });
+        setTimeout(() => {
+            // just in case
+            exit(1);
+        }, 1000 * 60).unref();
+    case 'UNIT_SET':
+        arg = cli.args.shift();
+        http.request({
+            socketPath: env.UNIT_SOCKET,
+            path: '/config' + arg,
+            method: 'PUT',
+        }, res => {
+            res.setEncoding('utf8');
+            res.push(cat(env.UNIT_TMP).stdout, 'utf-8');
+            res.on('data', data => process.stdout.write(data));
+            res.on('end', () => exit(0))
+            res.on('error', data => { console.error(data); exit(1); });
+        });
+        setTimeout(() => {
+            // just in case
+            exit(1);
+        }, 1000 * 60).unref();
         exit(0);
     case 'VIRTUAL_SERVER_GET':
         arg = cli.args.shift();
