@@ -9,7 +9,7 @@ import app from './src/index.js';
 const port = process.env.PORT ? parseInt(process.env.PORT) : 2223;
 const server = app.listen(port, function () {
     console.log(`Start time takes ` + (Date.now() - startTime) / 1000 + ` s`)
-    console.log(`Listening on ${port}`);
+    console.log(`Listening on ${port} in ${process.env.NODE_ENV} mode`);
 })
 server.on('close', () => {
     console.log(`Server closing`);

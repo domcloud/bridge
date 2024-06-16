@@ -4,16 +4,16 @@ import { unitExec } from '../executor/unit.js';
 
 export default function () {
     var router = express.Router();
-    router.get('/', async function (req, res, next) {
+    router.get('/*', async function (req, res, next) {
         try {
-            res.json(await unitExec.get(req.path));
+            res.json(JSON.parse((await unitExec.get(req.path)).stdout));
         } catch (error) {
             next(error);
         }
     });
-    router.post('/', async function (req, res, next) {
+    router.post('/*', async function (req, res, next) {
         try {
-            res.json(await unitExec.set(req.path, JSON.stringify(req.body)));
+            res.json(JSON.parse((await unitExec.set(req.path, JSON.stringify(req.body))).stdout));
         } catch (error) {
             next(error);
         }

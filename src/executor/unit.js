@@ -12,6 +12,7 @@ class UnitExecutor {
     }
     /**
      * @param {string} path
+     * @returns {Promise<{code: string | number, stdout: string, stderr: string}>}
      */
     async get(path) {
         return await spawnSudoUtil("UNIT_GET", [path]);
@@ -19,11 +20,12 @@ class UnitExecutor {
     /**
      * @param {string} path
      * @param {string} body
+     * @returns {Promise<{code: string | number, stdout: string, stderr: string}>}
      */
     async set(path, body) {
         return await executeLock('unit', async () => {
             ShellString(body).to(tmpFile);
-            await spawnSudoUtil("UNIT_SET", [path]);
+            return await spawnSudoUtil("UNIT_SET", [path]);
         });
     }
 }

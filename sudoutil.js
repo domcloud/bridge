@@ -114,37 +114,34 @@ switch (cli.args.shift()) {
         exit(0);
     case 'UNIT_GET':
         arg = cli.args.shift();
-        http.request({
-            socketPath: env.UNIT_SOCKET,
-            path: '/config' + arg,
-        }, res => {
-            res.setEncoding('utf8');
-            res.on('data', data => process.stdout.write(data));
-            res.on('end', () => exit(0))
-            res.on('error', data => { console.error(data); exit(1); });
+        var unit = spawn('curl', ['--unix-socket', env.UNIT_SOCKET, 'http://localhost/config' + arg], {
+            stdio: 'inherit',
+        });
+        unit.on('close', function (code) {
+            exit(code);
         });
         setTimeout(() => {
             // just in case
-            exit(1);
+            if (!unit.killed)
+                unit.kill();
         }, 1000 * 60).unref();
+        break;
     case 'UNIT_SET':
         arg = cli.args.shift();
-        http.request({
-            socketPath: env.UNIT_SOCKET,
-            path: '/config' + arg,
-            method: 'PUT',
-        }, res => {
-            res.setEncoding('utf8');
-            res.push(cat(env.UNIT_TMP).stdout, 'utf-8');
-            res.on('data', data => process.stdout.write(data));
-            res.on('end', () => exit(0))
-            res.on('error', data => { console.error(data); exit(1); });
+        unit = spawn('curl', ['-X', 'PUT',
+            '-data-binary', '@' + env.UNIT_TMP, '--unix-socket',
+            env.UNIT_SOCKET, 'http://localhost/config' + arg], {
+            stdio: 'inherit',
+        });
+        unit.on('close', function (code) {
+            exit(code);
         });
         setTimeout(() => {
             // just in case
-            exit(1);
+            if (!unit.killed)
+                unit.kill();
         }, 1000 * 60).unref();
-        exit(0);
+        break;
     case 'VIRTUAL_SERVER_GET':
         arg = cli.args.shift();
         cat(env.VIRTUAL_SERVER_PATH.replace('$', arg)).to(env.VIRTUAL_SERVER_TMP);
