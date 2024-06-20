@@ -13,10 +13,9 @@ const { exec } = shelljs;
 const opts = cli.parse({
     test: ['t', 'Test mode', 'bool', false],
     ignore: ['i', 'Ignore user list', 'string', ''],
-    verbose: ['v', 'verbose', 'bool', false],
 });
 
-const psOutput = exec('ps -eo user:20,pid,etimes,command --forest --no-headers', {
+const psOutput = exec('ps -eo user:70,pid,etimes,command --forest --no-headers', {
     silent: true,
     fatal: true,
 }).stdout.trim().split('\n');
@@ -26,11 +25,11 @@ const whoOutput = exec('who', {
     fatal: true,
 }).stdout.trim().split('\n');
 
-const ignoreUsers = opts.ignore.split(',')
+const ignoreUsers = opts.ignore ? opts.ignore.split(',')
     .reduce((acc, cur) => {
         acc[cur] = true;
         return acc;
-    }, {});
+    }, {}) : {};
 
 if (existsSync(LOGINLINGERDIR)) {
     const lingerFiles = readdirSync(LOGINLINGERDIR, { withFileTypes: true });
@@ -42,7 +41,7 @@ if (existsSync(LOGINLINGERDIR)) {
 
 ignoreUsers.root = true;
 
-if (opts.verbose) {
+if (opts.test) {
     console.log('Ignoring users: ' + Object.keys(ignoreUsers).join(','));
 }
 
@@ -51,7 +50,6 @@ const splitTest = /^([\w.-]+\+?) +(\d+) +(\d+) (.+)$/;
 const lists = psOutput
     .map(x => splitTest.exec(x))
     .filter(x => x !== null && !ignoreUsers[x[1]]).map(match => ({
-        raw: match[0],
         user: match[1],
         pid: match[2],
         etimes: parseInt(match[3]),
@@ -66,12 +64,9 @@ for (const item of whoOutput) {
 let candidates = lists.filter(x => x.etimes > 10800 || (x.command[0] != ' ' && !ignoreUsers[x.user] && x.etimes > 60));
 
 if (opts.test) {
-    console.log(candidates.map(x => x.raw).join('\n'));
+    console.table(candidates);
 } else {
     for (let x of candidates) {
-        if (opts.verbose) {
-            console.log(`Killing ${x.user}: ${x.pid} (${x.command})`);
-        }
         exec(`kill -9 ${x.pid}`);
     }
 }
