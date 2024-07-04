@@ -311,7 +311,7 @@ switch (cli.args.shift()) {
                     K: 1 / 1024,
                     B: 1 / (1024 * 1024),
                 }[unit];
-                if (size < 1536) {
+                if (size < 5 * 1024) {
                     return true;
                 }
             }

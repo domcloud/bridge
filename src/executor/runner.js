@@ -245,7 +245,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await writeLog("$> virtualmin delete-domain");
                             await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u', user]);
                             await virtExec("delete-domain", value, {
-                                user,
+                                domain,
                             });
                             await spawnSudoUtil('CLEAN_DOMAIN', [domaindata['ID'], domain]);
                             // no need to do other stuff
