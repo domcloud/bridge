@@ -297,7 +297,7 @@ switch (cli.args.shift()) {
             var m;
             while (m = r.exec(df)) {
                 if (!m) return false;
-                if ((m[2] || '').startsWith('/boot')) return false;
+                if ((m[2] || '').startsWith('/boot')) continue;
                 let bytes_str = m[1];
                 if (bytes_str.match(/^\d+$/)) {
                     bytes_str += "B";
