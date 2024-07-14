@@ -76,13 +76,12 @@ class UnitExecutor {
         return result;
     }
     unsandbox(config) {
-        if (!config) {
+        if (!config || !config.working_directory) {
             return {};
         }
-        let parts = config.stdout.split('/');
         return {
             app_start_command: config.arguments[2],
-            app_root: parts.slice(2).join('/'),
+            app_root: config.working_directory.split('/').slice(2).join('/'),
             env_var_list: Object.entries(config.environment || {}).map(([k, v]) => `${k}=${v}`)
         }
     }
