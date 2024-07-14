@@ -38,7 +38,7 @@ class UnitExecutor {
     }
     sandbox(config, domainname, domain) {
         let username = domain['Username'];
-        let wd = ((config['app_root'] + '') || (domain['Parent domain'] ? `domains/${domainname}/public_html` : 'public_html'));
+        let wd = (config['app_root'] || (domain['Parent domain'] ? `domains/${domainname}/public_html` : 'public_html'));
         wd = `/home/${username}/${wd}`.replace(/\/+/g, '/');
         wd.endsWith('/') && (wd = wd.substring(0, -1));
         let logbase = domain['Parent domain'] ? `/home/${username}/domains/${domainname}/logs` : `/home/${username}/logs`;
