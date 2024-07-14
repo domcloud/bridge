@@ -46,8 +46,8 @@ class UnitExecutor {
             "type": "external",
             "working_directory": wd,
             "executable": "/usr/local/bin/port",
-            "stdout": `${logbase}/unit-stdout.log`,
-            "stderr": `${logbase}/unit-stderr.log`,
+            "stdout": `${logbase}/unit_stdout_log`,
+            "stderr": `${logbase}/unit_stderr_log`,
             "user": username,
             "group": username,
             "arguments": [
