@@ -114,7 +114,7 @@ switch (cli.args.shift()) {
         exit(0);
     case 'UNIT_GET':
         arg = cli.args.shift();
-        var unit = spawn('curl', ['--unix-socket', env.UNIT_SOCKET, 'http://localhost/config' + arg], {
+        var unit = spawn('curl', ['--unix-socket', env.UNIT_SOCKET, 'http://localhost' + arg], {
             stdio: 'inherit',
         });
         unit.on('close', function (code) {
@@ -130,7 +130,22 @@ switch (cli.args.shift()) {
         arg = cli.args.shift();
         unit = spawn('curl', ['-X', 'PUT',
             '--data-binary', '@' + env.UNIT_TMP, '--unix-socket',
-            env.UNIT_SOCKET, 'http://localhost/config' + arg], {
+            env.UNIT_SOCKET, 'http://localhost' + arg], {
+            stdio: 'inherit',
+        });
+        unit.on('close', function (code) {
+            exit(code);
+        });
+        setTimeout(() => {
+            // just in case
+            if (!unit.killed)
+                unit.kill();
+        }, 1000 * 600).unref();
+        break;
+    case 'UNIT_DEL':
+        arg = cli.args.shift();
+        unit = spawn('curl', ['-X', 'DELETE', '--unix-socket',
+            env.UNIT_SOCKET, 'http://localhost' + arg], {
             stdio: 'inherit',
         });
         unit.on('close', function (code) {

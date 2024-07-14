@@ -22,9 +22,10 @@ const passengerKeys = [
 ];
 const locationKeys = [
     "root", "alias", "rewrite", "try_files", "return", "index",
-    "expires", "allow", "deny", "autoindex"
+    "expires", "allow", "deny", "autoindex", "proxy_pass"
 ];
 const sslNames = ["", "off", "always", "on"];
+const unitProxy = "http://127.0.0.1:88"
 
 class NginxExecutor {
     /** @param {import('nginx-conf/dist/src/conf').NginxConfItem} node */
@@ -32,9 +33,19 @@ class NginxExecutor {
         /** @param {import('nginx-conf/dist/src/conf').NginxConfItem} node */
         function expandLocation(node, config) {
             for (const key of locationKeys) {
-                if (config[key]) {
-                    node._add(key, key === "root" || key === "alias" ?
-                        path.join(`/home/${info.user}`, config[key]) : config[key]);
+                if (!config[key]) {
+                    // do nothing
+                } else if (key === "root" || key == "alias") {
+                    node._add(key, path.join(`/home/${info.user}`, config[key]));
+                } else if (key === "proxy_pass") {
+                    if (config[key] === "unit") {
+                        node._add(key, unitProxy);
+                    } else if (/^http:\/\/(10|127)\.\d+\.\d+\.\d+:\d+(\$\d+|\/.+)?$/) {
+                        node._add(key, config[key]);
+                    }
+                    node._add(key, path.join(`/home/${info.user}`, config[key]));
+                } else {
+                    node._add(key, config[key]);
                 }
             }
             if (config.passenger) {
@@ -201,6 +212,10 @@ class NginxExecutor {
                     r[k] = node[k][0]._value;
                     if (k === "root" || k === "alias") {
                         r[k] = r[k].slice(basepath.length);
+                    } else if (k === 'proxy_pass') {
+                        if (r[k] == unitProxy) {
+                            r[k] = "unit";
+                        }
                     }
                 }
             }

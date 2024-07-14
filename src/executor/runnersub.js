@@ -7,9 +7,10 @@ import { iptablesExec } from "./iptables.js";
 import { namedExec } from "./named.js";
 import { nginxExec } from "./nginx.js";
 import { virtualminExec } from "./virtualmin.js";
+import { unitExec } from "./unit.js";
 
 /**
- * @param {{source: any;features: any;commands: any;nginx: any;envs: any,directory:any, root:any}} config
+ * @param {{source: any;features: any;commands: any;nginx: any;unit: any;envs: any,directory:any, root:any}} config
  * @param {{[x: string]: any}} domaindata
  * @param {string} subdomain
  * @param {{(cmd: string, write?: boolean): Promise<any>}} sshExec
@@ -354,6 +355,13 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     if (config.nginx) {
         await writeLog("$> Applying nginx config on " + subdomain);
         await writeLog(await nginxExec.set(subdomain, config.nginx));
+    }
+
+
+    if (config.unit) {
+        await writeLog("$> Applying unit config on " + subdomain);
+        let d = await unitExec.setDomain(subdomain, config.unit, subdomaindata);
+        await writeLog(d.stdout);
     }
 
     try {
