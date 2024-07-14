@@ -43,7 +43,6 @@ class NginxExecutor {
                     } else if (/^http:\/\/(10|127)\.\d+\.\d+\.\d+:\d+(\$\d+|\/.+)?$/) {
                         node._add(key, config[key]);
                     }
-                    node._add(key, path.join(`/home/${info.user}`, config[key]));
                 } else {
                     node._add(key, config[key]);
                 }
@@ -147,6 +146,13 @@ class NginxExecutor {
         info.config.index = info.config.index || "index.html index.php";
         delete info.config.root;
         delete info.config.alias;
+        if (info.config?.proxy_pass) {
+            if (!info.config.locations || info.config.locations.length == 0) {
+                info.config.locations = [{ match: '/' }];
+            }
+            info.config.locations[0].proxy_pass = info.config.proxy_pass;
+            delete info.config?.proxy_pass;
+        }
         expandLocation(node, info.config);
     }
     extractInfo(node, domain) {
