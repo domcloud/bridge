@@ -21,7 +21,7 @@ const passengerKeys = [
     'document_root', 'base_uri', 'app_root', 'sticky_sessions'
 ];
 const locationKeys = [
-    "root", "alias", "rewrite", "try_files", "return", "index", 
+    "root", "alias", "rewrite", "try_files", "return", "index",
     "expires", "allow", "deny", "autoindex"
 ];
 const sslNames = ["", "off", "always", "on"];
@@ -115,9 +115,11 @@ class NginxExecutor {
             node._add('listen', info.ip6);
         }
         if (sslconf !== "off") {
-            var postfix = httpconf == 1 ? '' : ' http2';
-            node._add('listen', info.ip + ":443 ssl" + postfix);
-            node._add('listen', info.ip6 + ":443 ssl" + postfix);
+            node._add('listen', info.ip + ":443 ssl");
+            node._add('listen', info.ip6 + ":443 ssl");
+            if (httpconf == 2) {
+                node._add('http2', "on");
+            }
         } {
             node._add('root', info.root);
             node._add('access_log', info.access_log);
@@ -219,7 +221,7 @@ class NginxExecutor {
         }
         const data = {
             ssl: 0, // binary of 1 = HTTP, 2 = HTTPS
-            http: 2, // http version (1 or 2)
+            http: 1, // http version (1 or 2)
             dom: null,
             ip: null,
             ip6: null,
@@ -239,8 +241,10 @@ class NginxExecutor {
                 ip = ip.slice(0, -4);
             data[ip.startsWith("[") ? "ip6" : "ip"] = ip;
             data.ssl |= x._value.includes("ssl") ? 2 : 1;
-            if (x._value.includes("ssl")) data.http = x._value.includes('http2') ? 2 : 1;
         });
+        if (node.http2 && node.http2[0]._value == "on") {
+            data.http = 2;
+        }
         data.root = node.root ? node.root[0]._value : "";
         data.user = data.root.split('/')[2];
         data.access_log = node.access_log[0]._value;
