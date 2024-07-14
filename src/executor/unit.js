@@ -81,7 +81,7 @@ class UnitExecutor {
         }
         return {
             app_start_command: config.arguments[2],
-            app_root: config.working_directory.split('/').slice(2).join('/'),
+            app_root: config.working_directory.split('/').slice(3).join('/'),
             env_var_list: Object.entries(config.environment || {}).map(([k, v]) => `${k}=${v}`)
         }
     }
