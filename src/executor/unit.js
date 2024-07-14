@@ -47,7 +47,7 @@ class UnitExecutor {
             "working_directory": wd,
             "executable": "/usr/local/bin/port",
             "stdout": `${logbase}/unit-stdout.log`,
-            "stderr": `${username}/unit-stderr.log`,
+            "stderr": `${logbase}/unit-stderr.log`,
             "user": username,
             "group": username,
             "arguments": [
