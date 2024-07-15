@@ -10,7 +10,7 @@
     "2.7.5"
   ],
   "pythonVersionsList": [
-    "3.12.3",
+    "3.12.4",
     "3.11.9",
     "3.10.14",
     "3.9.19"
@@ -27,10 +27,10 @@
     "8.0.412+8"
   ],
   "pythonVersionsMap": {
-    "3.10.14": "https://github.com/indygreg/python-build-standalone/releases/download/20240415/cpython-3.10.14+20240415-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst",
-    "3.11.9": "https://github.com/indygreg/python-build-standalone/releases/download/20240415/cpython-3.11.9+20240415-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst",
-    "3.12.3": "https://github.com/indygreg/python-build-standalone/releases/download/20240415/cpython-3.12.3+20240415-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst",
-    "3.9.19": "https://github.com/indygreg/python-build-standalone/releases/download/20240415/cpython-3.9.19+20240415-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst"
+    "3.10.14": "https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.10.14+20240713-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst",
+    "3.11.9": "https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst",
+    "3.12.4": "https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.12.4+20240713-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst",
+    "3.9.19": "https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.9.19+20240713-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst"
   },
   "javaVersionsMap": {
     "8.0.412+8": "https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u412-b08/OpenJDK8U-jdk_x64_linux_hotspot_8u412b08.tar.gz",
