@@ -186,7 +186,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             for (const feature of config.features) {
                 const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
                 const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
-                
+                const user = domaindata['Username'];
                 if (!sandbox) {
                     switch (key) {
                         case 'modify':
@@ -228,8 +228,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         case 'backup':
                             await writeLog("$> virtualmin backup-domain");
                             await virtExec("backup-domain", value, {
-                                domain,
-                                'all-features': !value.features,
+                                user,
                                 'as-owner': true,
                             });
                             break;
@@ -241,7 +240,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             });
                             break;
                         case 'delete':
-                            const user = domaindata['Username'];
                             await writeLog("$> virtualmin delete-domain");
                             await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u', user]);
                             await virtExec("delete-domain", value, {
