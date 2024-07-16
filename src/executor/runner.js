@@ -229,6 +229,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             await writeLog("$> virtualmin backup-domain");
                             await virtExec("backup-domain", value, {
                                 user,
+                                'all-features': true,
                                 'as-owner': true,
                             });
                             break;
