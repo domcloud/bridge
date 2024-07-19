@@ -36,9 +36,9 @@ export default function () {
             next(error);
         }
     });
-    router.post('/config/*', async function (req, res, next) {
+    router.post('/config', async function (req, res, next) {
         try {
-            let result = await unitExec.set("/config" + req.path, JSON.stringify(req.body));
+            let result = await unitExec.set(req.path, JSON.stringify(req.body));
             res.header("content-type", "application/json")
             res.status(200).send(result.stdout);
         } catch (error) {
