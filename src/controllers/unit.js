@@ -5,18 +5,18 @@ import { checkGet } from '../util.js';
 
 export default function () {
     var router = express.Router();
-    router.get('/config/*', async function (req, res, next) {
+    router.get('/config', async function (req, res, next) {
         try {
-            let result = await unitExec.get("/config" + req.path);
+            let result = await unitExec.get(req.path);
             res.header("content-type", "application/json")
             res.status(200).send(result.stdout);
         } catch (error) {
             next(error);
         }
     });
-    router.get('/status/*', async function (req, res, next) {
+    router.get('/status', async function (req, res, next) {
         try {
-            let result = await unitExec.get("/status" + req.path);
+            let result = await unitExec.get(req.path);
             res.header("content-type", "application/json")
             res.status(200).send(result.stdout);
         } catch (error) {
