@@ -269,6 +269,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             domain: subdomain,
                             'renew': 2,
                             'web': true,
+                            'skip-dns-check': true,
                         });
                     }
                     // if LE ON AND force self-sign / shared on, must turn off
