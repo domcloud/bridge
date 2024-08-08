@@ -155,11 +155,16 @@ class NginxExecutor {
         }
         expandLocation(node, info.config);
         if (info.free) {
-            if (!Array.isArray(node.location) || node.location.length == 0 || node.location[0]._value != '/') {
+            if (!Array.isArray(node.location)) {
                 node._add('location', '/')
-                node.location[node.location.length - 1]._add('if', `($http_referer !~ "^https?://${info.dom}")`);
-                node.location[node.location.length - 1].if[0]._add('rewrite', '^ /deceptive.html last');
             }
+            let idx = node.location.findIndex(x => x._value == '/');
+            if (idx == -1) {
+                node._add('location', '/')
+                idx = node.location.length - 1;
+            }
+            node.location[idx]._add('if', `($http_referer !~ "^https?://${info.dom}")`);
+            node.location[idx].if[0]._add('rewrite', '^ /deceptive.html last');
             let loc = node._add('location', '= /deceptive.html', []);
             loc.location[loc.location.length - 1]._add('root', '/usr/local/share/www')
             loc.location[loc.location.length - 1]._add('internal')
