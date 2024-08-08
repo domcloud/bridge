@@ -19,6 +19,7 @@ let phpVersionsList = [];
  * @type {Record<string, string>}
  */
 let sslWildcardsMap = {};
+
 export const initUtils = () => {
     tokenSecret = `Bearer ${process.env.SECRET}`;
     allowIps = process.env.ALLOW_IP ? process.env.ALLOW_IP.split(',').reduce((a, b) => {

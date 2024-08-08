@@ -147,13 +147,23 @@ class NginxExecutor {
         delete info.config.root;
         delete info.config.alias;
         if (info.config?.proxy_pass) {
-            if (!info.config.locations || info.config.locations.length == 0) {
-                info.config.locations = [{ match: '/' }];
+            if (!Array.isArray(info.config.locations) || info.config.locations.length == 0 || info.config.locations[0].match != '/') {
+                info.config.locations = [{ match: '/' }, ...(info.config.locations || [])];
             }
             info.config.locations[0].proxy_pass = info.config.proxy_pass;
             delete info.config?.proxy_pass;
         }
         expandLocation(node, info.config);
+        if (info.free) {
+            if (!Array.isArray(node.location) || node.location.length == 0 || node.location[0]._value != '/') {
+                node._add('location', '/')
+                node.location[node.location.length - 1]._add('if', `($http_referer !~ "^https?://${info.dom}")`);
+                node.location[node.location.length - 1].if[0]._add('rewrite', '^ /deceptive.html last');
+            }
+            let loc = node._add('location', '= /deceptive.html', []);
+            loc.location[loc.location.length - 1]._add('root', '/usr/local/share/www')
+            loc.location[loc.location.length - 1]._add('internal')
+        }
     }
     extractInfo(node, domain) {
         const extractLocations = (node, basepath) => {
@@ -170,7 +180,13 @@ class NginxExecutor {
                             r.fastcgi = "always";
                         }
                     } else {
-                        r.locations.push(extractLocations(l, basepath));
+                        let mm = extractLocations(l, basepath);
+                        if (mm.match === '= /deceptive.html') {
+                            continue;
+                        } else if (Object.keys(mm).length == 1) {
+                            continue;
+                        }
+                        r.locations.push(mm);
                     }
                 }
                 if (r.locations.length === 0)
@@ -249,6 +265,7 @@ class NginxExecutor {
             root: null,
             user: null,
             fcgi: null,
+            free: false,
             access_log: null,
             error_log: null,
             ssl_certificate: null,
@@ -256,6 +273,7 @@ class NginxExecutor {
             config: {},
         };
         data.dom = domain;
+        data.free = process.env.NGINX_FREE_DOMAIN && (domain + '').endsWith(process.env.NGINX_FREE_DOMAIN)
         node.listen.forEach(x => {
             let ip = ("" + x._value).split(" ")[0];
             if (ip.endsWith(":443"))
