@@ -15,34 +15,28 @@ class LogmanExecutor {
         }
     }
     /**
-     * @param {any} domain
+     * @param {string} user
      * @param {string} type
      * @param {number} n
      */
-    async getLog(domain, type, n) {
+    async getLog(user, type, n) {
         switch (type) {
             case 'access':
-                if (!domain['Access log']) {
-                    return {
-                        code: 255,
-                        stderr: 'No access log found',
-                        stdout: '',
-                    }
-                }
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
-                    "tail", "-n", n, domain['Access log']]);
+                    "tail", "-n", n + '', `/home/${user}/logs/access_log`]);
             case 'error':
-                if (!domain['Error log']) {
-                    return {
-                        code: 255,
-                        stderr: 'No error log found',
-                        stdout: '',
-                    }
-                }
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
-                    "tail", "-n", n, domain['Error log']]);
+                    "tail", "-n", n + '', `/home/${user}/logs/error_log`]);
+            case 'php':
+                return await spawnSudoUtil("SHELL_SUDO", ["root",
+                    "tail", "-n", n + '', `/home/${user}/logs/php_log`]);
+            case 'unit-stdout':
+                return await spawnSudoUtil("SHELL_SUDO", ["root",
+                    "tail", "-n", n + '', `/home/${user}/logs/unit_stdout_log`]);
+            case 'unit-stderr':
+                return await spawnSudoUtil("SHELL_SUDO", ["root",
+                    "tail", "-n", n + '', `/home/${user}/logs/unit_stderr_log`]);
             case 'passenger':
-                const user = domain['Username'];
                 const procs = await this.getPassengerPids(user);
                 if (procs.code !== 0) {
                     return procs;

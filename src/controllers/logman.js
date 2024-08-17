@@ -11,21 +11,12 @@ import { logmanExec } from '../executor/logman.js';
 
 export default function () {
     var router = express.Router();
-    router.get('/get', checkGet(['domain', 'type']), async function (req, res, next) {
+    router.get('/get', checkGet(['user', 'type']), async function (req, res, next) {
         try {
-            let domain = await virtualminExec.getDomainInfo(req.query.domain.toString());
             let type = req.query.type.toString()
+            let user = req.query.user.toString()
             let n = parseInt((req.query.n  || 100).toString()) || 100;
-            let output = await logmanExec.getLog(domain, type, n);
-            return res.json(output);
-        } catch (err) {
-            next(err);
-        }
-    });
-    router.post('/restart', checkGet(['domain']), async function (req, res, next) {
-        try {
-            let domain = await virtualminExec.getDomainInfo(req.query.domain.toString());
-            let output = await logmanExec.restartPassenger(domain);
+            let output = await logmanExec.getLog(user, type, n);
             return res.json(output);
         } catch (err) {
             next(err);
