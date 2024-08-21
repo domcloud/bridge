@@ -1,6 +1,5 @@
 import {
     checkGet,
-    checkPost,
 } from '../util.js';
 import express from 'express';
 import {

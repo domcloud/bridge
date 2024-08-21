@@ -1,12 +1,7 @@
 import express from 'express';
 import {
-    iptablesExec as executor
-} from '../executor/iptables.js';
-import {
     checkGet,
-    checkPost
 } from '../util.js';
-import { virtualminExec } from '../executor/virtualmin.js';
 import { logmanExec } from '../executor/logman.js';
 
 export default function () {
