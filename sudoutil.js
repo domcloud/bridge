@@ -283,13 +283,13 @@ switch (cli.args.shift()) {
         var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
         var services = [
             'nginx',
-            ...[...fpmlist.map((f) => f + '-php-fpm')],
+            ...fpmlist.map((f) => f + '-php-fpm'),
             'named',
             'webmin',
             'sshd',
             'crond',
             'mariadb',
-            // 'postgresql',
+            'postgresql-16',
             'iptables',
             'ip6tables',
             'fail2ban',
