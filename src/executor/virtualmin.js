@@ -134,7 +134,11 @@ class VirtualminExecutor {
                         p.push(escapeShell(k));
                     else if (Array.isArray(v))
                         v.forEach(e => {
-                            p.push(escapeShell(k), escapeShell(e));
+                            if (Array.isArray(e)) {
+                                p.push(escapeShell(k), ...e.map(ee => escapeShell(ee)));
+                            } else {
+                                p.push(escapeShell(k), escapeShell(e));
+                            }
                         });
                     else
                         p.push(escapeShell(k), escapeShell(v));

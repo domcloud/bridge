@@ -236,8 +236,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await writeLog("$> virtualmin restore-domain");
                         await virtExec("restore-domain", value, {
                             domain,
+                            option: (!value.feature || !value.feature.includes('home')) ? [['dir', 'delete', '1']] : false,
+                            'fix': true,
                             'reuid': true,
                             'skip-warnings': true,
+                            'all-features': !value.feature,
                         });
                         break;
                     case 'delete':
