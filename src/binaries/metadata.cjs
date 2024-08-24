@@ -1,1 +1,1 @@
-module.exports = require('./metadata.json');
+module.exports = require('./metadata.json')[process.arch];
