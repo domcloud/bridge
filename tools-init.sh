@@ -4,8 +4,8 @@ if [ ! -d "./phpmyadmin" ]; then
     git clone https://github.com/phpmyadmin/phpmyadmin.git phpmyadmin --filter=tree:0 -b STABLE
     cd ./phpmyadmin
     composer install -o
-    yarn install
-    yarn build
+    npm install
+    npm run build
     cp config.sample.inc.php config.inc.php
     hash=`node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"`
     sed -ri "s/\['blowfish_secret'\] = '';/['blowfish_secret'] = '${hash}';/g" config.inc.php
@@ -14,8 +14,8 @@ else
     cd ./phpmyadmin
     git pull
     composer install -o
-    yarn install
-    yarn build
+    npm install
+    npm run build
     cd ..
 fi
 if [ ! -d "./phppgadmin" ]; then
