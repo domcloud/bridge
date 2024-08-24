@@ -182,93 +182,92 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 firewallStatusCache = !!iptablesExec.getByUser(await iptablesExec.getParsed(), domaindata['Username'], domaindata['User ID']);
             return firewallStatusCache;
         };
-        if (Array.isArray(config.features)) {
-            for (const feature of config.features) {
-                const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
-                const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
-                const user = domaindata['Username'];
-                if (!sandbox) {
-                    switch (key) {
-                        case 'modify':
-                            await writeLog("$> virtualmin modify-domain");
-                            await virtExec("modify-domain", value, {
-                                domain,
-                            });
-                            break;
-                        case 'rename':
-                            if (value && value["new-user"] && await firewallStatus()) {
-                                await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
-                            }
-                            await writeLog("$> virtualmin rename-domain");
-                            await virtExec("rename-domain", value, {
-                                domain,
-                            });
-                            // in case if we change domain name
-                            if (value && value["new-domain"])
-                                domain = value["new-domain"];
-                            await new Promise(r => setTimeout(r, 1000));
-                            if (value && value["new-user"] && await firewallStatus()) {
-                                await iptablesExec.setAddUser(value["new-user"], domaindata['User ID']);
-                            }
-                            // @ts-ignore
-                            domaindata = await virtualminExec.getDomainInfo(domain);
-                            break;
-                        case 'disable':
-                            await writeLog("$> virtualmin disable-domain");
-                            await virtExec("disable-domain", value, {
-                                domain,
-                            });
-                            break;
-                        case 'enable':
-                            await writeLog("$> virtualmin enable-domain");
-                            await virtExec("enable-domain", value, {
-                                domain,
-                            });
-                            break;
-                        case 'backup':
-                            await writeLog("$> virtualmin backup-domain");
-                            await virtExec("backup-domain", value, {
-                                user,
-                                'all-features': true,
-                                'as-owner': true,
-                            });
-                            break;
-                        case 'restore':
-                            await writeLog("$> virtualmin restore-domain");
-                            await virtExec("restore-domain", value, {
-                                domain,
-                                'reuid': true,
-                            });
-                            break;
-                        case 'delete':
-                            await writeLog("$> virtualmin delete-domain");
-                            await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u', user]);
-                            await virtExec("delete-domain", value, {
-                                domain,
-                            });
-                            await spawnSudoUtil('CLEAN_DOMAIN', [domaindata['ID'], domain]);
-                            // no need to do other stuff
-                            return;
-                        default:
-                            break;
-                    }
-                }
+        for (const feature of Array.isArray(config.features) ? config.features : []) {
+            const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
+            const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
+            const user = domaindata['Username'];
+            if (!sandbox) {
                 switch (key) {
-                    case 'firewall':
-                        if (value === '' || value === 'on') {
-                            await writeLog("$> Changing firewall protection to " + (value || 'on'));
-                            await writeLog(await iptablesExec.setAddUser(domaindata['Username'], domaindata['User ID']));
-                            firewallStatusCache = true;
-                        } else if (value === 'off') {
-                            await writeLog("$> Changing firewall protection to " + value);
-                            await writeLog(await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']));
-                            firewallStatusCache = false;
-                        }
+                    case 'modify':
+                        await writeLog("$> virtualmin modify-domain");
+                        await virtExec("modify-domain", value, {
+                            domain,
+                        });
                         break;
+                    case 'rename':
+                        if (value && value["new-user"] && await firewallStatus()) {
+                            await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
+                        }
+                        await writeLog("$> virtualmin rename-domain");
+                        await virtExec("rename-domain", value, {
+                            domain,
+                        });
+                        // in case if we change domain name
+                        if (value && value["new-domain"])
+                            domain = value["new-domain"];
+                        await new Promise(r => setTimeout(r, 1000));
+                        if (value && value["new-user"] && await firewallStatus()) {
+                            await iptablesExec.setAddUser(value["new-user"], domaindata['User ID']);
+                        }
+                        // @ts-ignore
+                        domaindata = await virtualminExec.getDomainInfo(domain);
+                        break;
+                    case 'disable':
+                        await writeLog("$> virtualmin disable-domain");
+                        await virtExec("disable-domain", value, {
+                            domain,
+                        });
+                        break;
+                    case 'enable':
+                        await writeLog("$> virtualmin enable-domain");
+                        await virtExec("enable-domain", value, {
+                            domain,
+                        });
+                        break;
+                    case 'backup':
+                        await writeLog("$> virtualmin backup-domain");
+                        await virtExec("backup-domain", value, {
+                            user,
+                            'all-features': true,
+                            'as-owner': true,
+                        });
+                        break;
+                    case 'restore':
+                        await writeLog("$> virtualmin restore-domain");
+                        await virtExec("restore-domain", value, {
+                            domain,
+                            'reuid': true,
+                            'skip-warnings': true,
+                        });
+                        break;
+                    case 'delete':
+                        await writeLog("$> virtualmin delete-domain");
+                        await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u', user]);
+                        await virtExec("delete-domain", value, {
+                            domain,
+                        });
+                        await spawnSudoUtil('CLEAN_DOMAIN', [domaindata['ID'], domain]);
+                        // no need to do other stuff
+                        return;
                     default:
-                        await runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec);
                         break;
                 }
+            }
+            switch (key) {
+                case 'firewall':
+                    if (value === '' || value === 'on') {
+                        await writeLog("$> Changing firewall protection to " + (value || 'on'));
+                        await writeLog(await iptablesExec.setAddUser(domaindata['Username'], domaindata['User ID']));
+                        firewallStatusCache = true;
+                    } else if (value === 'off') {
+                        await writeLog("$> Changing firewall protection to " + value);
+                        await writeLog(await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']));
+                        firewallStatusCache = false;
+                    }
+                    break;
+                default:
+                    await runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec);
+                    break;
             }
         }
         await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
