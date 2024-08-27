@@ -230,6 +230,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             user,
                             'all-features': true,
                             'as-owner': true,
+                            'ignore-errors': true,
                         });
                         break;
                     case 'restore':
