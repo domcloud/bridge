@@ -20,6 +20,7 @@ import {
 } from 'path';
 import axios from 'axios';
 
+
 /**
  * @param {import('stream').Writable} stream
  * @param {string} content
@@ -53,31 +54,21 @@ function trimPayload(payload) {
 export async function runConfigInBackground(body, domain, sandbox, callback) {
     let fullLogData = [],
         chunkedLogData = ['Running deployment script... Please wait...\n'],
-        delay = 5000,
         startTime = Date.now();
     const write = new PassThrough();
     const headers = {
         'Content-Type': 'text/plain; charset=UTF-8',
     };
-    let aborted = false,
-        periodicAbort = null;
-    const cancelController = new AbortController();
+    let aborted = false;
     const periodicSender = async () => {
-        periodicAbort = null;
-        try {
-            if (chunkedLogData.length > 0) {
-                var chunkk = chunkedLogData;
-                chunkedLogData = ['[Chunked data...]\n'];
-                await axios.post(callback, normalizeShellOutput(chunkk), {
-                    headers,
-                    // @ts-ignore
-                    signal: cancelController.signal,
+        if (chunkedLogData.length > 0) {
+            var chunkk = chunkedLogData;
+            chunkedLogData = ['[Chunked data...]\n'];
+
+            await curlPost(callback, normalizeShellOutput(chunkk), { headers })
+                .catch(e => {
+                    console.error(e);
                 });
-            }
-        } catch (e) {
-        } finally {
-            if (!cancelController.signal.aborted)
-                periodicAbort = setTimeout(periodicSender, delay).unref();
         }
     }
     periodicSender();
@@ -87,15 +78,12 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         fullLogData.push(chunk);
     });
     write.on('end', () => {
-        cancelController.abort()
-        periodicAbort && clearTimeout(periodicAbort);
         // and finish message with full log
         if (callback) {
-            axios.post(callback, trimPayload(normalizeShellOutput(fullLogData)), {
-                headers
-            }).catch(e => {
-                console.error(e);
-            });
+            curlPost(callback, trimPayload(normalizeShellOutput(fullLogData)), { headers })
+                .catch(e => {
+                    console.error(e);
+                });
         }
     });
     try {
@@ -154,4 +142,66 @@ export default function () {
         res.send('OK');
     });
     return router;
+}
+
+
+/**
+ * Mimics axios.post using curl command.
+ * 
+ * @param {string} url - The URL to which the request is sent.
+ * @param {Object|string} data - The payload to be sent in the request body.
+ * @param {Object} config - Configuration object containing headers and other options.
+ * @returns {Promise} - A promise that resolves with the response or rejects with an error.
+ */
+function curlPost(url, data, config = {}) {
+    return new Promise((resolve, reject) => {
+        // Convert data to string if it's an object
+        const payload = typeof data === 'object' ? JSON.stringify(data) : data;
+
+        // Extract headers from config
+        const headers = config.headers || {};
+        const timeout = config.timeout || 0; // Timeout in seconds
+
+        // Convert headers object to an array of `-H` options for curl
+        const headerOptions = Object.entries(headers).flatMap(([key, value]) => ['-H', `${key}: ${value}`]);
+
+        // Prepare the curl command with the necessary arguments
+        const curlArgs = [
+            '-X', 'POST',
+            ...headerOptions,
+            '-d', payload,
+            url
+        ];
+
+        if (timeout > 0) {
+            curlArgs.push('--max-time', timeout.toString());
+        }
+
+        // Log the curl arguments
+        console.log('Curl Command:', 'curl', ...curlArgs);
+
+        const curl = spawn('curl', curlArgs);
+
+        let response = '';
+        let errorResponse = '';
+
+        // Capture the standard output
+        curl.stdout.on('data', (data) => {
+            response += data.toString();
+        });
+
+        // Capture the standard error
+        curl.stderr.on('data', (data) => {
+            errorResponse += data.toString();
+        });
+
+        // Handle process close
+        curl.on('close', (code) => {
+            if (code === 0) {
+                resolve(response);
+            } else {
+                reject(new Error(`Curl process exited with code ${code}: ${errorResponse}`));
+            }
+        });
+    });
 }
