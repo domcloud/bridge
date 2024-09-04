@@ -18,7 +18,7 @@ import {
 import {
     dirname
 } from 'path';
-import axios from 'axios';
+import request from '../request.js';
 
 
 /**
@@ -59,13 +59,19 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     const headers = {
         'Content-Type': 'text/plain; charset=UTF-8',
     };
+    /**
+     * @type {import('https').RequestOptions}
+     */
+    const options = {
+        rejectUnauthorized: false, // can be bad if I forgotten to renew
+        family: 4, // some servers gateway ipv6 not working
+    };
     let aborted = false;
     const periodicSender = async () => {
         if (chunkedLogData.length > 0) {
-            var chunkk = chunkedLogData;
+            const data = normalizeShellOutput(chunkedLogData);
             chunkedLogData = ['[Chunked data...]\n'];
-
-            await curlPost(callback, normalizeShellOutput(chunkk), { headers })
+            request(callback, { data, headers, ...options })
                 .catch(e => {
                     console.error(e);
                 });
@@ -80,7 +86,8 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     write.on('end', () => {
         // and finish message with full log
         if (callback) {
-            curlPost(callback, trimPayload(normalizeShellOutput(fullLogData)), { headers })
+            const data = trimPayload(normalizeShellOutput(fullLogData));
+            request(callback, { data, headers, ...options })
                 .catch(e => {
                     console.error(e);
                 });

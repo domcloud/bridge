@@ -121,12 +121,12 @@ class NginxExecutor {
         let sslconf = info.config.ssl || sslNames[info.ssl];
         let httpconf = info.config.http || info.http;
         if (sslconf !== "enforce" && sslconf !== "always") {
-            node._add('listen', info.ip);
-            node._add('listen', info.ip6);
+            node._add('listen', info.ip ? info.ip + ":80" : "80");
+            node._add('listen', (info.ip6 || '[::]') + ":80");
         }
         if (sslconf !== "off") {
-            node._add('listen', info.ip + ":443 ssl");
-            node._add('listen', info.ip6 + ":443 ssl");
+            node._add('listen', info.ip ? info.ip + ":443 ssl" : "443 ssl");
+            node._add('listen', (info.ip6 || '[::]') + ":443 ssl");
             if (httpconf == 2) {
                 node._add('http2', "on");
             }
@@ -283,6 +283,10 @@ class NginxExecutor {
             let ip = ("" + x._value).split(" ")[0];
             if (ip.endsWith(":443"))
                 ip = ip.slice(0, -4);
+            else if (ip.endsWith(":80"))
+                ip = ip.slice(0, -3);
+            else if (ip === "80" || ip === "443")
+                ip = "";
             data[ip.startsWith("[") ? "ip6" : "ip"] = ip;
             data.ssl |= x._value.includes("ssl") ? 2 : 1;
         });

@@ -1,6 +1,6 @@
 {
   "name": "domcloud-bridge",
-  "version": "0.55.0",
+  "version": "0.56.0",
   "description": "Deployment runner for DOM Cloud",
   "main": "app.js",
   "engines": {
@@ -19,7 +19,6 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "axios": "^1.6.8",
     "cli": "^1.0.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

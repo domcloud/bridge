@@ -1,7 +1,7 @@
-import axios from "axios";
 import fs from "fs";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
+import request from "../request.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const pythonConstants = {
@@ -48,8 +48,7 @@ export const initUtils = async () => {
      * @type {Record<string, string>}
      */
     let javaVersionsMap = {};
-    await axios
-      .get("https://rvm_io.global.ssl.fastly.net/binaries/centos/9/x86_64/") // currently aarch64 have to rebuilt
+    await request("https://rvm_io.global.ssl.fastly.net/binaries/centos/9/x86_64/")  // currently aarch64 have to rebuilt
       .then((res) => {
         // @ts-ignore
         var matches = [
@@ -66,15 +65,21 @@ export const initUtils = async () => {
         console.error("error fetching Ruby releases", err.message);
       });
 
-    await axios.get(pythonConstants.latestTagUrl()).then((res) => {
+    await request(pythonConstants.latestTagUrl()).then((res) => {
+      res.data = JSON.parse(res.data)
       if (res.data && res.data.tag) {
         pythonConstants.tag = res.data.tag;
       } else {
         console.warn("unable get latest python tag");
       }
     });
-    await axios
-      .get(pythonConstants.index())
+    await request(pythonConstants.index(), {
+      headers: {
+        'user-agent': 'curl/7.81.0',
+        'Host': 'github.com',
+        'accept': '*/*',
+      }
+    })
       .then((res) => {
         // @ts-ignore
         var matches = [
@@ -91,12 +96,10 @@ export const initUtils = async () => {
       .catch((err) => {
         console.error("error fetching Python releases", err.message);
       });
-    await axios
-      .get("https://api.adoptium.net/v3/info/available_releases")
+    await request("https://api.adoptium.net/v3/info/available_releases")
       .then(async (res) => {
         for (const ver of res.data.available_releases) {
-          await axios
-            .get(
+          await request(
               `https://api.adoptium.net/v3/assets/latest/${ver}/hotspot?architecture=${archLinux[arch]}&image_type=jdk&os=linux&vendor=eclipse`
             )
             .then((x) => {
