@@ -65,6 +65,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     const options = {
         rejectUnauthorized: false, // can be bad if I forgotten to renew
         family: 4, // some servers gateway ipv6 not working
+        method: 'POST',
     };
     let aborted = false;
     const periodicSender = async () => {
