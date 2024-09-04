@@ -72,7 +72,9 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             const data = normalizeShellOutput(chunkedLogData);
             chunkedLogData = ['[Chunked data...]\n'];
             request(callback, { data, headers, ...options })
-                .catch(e => {
+                .then(e => {
+                    console.log('callback response:', e.statusCode)
+                }).catch(e => {
                     console.error(e);
                 });
         }
@@ -88,7 +90,9 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         if (callback) {
             const data = trimPayload(normalizeShellOutput(fullLogData));
             request(callback, { data, headers, ...options })
-                .catch(e => {
+                .then(e => {
+                    console.log('callback response:', e.statusCode)
+                }).catch(e => {
                     console.error(e);
                 });
         }
@@ -126,8 +130,16 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 fs.mkdirSync(path.join(__dirname, '../../logs'), { recursive: true });
-const childLogger = fs.openSync(path.join(__dirname, `../../logs/${new Date().toISOString().substring(0, 10)}.log`), 'a');
+const getLoggerPath = () => path.join(__dirname, `../../logs/${new Date().toISOString().substring(0, 10)}.log`);
+let loggerPath = getLoggerPath();
+let childLogger = fs.openSync(loggerPath, 'a');
 export async function runConfigInBackgroundSingleton(payload) {
+    const curLoggerPath = getLoggerPath();
+    if (curLoggerPath != loggerPath) {
+        loggerPath = curLoggerPath;
+        // fs.closeSync(childLogger);
+        childLogger = fs.openSync(curLoggerPath, 'a');
+    }
     spawn('node', [path.join(process.cwd(), '/runner.js')], {
         stdio: ['ignore', childLogger, childLogger],
         detached: true,
