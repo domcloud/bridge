@@ -56,6 +56,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         chunkedLogData = ['Running deployment script... Please wait...\n'],
         startTime = Date.now();
     const write = new PassThrough();
+    const delay = 5000;
     const headers = {
         'Content-Type': 'text/plain; charset=UTF-8',
     };
@@ -79,6 +80,9 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
                     console.error(e);
                 });
         }
+        if (write && !write.writableEnded) {
+            setTimeout(periodicSender, delay).unref();
+        }
     }
     periodicSender();
     write.on('data', (chunk) => {
@@ -89,6 +93,7 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
     write.on('end', () => {
         // and finish message with full log
         if (callback) {
+            chunkedLogData = [];
             const data = trimPayload(normalizeShellOutput(fullLogData));
             request(callback, { data, headers, ...options })
                 .then(e => {
@@ -99,9 +104,9 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
         }
     });
     try {
-        await runConfig(body || {}, domain + "", async (s) => {
+        await runConfig(body || {}, domain + "", (s) => {
             console.log('> ' + s);
-            await writeAsync(write, s);
+            return writeAsync(write, s);
         }, sandbox);
     } catch (error) {
         console.log('!> ', error);
