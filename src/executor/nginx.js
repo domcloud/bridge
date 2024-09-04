@@ -318,19 +318,18 @@ class NginxExecutor {
     /**
      * @param {string} domain
      */
-    async get(domain) {
-        return await executeLock('nginx', () => {
+    get(domain) {
+        return executeLock('nginx', () => {
             return new Promise((resolve, reject) => {
                 spawnSudoUtil('NGINX_GET', [domain]).then(() => {
                     NginxConfFile.create(tmpFile, (err, conf) => {
                         if (err)
                             return reject(err);
-                        try {
-                            let node = conf.nginx;
-                            return resolve(node.server[0]);
-                        } catch (error) {
-                            return reject(error);
+                        const node = conf.nginx.server?.[0];
+                        if (!node) {
+                            return reject(new Error(`Cannot find domain ${domain}`));
                         }
+                        return resolve(node);
                     });
                 }).catch(reject);
             });
@@ -340,15 +339,15 @@ class NginxExecutor {
      * @param {string} domain
      * @param {any} config
      */
-    async set(domain, config) {
-        return await executeLock('nginx', async () => {
+    set(domain, config) {
+        return executeLock('nginx', async () => {
             await spawnSudoUtil('NGINX_GET', [domain]);
             return await new Promise((resolve, reject) => {
                 var src = cat(tmpFile).toString();
                 NginxConfFile.createFromSource(src, (err, conf) => {
                     if (err)
                         return reject(err);
-                    const node = conf.nginx.server[0];
+                    const node = conf.nginx.server?.[0];
                     if (!node) {
                         return reject(new Error(`Cannot find domain ${domain}`));
                     }
@@ -369,8 +368,8 @@ class NginxExecutor {
      * @param {string} domain
      * @param {any} info
      */
-    async setDirect(domain, info) {
-        return await executeLock('nginx', async () => {
+    setDirect(domain, info) {
+        return executeLock('nginx', async () => {
             await spawnSudoUtil('NGINX_GET', [domain]);
             return await new Promise((resolve, reject) => {
                 var src = cat(tmpFile).toString();
@@ -397,8 +396,8 @@ class NginxExecutor {
      * @param {string} ssl
      * @param {string} http
      */
-    async setSsl(domain, ssl, http) {
-        return await executeLock('nginx', async () => {
+    setSsl(domain, ssl, http) {
+        return executeLock('nginx', async () => {
             await spawnSudoUtil('NGINX_GET', [domain]);
             return await new Promise((resolve, reject) => {
                 var src = cat(tmpFile).toString();

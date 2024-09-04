@@ -32,20 +32,20 @@ jobs:
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_AMS }}
           data: >-
             {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
-      - name: Invoke TYO deployment hook
+      - name: Invoke NUE deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
-          webhook_secret: ${{ secrets.WEBHOOK_SECRET_TYO }}
-          webhook_auth: ${{ secrets.WEBHOOK_AUTH_TYO }}
+          webhook_secret: ${{ secrets.WEBHOOK_SECRET_NUE }}
+          webhook_auth: ${{ secrets.WEBHOOK_AUTH_NUE }}
           data: >-
             {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
-      - name: Invoke BLR deployment hook
+      - name: Invoke OSK deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
-          webhook_secret: ${{ secrets.WEBHOOK_SECRET_BLR }}
-          webhook_auth: ${{ secrets.WEBHOOK_AUTH_BLR }}
+          webhook_secret: ${{ secrets.WEBHOOK_SECRET_OSK }}
+          webhook_auth: ${{ secrets.WEBHOOK_AUTH_OSK }}
           data: >-
             {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
       - name: Invoke SAO deployment hook
