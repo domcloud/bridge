@@ -207,6 +207,19 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 var phpVer = value.replace('.', '');
                 await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);
                 break;
+            case 'http':
+                var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
+                value = parseInt(value);
+                if (![1, 2].includes(value)) {
+                    throw new Error(`http option invalid. specify "http 1" or "http 2"`);
+                }
+                if (value === nginxInfos.http) {
+                    await writeLog("$> http version config is set unchanged");
+                } else {
+                    await writeLog("$> Applying nginx http config on " + subdomain);
+                    await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
+                }
+                break;
             case 'ssl':
                 // ssl also fix any misconfigurations
                 var changed = false;
