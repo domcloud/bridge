@@ -62,6 +62,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             domain: subdomain,
                             mysql: true,
                         });
+                        subdomaindata['Features'] = subdomaindata['Features'].replace(/ ?mysql/, '');
                     } else {
                         await writeLog("Already disabled");
                     }
@@ -74,6 +75,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         mysql: true,
                     });
                     dbneedcreate = true;
+                    subdomaindata['Features'] += ' ' + key;
                 }
                 if (value.startsWith("create ")) {
                     let newdb = value.substr("create ".length).trim();
@@ -101,6 +103,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             domain: subdomain,
                             postgres: true,
                         });
+                        subdomaindata['Features'] = subdomaindata['Features'].replace(/ ?postgres/, '');
                     } else {
                         await writeLog("Already disabled");
                     }
@@ -112,6 +115,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         domain: subdomain,
                         postgres: true,
                     });
+                    subdomaindata['Features'] += ' ' + key;
                     dbneedcreate = true;
                 }
                 if (value.startsWith("create ")) {
@@ -141,6 +145,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             domain: subdomain,
                             dns: true,
                         });
+                        subdomaindata['Features'] = subdomaindata['Features'].replace(/ ?dns/, '');
                     } else {
                         await writeLog("Already disabled");
                     }
@@ -152,6 +157,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         domain: subdomain,
                         dns: true,
                     });
+                    subdomaindata['Features'] += ' ' + key;
                 }
                 if (!Array.isArray(value)) {
                     break;
@@ -271,6 +277,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             'web': true,
                             'skip-dns-check': true,
                         });
+                        subdomaindata['SSL cert expiry'] = new Date().toISOString()
                     }
                     // if LE ON AND force self-sign / shared on, must turn off
                     // if it was shared or ssl path don't match, just assume that's also LE ON
@@ -280,6 +287,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         domain: subdomain,
                         'self': true,
                     });
+                    delete subdomaindata['Lets Encrypt renewal'];
+                    delete subdomaindata['SSL shared with'];
                 } else if (!changed) {
                     await writeLog("$> SSL config seems OK, nothing changed");
                     break;

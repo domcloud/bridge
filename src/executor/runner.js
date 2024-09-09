@@ -14,6 +14,7 @@ import {
 } from "./virtualmin.js";
 import { runConfigCodeFeatures } from "./runnercode.js";
 import { runConfigSubdomain } from "./runnersub.js";
+import path from "path";
 
 // TODO: Need to able to customize this
 const maxExecutionTime = 900000;
@@ -213,6 +214,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         domaindata = await virtualminExec.getDomainInfo(domain);
                         break;
                     case 'disable':
+                        await sshExec(`mkdir -p ${domaindata['Home directory']}`);
                         await writeLog("$> virtualmin disable-domain");
                         await virtExec("disable-domain", value, {
                             domain,
@@ -223,6 +225,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await virtExec("enable-domain", value, {
                             domain,
                         });
+                        await spawnSudoUtil("SHELL_SUDO", ["root",
+                            "rm", "-f", path.join(domaindata['Home directory'], `disabled_by_virtualmin.html`)
+                        ]);
                         break;
                     case 'backup':
                         await writeLog("$> virtualmin backup-domain");
