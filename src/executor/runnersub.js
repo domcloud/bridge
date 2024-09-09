@@ -217,6 +217,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 if (value === nginxInfos.http) {
                     await writeLog("$> http version config is set unchanged");
                 } else {
+                    nginxInfos.http = value;
                     await writeLog("$> Applying nginx http config on " + subdomain);
                     await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
                 }
