@@ -208,6 +208,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);
                 break;
             case 'http':
+                var nginxNodes = await nginxExec.get(subdomain);
                 var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
                 value = parseInt(value);
                 if (![1, 2].includes(value)) {
@@ -234,8 +235,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     selfSignSsl = true;
                 }
                 var sharedSSL = regenerateSsl ? null : detectCanShareSSL(subdomain);
-                var nginxNodes = await nginxExec.get(subdomain);
-                var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
+                nginxNodes = await nginxExec.get(subdomain);
+                nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
                 var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
                 var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : subdomaindata['SSL key file'];
                 // if (force regenerate or no explicit command or ssl not match) AND it's shared, then must break.
