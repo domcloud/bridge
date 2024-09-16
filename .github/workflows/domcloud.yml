@@ -64,3 +64,11 @@ jobs:
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGP }}
           data: >-
             {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
+      - name: Invoke MNZ deployment hook
+        uses: distributhor/workflow-webhook@v3
+        env:
+          webhook_url: https://my.domcloud.co/api/githubdeploy
+          webhook_secret: ${{ secrets.WEBHOOK_SECRET_MNZ }}
+          webhook_auth: ${{ secrets.WEBHOOK_AUTH_MNZ }}
+          data: >-
+            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
