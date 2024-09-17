@@ -69,7 +69,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         // sometimes we need to wait for the domain to be created
         await writeLog("$> virtualmin list-domains");
         await new Promise((resolve, reject) => {
-            setTimeout(resolve, 3000);
+            setTimeout(resolve, 1000);
         });
         await new Promise((resolve, reject) => {
             let tries = 0;
@@ -237,7 +237,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await virtExec("backup-domain", value, {
                             user,
                             'all-features': true,
-                            'as-owner': true,
                             'ignore-errors': true,
                         });
                         break;
