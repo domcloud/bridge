@@ -53,7 +53,9 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 } else if (parg.version !== "system") {
                     await sshExec(`pyenv install ${parg.version} -s`);
                 }
-                await sshExec(`pyenv global ${parg.version.replace(":latest", "")} ; source ~/.bashrc`);
+                await sshExec(`pyenv global ${parg.version.replace(":latest", "")}`);
+                await sshExec(`[[ -z $PIP_PROGRESS_BAR ]] && echo "export PIP_PROGRESS_BAR=off" >> ~/.bashrc`)
+                await sshExec(`source ~/.bashrc`, false)
                 await sshExec("python --version");
             }
             break;
@@ -73,10 +75,11 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                     arg = "@" + value;
                 }
                 await writeLog("$> Changing Node engine to " + (value || 'lts'));
-                await sshExec("pathman add .local/opt/node/bin ; source ~/.config/envman/PATH.env");
+                await sshExec("pathman add .local/opt/node/bin");
                 await sshExec(`curl -sS https://webinstall.dev/node${arg} | bash`);
                 await sshExec("command -v corepack &> /dev/null || npm i -g corepack && corepack enable");
-                await sshExec(`[[ -z $COREPACK_ENABLE_AUTO_PIN ]] && echo "COREPACK_ENABLE_AUTO_PIN=0" >> ~/.bashrc && source ~/.bashrc`)
+                await sshExec(`[[ -z $COREPACK_ENABLE_AUTO_PIN ]] && echo "export COREPACK_ENABLE_AUTO_PIN=0" >> ~/.bashrc`)
+                await sshExec("source ~/.bashrc", false);
                 await sshExec("node --version");
             }
             break;
@@ -96,7 +99,8 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 }
                 await writeLog("$> Changing Deno engine to " + (value || 'stable'));
                 await sshExec(`curl -sS https://webinstall.dev/deno${arg} | bash`);
-                await sshExec("mkdir -p ~/.deno/bin/ && pathman add ~/.deno/bin/ ; source ~/.config/envman/PATH.env");
+                await sshExec("mkdir -p ~/.deno/bin/ && pathman add ~/.deno/bin/");
+                await sshExec("source ~/.bashrc", false);
                 await sshExec("deno --version");
             }
             break;

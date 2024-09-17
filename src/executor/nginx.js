@@ -342,7 +342,7 @@ class NginxExecutor {
     set(domain, config) {
         return executeLock('nginx', async () => {
             await spawnSudoUtil('NGINX_GET', [domain]);
-            return await new Promise((resolve, reject) => {
+            const conf = await new Promise((resolve, reject) => {
                 var src = cat(tmpFile).toString();
                 NginxConfFile.createFromSource(src, (err, conf) => {
                     if (err)
@@ -352,16 +352,29 @@ class NginxExecutor {
                         return reject(new Error(`Cannot find domain ${domain}`));
                     }
                     const info = this.extractInfo(node, domain);
-                    info.config = config;
-                    this.applyInfo(node, info);
-                    writeTo(tmpFile, conf.toString());
-                    spawnSudoUtil('NGINX_SET', [domain]).then(() => {
-                        resolve("Done updated\n" + node.toString());
-                    }).catch((err) => {
-                        reject(err);
-                    })
+                    if (typeof config === 'string') {
+                        // experimental parse from string
+                        new Promise((resolve, reject) => {
+                            NginxConfFile.createFromSource(config, (err, rawConf) => {
+                                if (err)
+                                    return reject(err);
+                                const rawNode = rawConf.nginx.server?.[0] || rawConf.nginx;
+                                const rawInfo = this.extractInfo(rawNode, domain);
+                                info.config = rawInfo.config;
+                                this.applyInfo(node, info);
+                                resolve(conf);
+                            })
+                        }).then(resolve).catch(reject);
+                    } else {
+                        info.config = config;
+                        this.applyInfo(node, info);
+                        resolve(conf);
+                    }
                 });
             });
+            writeTo(tmpFile, conf.toString());
+            await spawnSudoUtil('NGINX_SET', [domain]);
+            return "Done updated\n" + conf.toString();
         })
     }
     /**

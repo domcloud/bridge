@@ -51,6 +51,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         }
     }
     await writeLog(`DOM Cloud runner v${getVersion()} ref ${getRevision()} in ${domain} at ${new Date().toISOString()}`);
+    if (typeof config.features === 'string') {
+        config.features = [config.features];
+    }
     if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {
         // create new domain
         await writeLog("$> virtualmin create-domain");
@@ -280,7 +283,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
         }
         await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
-        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PIP_PROGRESS_BAR=off`, false);
+        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
         await sshExec(`USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         const firewallOn = await firewallStatus();
         if (config.subdomain) {
