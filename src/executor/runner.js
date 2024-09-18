@@ -225,7 +225,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         domaindata = await virtualminExec.getDomainInfo(domain);
                         break;
                     case 'disable':
-                        await sshExec(`mkdir -p ${domaindata['Home directory']}`);
+                        await sshExec(`mkdir -p '${domaindata['Home directory']}'`);
                         await writeLog("$> virtualmin disable-domain");
                         await virtExec("disable-domain", value, {
                             domain,

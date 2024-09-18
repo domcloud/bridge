@@ -330,15 +330,15 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 var absolutePath = path.join(subdomaindata['Home directory'], value);
                 if (absolutePath !== subdomaindata['HTML directory']) {
-                    await writeLog("$> Changing root folder");
-                    await sshExec(`mkdir -p ${absolutePath}`);
+                    await writeLog("$> Changing root path to " + value);
+                    await sshExec(`mkdir -p '${absolutePath}'`);
                     await virtExec("modify-web", {
                         domain: subdomain,
                         'document-dir': value,
                     });
                     subdomaindata['HTML directory'] = absolutePath;
                 } else {
-                    await writeLog("$> root folder is set unchanged");
+                    await writeLog("$> root path is set unchanged");
                 }
                 break;
         }
@@ -347,7 +347,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     if (config.source || config.commands || config.services) {
         await sshExec(`shopt -s dotglob`, false);
         await sshExec(`export DOMAIN='${subdomain}'`, false);
-        await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);
+        await sshExec(`mkdir -p '${subdomaindata['Home directory']}/public_html' && cd "$_"`);
     }
 
     if (config.nginx && config.nginx.root) {
@@ -467,11 +467,16 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
 
         if (config.services) {
+            const htmlDir = subdomaindata['Home directory'] + '/public_html';
             const addFlags = typeof config.services == 'string' ? `-f ${config.services} --progress quiet` : '--progress quiet';
+            if (htmlDir == subdomaindata['HTML directory']) {
+                await writeLog("$> Changing root path for safety");
+                await featureRunner("root public_html/public");
+            }
             await writeLog("$> Removing docker compose services if exists");
             await sshExec(`docker compose ${addFlags} down --remove-orphans --rmi all || true`);
             await writeLog("$> Configuring NGINX forwarding for docker");
-            let d = await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain, writeLog);
+            let d = await dockerExec.executeServices(config.services, htmlDir, subdomain, writeLog);
             await writeLog("$> Writing docker compose services");
             await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
             await writeLog("$> Applying compose services");
