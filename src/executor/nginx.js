@@ -249,7 +249,7 @@ class NginxExecutor {
                         if (r[k] == unitProxy) {
                             r[k] = "unit";
                         } else if (r[k].startsWith(dockerProxy)) {
-                            r[k] = "docker:" + r[k].slice(dockerProxy);
+                            r[k] = "docker:" + r[k].slice(dockerProxy.length);
                         }
                     }
                 }
