@@ -55,7 +55,6 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                     await sshExec(`pyenv install ${parg.version} -s`);
                 }
                 await sshExec(`pyenv global ${parg.version.replace(":latest", "")}`);
-                await sshExec(`[[ -z $PIP_PROGRESS_BAR ]] && echo "export PIP_PROGRESS_BAR=off" >> ~/.bashrc`)
                 await sshExec(`source ~/.bashrc`, false)
                 await sshExec("python --version");
             }

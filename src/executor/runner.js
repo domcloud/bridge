@@ -282,7 +282,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             }
         }
         await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
-        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, false);
+        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 `, false);
+        await sshExec(`export PIP_PROGRESS_BAR=off BUILDKIT_PROGRESS=plain`, false);
         await sshExec(`USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         const firewallOn = await firewallStatus();
         if (config.subdomain) {
