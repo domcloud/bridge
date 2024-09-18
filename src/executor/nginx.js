@@ -45,7 +45,7 @@ class NginxExecutor {
                         if (port > 0x400 && port < 0xFFFF) {
                             node._add(key, `http://${info.docker_ip}:${port}`);
                         }
-                    } else if (/^http:\/\/(10|127)\.\d+\.\d+\.\d+:\d+(\$.+|\/.+)?$/.test(config[key])) {
+                    } else if (/^http:\/\/127\.\d+\.\d+\.\d+:\d+(\$.+|\/.+)?$/.test(config[key])) {
                         node._add(key, config[key]);
                     }
                 } else {
@@ -271,7 +271,7 @@ class NginxExecutor {
         }
         const findDockerIp = (l) => {
             if (l.proxy_pass && l.proxy_pass[0]) {
-                if (/^http:\/\/10\.\d+\.\d+\.\d+:\d+$/.test(l.proxy_pass[0]._value)) {
+                if (/^http:\/\/127\.[12]\d\d\.\d+\.\d+:\d+$/.test(l.proxy_pass[0]._value)) {
                     return new URL(l.proxy_pass[0]._value).hostname;
                 }
             }

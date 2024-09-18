@@ -57,13 +57,12 @@ class DockerExecutor {
         });
     }
     generateRandomIPv4() {
-        // Generate random octets (numbers between 0 and 255)
-        const octet1 = Math.trunc(Math.random() * 256);
+        // Valid docker IP is in range 127.128.0.0/9
+        const octet1 = Math.trunc(Math.random() * 128) + 128;
         const octet2 = Math.trunc(Math.random() * 256);
         const octet3 = Math.trunc(Math.random() * 256);
 
-        // Construct the address with the "10." prefix
-        const ipAddress = `10.${octet1}.${octet2}.${octet3}`;
+        const ipAddress = `127.${octet1}.${octet2}.${octet3}`;
         return ipAddress;
     }
     /**
