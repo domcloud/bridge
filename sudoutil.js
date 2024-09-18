@@ -50,6 +50,7 @@ const env = Object.assign({}, {
     NGINX_TMP: path.join(__dirname, '.tmp/nginx'),
     UNIT_SOCKET: '/var/run/unit/control.sock',
     UNIT_TMP: path.join(__dirname, '.tmp/unit'),
+    COMPOSE_TMP: path.join(__dirname, '.tmp/compose'),
     IPTABLES_PATH: '/etc/sysconfig/iptables',
     IPTABLES_OUT: '/etc/sysconfig/iptables',
     IPTABLES_SAVE: 'iptables-save',
@@ -111,6 +112,15 @@ switch (cli.args.shift()) {
         }
         rm(DEST + '.bak');
         exec(`${env.NGINX_BIN} -s reload`);
+        exit(0);
+    case 'COMPOSE_GET':
+        arg = cli.args.shift();
+        cat(arg).to(env.COMPOSE_TMP);
+        fixOwner(env.COMPOSE_TMP);
+        exit(0);
+    case 'COMPOSE_SET':
+        arg = cli.args.shift();
+        cat(env.COMPOSE_TMP).to(arg);
         exit(0);
     case 'UNIT_GET':
         arg = cli.args.shift();

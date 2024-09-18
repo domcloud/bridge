@@ -40,7 +40,12 @@ class NginxExecutor {
                 } else if (key === "proxy_pass") {
                     if (config[key] === "unit") {
                         node._add(key, unitProxy);
-                    } else if (/^http:\/\/(10|127)\.\d+\.\d+\.\d+:\d+(\$\d+|\/.+)?$/) {
+                    } else if (/^docker:(\d+)$/.test(config[key]) && info.docker_ip) {
+                        let port = parseInt(config[key].substring(7));
+                        if (port > 0x400 && port < 0xFFFF) {
+                            node._add(key, `http://${info.docker_ip}:${port}`);
+                        }
+                    } else if (/^http:\/\/(10|127)\.\d+\.\d+\.\d+:\d+(\$.+|\/.+)?$/.test(config[key])) {
                         node._add(key, config[key]);
                     }
                 } else {
@@ -93,7 +98,7 @@ class NginxExecutor {
                     }
                 }
             }
-            if (config.fastcgi) {
+            if (config.fastcgi && info.fcgi) {
                 node._add("location", "~ \\.php" + (config.fastcgi == 'always' ? "(/|$)" : "$"));
                 var n = node.location[node.location.length - 1];
                 switch (config.fastcgi) {
@@ -261,6 +266,21 @@ class NginxExecutor {
             }
             return null;
         }
+        const findDockerIp = (l) => {
+            if (l.proxy_pass && l.proxy_pass[0]) {
+                if (/^http:\/\/10\.\d+\.\d+\.\d+:\d+$/.test(l.proxy_pass[0]._value)) {
+                    return new URL(l.proxy_pass[0]._value).hostname;
+                }
+            }
+            if (l.location) {
+                for (const ll of l.location) {
+                    var r = findFastCgi(ll);
+                    if (r)
+                        return r;
+                }
+            }
+            return null;
+        }
         const data = {
             ssl: 0, // binary of 1 = HTTP, 2 = HTTPS
             http: 1, // http version (1 or 2)
@@ -270,6 +290,7 @@ class NginxExecutor {
             root: null,
             user: null,
             fcgi: null,
+            docker_ip: null,
             free: false,
             access_log: null,
             error_log: null,
@@ -301,6 +322,7 @@ class NginxExecutor {
         data.ssl_certificate_key = node.ssl_certificate_key ? node.ssl_certificate_key[0]._value : `/home/${data.user}/ssl.key`;
 
         data.fcgi = findFastCgi(node);
+        data.docker_ip = findDockerIp(node);
         data.config = extractLocations(node, `/home/${data.user}/`);
         delete data.config.match;
         delete data.config.alias;

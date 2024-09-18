@@ -8,9 +8,10 @@ import { namedExec } from "./named.js";
 import { nginxExec } from "./nginx.js";
 import { virtualminExec } from "./virtualmin.js";
 import { unitExec } from "./unit.js";
+import { dockerExec } from "./docker.js";
 
 /**
- * @param {{source: any;features: any;commands: any;nginx: any;unit: any;envs: any,directory:any, root:any}} config
+ * @param {{source: any;features: any;commands: any;services: any;nginx: any;unit: any;envs: any,directory:any, root:any}} config
  * @param {{[x: string]: any}} domaindata
  * @param {string} subdomain
  * @param {{(cmd: string, write?: boolean): Promise<any>}} sshExec
@@ -343,7 +344,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
     };
 
-    if (config.source || config.commands) {
+    if (config.source || config.commands || config.services) {
         await sshExec(`shopt -s dotglob`, false);
         await sshExec(`export DOMAIN='${subdomain}'`, false);
         // enable managing systemd for linger user
@@ -364,6 +365,16 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             root: config.root
         }]);
         delete config.root;
+    }
+
+    if (config.services) {
+        await writeLog("$> Applying docker compose services");
+        await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain);
+        if (typeof config.services == 'string') {
+            await sshExec(`docker compose up --build -f ` + config.services);
+        } else {
+            await sshExec(`docker compose up --build`);
+        }
     }
 
     if (Array.isArray(config.features)) {

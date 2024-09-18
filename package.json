@@ -1,6 +1,6 @@
 {
   "name": "domcloud-bridge",
-  "version": "0.58.0",
+  "version": "0.59.0",
   "description": "Deployment runner for DOM Cloud",
   "main": "app.js",
   "engines": {
@@ -25,7 +25,8 @@
     "fast-xml-parser": "^4.3.6",
     "nginx-conf": "^2.1.0",
     "proper-lockfile": "^4.1.2",
-    "shelljs": "^0.8.5"
+    "shelljs": "^0.8.5",
+    "yaml": "^2.5.1"
   },
   "devDependencies": {
     "@types/cli": "^0.11.25",
