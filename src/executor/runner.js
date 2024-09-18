@@ -140,6 +140,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise(function (resolve, reject) {
                 if (!ssh) return reject("shell has terminated already");
+                let first = true;
                 cb = (/** @type {string} */ chunk, code) => {
                     if (!ssh) {
                         if (code) {
@@ -159,10 +160,17 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         resolve();
                         return true;
+                    } else if (first && chunk.startsWith("<")) {
+                        // stdin line skips
+                        if (chunk.includes("\n")) {
+                            first = false;
+                        }
+                        return false;
                     } else {
                         if (write && chunk) {
                             writer(chunk);
                         }
+                        first = false;
                         return false;
                     }
                 };

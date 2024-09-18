@@ -472,9 +472,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         if (config.services) {
             await writeLog("$> Removing docker compose services if exists");
             if (typeof config.services == 'string') {
-                await sshExec(`docker compose -f ${config.services} --progress plain down --remove-orphans --rmi all || true`);
+                await sshExec(`docker compose -f ${config.services} --progress quiet down --remove-orphans --rmi all || true`);
             } else {
-                await sshExec(`docker compose --progress-plain down --remove-orphans --rmi all || true`);
+                await sshExec(`docker compose --progress-plain quiet --remove-orphans --rmi all || true`);
             }
             await writeLog("$> Writing docker compose services");
             let d = await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain);
@@ -485,6 +485,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             } else {
                 await sshExec(`docker compose up --build --detach`);
             }
+            await sshExec(`docker ps`);
         }
 
         if (config.commands) {

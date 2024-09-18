@@ -157,11 +157,11 @@ class DockerExecutor {
         } else {
             composeObject.services = services;
         }
-        composeObject.services = this.rewriteServices(composeObject.services, domain);
+        composeObject.services = await this.rewriteServices(composeObject.services, domain);
         let composeFile = yaml.stringify(composeObject);
         await executeLock('compose', () => {
             return new Promise((resolve, reject) => {
-                ShellString(composeFile).to(filename)
+                ShellString(composeFile).to(tmpFile)
                 spawnSudoUtil('COMPOSE_SET', [filename]).then(resolve).catch(reject);
             });
         });
