@@ -143,19 +143,22 @@ class DockerExecutor {
      */
     async executeServices(services, home, domain) {
         let filename = path.join(home, 'docker-compose.yml');
+        let composeObject = {};
         if (typeof services === 'string') {
             filename = path.join(home, services);
             // cat from file
-            services = yaml.parse(await executeLock('compose', () => {
+            composeObject = yaml.parse(await executeLock('compose', () => {
                 return new Promise((resolve, reject) => {
                     spawnSudoUtil('COMPOSE_GET', [filename]).then(() => {
                         resolve(cat(tmpFile));
                     }).catch(reject);
                 });
-            })).services;
+            }));
+        } else {
+            composeObject.services = services;
         }
-        services = this.rewriteServices(services, domain);
-        let composeFile = yaml.stringify({ services });
+        composeObject.services = this.rewriteServices(composeObject.services, domain);
+        let composeFile = yaml.stringify(composeObject);
         await executeLock('compose', () => {
             return new Promise((resolve, reject) => {
                 ShellString(composeFile).to(filename)
