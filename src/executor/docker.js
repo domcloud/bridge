@@ -106,6 +106,9 @@ class DockerExecutor {
                     } else {
                         throw new Error("Unknown ports format: " + name);
                     }
+                } else if (typeof port === 'object' && port.target && port.published) {
+                    conf.published = port.published;
+                    conf.target = port.target;
                 }
                 exposedPorts.push(conf.published);
                 service.ports[i] = conf;
@@ -121,26 +124,30 @@ class DockerExecutor {
             nginxChanged = true;
         }
         let proxyPass = matchedConf.proxy_pass + "";
-        if (!proxyPass || !proxyPass.startsWith('docker:') || exposedPorts.includes(proxyPass.replace(/^docker:/, ''))) {
+        if (!proxyPass || !proxyPass.startsWith('docker:') || !exposedPorts.includes(proxyPass.replace(/^docker:/, ''))) {
             if (exposedPorts.length == 0) {
                 throw new Error("There are no exposed ports! Need atleast one to forward it into NGINX");
             }
             matchedConf.proxy_pass = "docker:" + exposedPorts[exposedPorts.length - 1];
             nginxChanged = true;
         }
+        let nginxStatus = '';
         if (nginxChanged) {
-            await nginxExec.setDirect(domain, nginx);
+            nginxStatus = await nginxExec.setDirect(domain, nginx);
+        } else {
+            nginxStatus = "Done unchanged";
         }
-        return services;
+        return [services, nginxStatus];
     }
     /**
      * 
      * @param {any} services 
      * @param {string} home 
      * @param {string} domain 
+     * @param {(arg0: string) => Promise<void>} logWriter 
      * @return {Promise<string>}
      */
-    async executeServices(services, home, domain) {
+    async executeServices(services, home, domain, logWriter) {
         let filename = path.join(home, 'docker-compose.yml');
         let composeObject = {};
         if (typeof services === 'string') {
@@ -156,7 +163,11 @@ class DockerExecutor {
         } else {
             composeObject.services = services;
         }
-        composeObject.services = await this.rewriteServices(composeObject.services, domain);
+        let nginxStatus = '';
+        [composeObject.services, nginxStatus] = await this.rewriteServices(composeObject.services, domain);
+        if (logWriter) {
+            await logWriter(nginxStatus)
+        }
         let composeFile = yaml.stringify(composeObject);
         await executeLock('compose', () => {
             return new Promise((resolve, reject) => {

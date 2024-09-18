@@ -476,8 +476,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             } else {
                 await sshExec(`docker compose --progress-plain quiet --remove-orphans --rmi all || true`);
             }
+            await writeLog("$> Configuring NGINX forwarding for docker");
+            let d = await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain, writeLog);
             await writeLog("$> Writing docker compose services");
-            let d = await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain);
             await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
             await writeLog("$> Applying compose services");
             if (typeof config.services == 'string') {

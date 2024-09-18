@@ -154,21 +154,21 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     let match = chunk.match(/\[.+?\@.+? .+?\]\$/);
                     if (match) {
                         cb = null;
-                        chunk = chunk.replace(/\x1b.+?$/, '').trimEnd();
-                        if (write && chunk) {
-                            writer(chunk + "\n");
+                        if (write) {
+                            writer("\n");
                         }
                         resolve();
                         return true;
-                    } else if (first && chunk.startsWith("<")) {
-                        // stdin line skips
-                        if (chunk.includes("\n")) {
-                            first = false;
-                        }
-                        return false;
                     } else {
                         if (write && chunk) {
-                            writer(chunk);
+                            if (first) {
+                                let pos = chunk.indexOf('\n');
+                                if (pos >= 0) {
+                                    writer(chunk.substring(pos + 1));
+                                }
+                            } else {
+                                writer(chunk);
+                            }
                         }
                         first = false;
                         return false;
@@ -312,5 +312,3 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         }
     }
 }
-
-
