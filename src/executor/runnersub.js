@@ -367,16 +367,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         delete config.root;
     }
 
-    if (config.services) {
-        await writeLog("$> Applying docker compose services");
-        await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain);
-        if (typeof config.services == 'string') {
-            await sshExec(`docker compose up --build -f ` + config.services);
-        } else {
-            await sshExec(`docker compose up --build`);
-        }
-    }
-
     if (Array.isArray(config.features)) {
         await writeLog("$> Applying features");
         for (const feature of config.features) {
@@ -478,6 +468,25 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 await sshExec(exec);
             }
         }
+
+        if (config.services) {
+            await writeLog("$> Removing docker compose services if exists");
+            if (typeof config.services == 'string') {
+                await sshExec(`docker compose -f ${config.services} down --rmi || true`);
+            } else {
+                await sshExec(`docker compose down --rmi || tur`);
+            }
+            await writeLog("$> Writing docker compose services");
+            let d = await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain);
+            await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
+            await writeLog("$> Applying compose services");
+            if (typeof config.services == 'string') {
+                await sshExec(`docker compose -f ${config.services} up --build`);
+            } else {
+                await sshExec(`docker compose up --build`);
+            }
+        }
+
         if (config.commands) {
             await sshExec(`export DATABASE='${dbname}'`, false);
             if (config.envs) {
@@ -500,6 +509,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
             }
         }
+
     } catch (error) {
         throw error;
     } finally {
