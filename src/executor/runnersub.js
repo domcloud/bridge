@@ -474,7 +474,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             if (typeof config.services == 'string') {
                 await sshExec(`docker compose -f ${config.services} down --rmi || true`);
             } else {
-                await sshExec(`docker compose down --rmi || tur`);
+                await sshExec(`docker compose down --rmi || true`);
             }
             await writeLog("$> Writing docker compose services");
             let d = await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain);
