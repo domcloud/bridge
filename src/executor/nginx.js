@@ -176,7 +176,7 @@ class NginxExecutor {
         }
     }
     extractInfo(node, domain) {
-        const extractLocations = (node, basepath) => {
+        const extractLocations = (node, info) => {
             const r = {};
             if (node.location) {
                 r.locations = [];
@@ -190,7 +190,7 @@ class NginxExecutor {
                             r.fastcgi = "always";
                         }
                     } else {
-                        let mm = extractLocations(l, basepath);
+                        let mm = extractLocations(l, info);
                         if (mm.match === '= /deceptive.html') {
                             continue;
                         } else if (Object.keys(mm).length == 1) {
@@ -233,7 +233,7 @@ class NginxExecutor {
                         case "python":
                         case "meteor_app_settings":
                             // expand home path
-                            r.passenger[ke] = ve.slice(basepath.length);
+                            r.passenger[ke] = ve.slice(info.home.length);
                             break;
                         default:
                             r.passenger[ke] = unescapeNginx(ve);
@@ -243,10 +243,13 @@ class NginxExecutor {
                 if (locationKeys.includes(k)) {
                     r[k] = node[k][0]._value;
                     if (k === "root" || k === "alias") {
-                        r[k] = r[k].slice(basepath.length);
+                        r[k] = r[k].slice(info.home.length);
                     } else if (k === 'proxy_pass') {
+                        const dockerProxy = 'http://' + info.docker_ip + ':';
                         if (r[k] == unitProxy) {
                             r[k] = "unit";
+                        } else if (r[k].startsWith(dockerProxy)) {
+                            r[k] = "docker:" + r[k].slice(dockerProxy);
                         }
                     }
                 }
@@ -274,7 +277,7 @@ class NginxExecutor {
             }
             if (l.location) {
                 for (const ll of l.location) {
-                    var r = findFastCgi(ll);
+                    var r = findDockerIp(ll);
                     if (r)
                         return r;
                 }
@@ -289,6 +292,7 @@ class NginxExecutor {
             ip6: null,
             root: null,
             user: null,
+            home: null,
             fcgi: null,
             docker_ip: null,
             free: false,
@@ -316,14 +320,15 @@ class NginxExecutor {
         }
         data.root = node.root ? node.root[0]._value : "";
         data.user = data.root.split('/')[2];
+        data.home = `/home/${data.user}/`;
         data.access_log = node.access_log[0]._value;
         data.error_log = node.error_log[0]._value;
-        data.ssl_certificate = node.ssl_certificate ? node.ssl_certificate[0]._value : `/home/${data.user}/ssl.cert`;
-        data.ssl_certificate_key = node.ssl_certificate_key ? node.ssl_certificate_key[0]._value : `/home/${data.user}/ssl.key`;
+        data.ssl_certificate = node.ssl_certificate ? node.ssl_certificate[0]._value : data.home + `ssl.cert`;
+        data.ssl_certificate_key = node.ssl_certificate_key ? node.ssl_certificate_key[0]._value : data.home + `ssl.key`;
 
         data.fcgi = findFastCgi(node);
         data.docker_ip = findDockerIp(node);
-        data.config = extractLocations(node, `/home/${data.user}/`);
+        data.config = extractLocations(node, data);
         delete data.config.match;
         delete data.config.alias;
         data.config.ssl = sslNames[data.ssl];

@@ -472,18 +472,18 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         if (config.services) {
             await writeLog("$> Removing docker compose services if exists");
             if (typeof config.services == 'string') {
-                await sshExec(`docker compose -f ${config.services} down --rmi || true`);
+                await sshExec(`docker compose -f ${config.services} down --remove-orphans --rmi all || true`);
             } else {
-                await sshExec(`docker compose down --rmi || true`);
+                await sshExec(`docker compose down --remove-orphans --rmi all || true`);
             }
             await writeLog("$> Writing docker compose services");
             let d = await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain);
             await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
             await writeLog("$> Applying compose services");
             if (typeof config.services == 'string') {
-                await sshExec(`docker compose -f ${config.services} up --build`);
+                await sshExec(`docker compose -f ${config.services} up --build --detach`);
             } else {
-                await sshExec(`docker compose up --build`);
+                await sshExec(`docker compose up --build --detach`);
             }
         }
 
