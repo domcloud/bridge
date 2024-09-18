@@ -347,9 +347,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     if (config.source || config.commands || config.services) {
         await sshExec(`shopt -s dotglob`, false);
         await sshExec(`export DOMAIN='${subdomain}'`, false);
-        // enable managing systemd for linger user
-        await sshExec(`export XDG_RUNTIME_DIR=/run/user/$(id -u)`, false);
-        await sshExec(`export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus`, false);
         await sshExec(`mkdir -p ${subdomaindata['Home directory']}/public_html && cd "$_"`);
     }
 
@@ -470,22 +467,15 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
 
         if (config.services) {
+            const addFlags = typeof config.services == 'string' ? `-f ${config.services} --progress quiet` : '--progress quiet';
             await writeLog("$> Removing docker compose services if exists");
-            if (typeof config.services == 'string') {
-                await sshExec(`docker compose -f ${config.services} --progress quiet down --remove-orphans --rmi all || true`);
-            } else {
-                await sshExec(`docker compose --progress-plain quiet --remove-orphans --rmi all || true`);
-            }
+            await sshExec(`docker compose ${addFlags} down --remove-orphans --rmi all || true`);
             await writeLog("$> Configuring NGINX forwarding for docker");
             let d = await dockerExec.executeServices(config.services, subdomaindata['Home directory'] + '/public_html', subdomain, writeLog);
             await writeLog("$> Writing docker compose services");
             await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
             await writeLog("$> Applying compose services");
-            if (typeof config.services == 'string') {
-                await sshExec(`docker compose -f ${config.services} --progress quiet up --build --detach`);
-            } else {
-                await sshExec(`docker compose up --build --detach`);
-            }
+            await sshExec(`docker compose ${addFlags} up --build --detach`);
             await sshExec(`docker ps`);
         }
 

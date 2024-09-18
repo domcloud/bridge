@@ -13,13 +13,10 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
     let arg;
     switch (key) {
         case 'restart':
-                await writeLog("$> Restarting passenger processes");
-                await writeLog(await logmanExec.restartPassenger(domaindata));
+            await writeLog("$> Restarting passenger processes");
+            await writeLog(await logmanExec.restartPassenger(domaindata));
             break;
         case 'docker':
-            await sshExec(`export XDG_RUNTIME_DIR=/run/user/$(id -u)`, false);
-            await sshExec(`export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`, false);
-            await sshExec(`export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus`, false);
             if (value === '' || value === 'on') {
                 await writeLog("$> Enabling docker features");
                 await writeLog(await dockerExec.enableDocker(domaindata['Username']));
@@ -27,6 +24,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`echo "export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock" >>  ~/.bashrc;`);
                 await sshExec(`mkdir -p ~/.config/docker; echo '{"exec-opts": ["native.cgroupdriver=cgroupfs"]}' > ~/.config/docker/daemon.json`);
                 await sshExec(`dockerd-rootless-setuptool.sh install`);
+                await sshExec(`export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`, false);
             } else if (value === 'off') {
                 await writeLog("$> Disabling docker features");
                 await sshExec(`dockerd-rootless-setuptool.sh uninstall`);

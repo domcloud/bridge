@@ -277,7 +277,7 @@ switch (cli.args.shift()) {
         break;
     case 'SHELL_INTERACTIVE':
         arg = cli.args.shift();
-        var su = spawn(env.BASH_SU, [arg, '-s', env.BASH_PATH, '-P', '-l'], {
+        var su = spawn("machinectl", ['-q', 'shell', arg + '@'], {
             stdio: 'inherit'
         });
         su.on('close', function (code) {
