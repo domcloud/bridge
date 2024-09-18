@@ -38,7 +38,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     let domainprefix = stillroot || !subdomaindata['Parent domain'] ? "db" : subdomain.slice(0, -(subdomaindata['Parent domain'].length + 1));
     let dbname = getDbName(domaindata['Username'], domainprefix);
 
-    const featureRunner = async (/** @type {object|string} */ feature) => {
+    async function featureRunner(/** @type {object|string} */ feature) {
         let key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
         let value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
         if (key == 'mariadb') {
@@ -344,6 +344,24 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
     };
 
+    async function serviceRunner(/** @type {object|string} */ services) {
+        const htmlDir = subdomaindata['Home directory'] + '/public_html';
+        const addFlags = typeof services == 'string' ? `-f ${services} --progress quiet` : '--progress quiet';
+        if (htmlDir == subdomaindata['HTML directory']) {
+            await writeLog("$> Changing root path for safety");
+            await featureRunner("root public_html/public");
+        }
+        await writeLog("$> Removing docker compose services if exists");
+        await sshExec(`docker compose ${addFlags} down --remove-orphans --rmi all || true`);
+        await writeLog("$> Configuring NGINX forwarding for docker");
+        let d = await dockerExec.executeServices(services, htmlDir, subdomain, writeLog);
+        await writeLog("$> Writing docker compose services");
+        await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
+        await writeLog("$> Applying compose services");
+        await sshExec(`docker compose ${addFlags} up --build --detach`);
+        await sshExec(`docker ps`);
+    }
+
     if (config.source || config.commands || config.services) {
         await sshExec(`shopt -s dotglob`, false);
         await sshExec(`export DOMAIN='${subdomain}'`, false);
@@ -466,24 +484,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             }
         }
 
-        if (config.services) {
-            const htmlDir = subdomaindata['Home directory'] + '/public_html';
-            const addFlags = typeof config.services == 'string' ? `-f ${config.services} --progress quiet` : '--progress quiet';
-            if (htmlDir == subdomaindata['HTML directory']) {
-                await writeLog("$> Changing root path for safety");
-                await featureRunner("root public_html/public");
-            }
-            await writeLog("$> Removing docker compose services if exists");
-            await sshExec(`docker compose ${addFlags} down --remove-orphans --rmi all || true`);
-            await writeLog("$> Configuring NGINX forwarding for docker");
-            let d = await dockerExec.executeServices(config.services, htmlDir, subdomain, writeLog);
-            await writeLog("$> Writing docker compose services");
-            await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
-            await writeLog("$> Applying compose services");
-            await sshExec(`docker compose ${addFlags} up --build --detach`);
-            await sshExec(`docker ps`);
-        }
-
         if (config.commands) {
             await sshExec(`export DATABASE='${dbname}'`, false);
             if (config.envs) {
@@ -499,12 +499,18 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         await sshExec(cmd.command, cmd.write === false ? false : true);
                     } else if (cmd.feature) {
                         await featureRunner(cmd.feature);
+                    } else if (cmd.services) {
+                        await serviceRunner(cmd.services);
                     } else if (cmd.filename && cmd.content) {
                         await writeLog("$> writing " + cmd.filename);
                         await sshExec(`echo "${Buffer.from(cmd.content).toString('base64')}" | base64 --decode > "${cmd.filename}"`, false);
                     }
                 }
             }
+        }
+
+        if (config.services) {
+            await serviceRunner(config.services);
         }
 
     } catch (error) {
@@ -522,5 +528,4 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             }
         }
     }
-
 }
