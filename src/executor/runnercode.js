@@ -73,7 +73,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                     arg = "@" + value;
                 }
                 await writeLog("$> Changing Node engine to " + (value || 'lts'));
-                await sshExec("pathman add .local/opt/node/bin");
+                await sshExec("pathman add .local/opt/node/bin ; source ~/.config/envman/PATH.env");
                 await sshExec(`curl -sS https://webinstall.dev/node${arg} | bash`);
                 await sshExec("command -v corepack &> /dev/null || npm i -g corepack && corepack enable");
                 await sshExec(`[[ -z $COREPACK_ENABLE_AUTO_PIN ]] && echo "export COREPACK_ENABLE_AUTO_PIN=0" >> ~/.bashrc`)
