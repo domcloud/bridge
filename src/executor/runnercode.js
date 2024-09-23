@@ -231,6 +231,16 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec("java --version");
             }
             break;
+        case 'neovim':
+        case 'nvim':
+            if (value == 'off') {
+                await writeLog("$> Removing Neovim config");
+                await sshExec(`rm -rf ~/.config/nvim ~/.local/state/nvim ~/.local/share/nvim`);
+            } else {
+                await writeLog("$> Installing Neovim Nvchad config");
+                await sshExec(`git clone https://github.com/NvChad/starter ~/.config/nvim`);
+            }
+            break;
         default:
             break;
     }
