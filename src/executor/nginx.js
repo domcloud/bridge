@@ -25,6 +25,7 @@ const locationKeys = [
     "expires", "allow", "deny", "autoindex", "proxy_pass"
 ];
 const sslNames = ["", "off", "always", "on"];
+const wwwNames = ["", "off", "always", "on"];
 const unitProxy = "http://127.0.0.1:88"
 
 class NginxExecutor {
@@ -122,7 +123,14 @@ class NginxExecutor {
                 node._remove(prop);
             }
         });
-        node._add('server_name', info.dom);
+        let wwwconf = info.config.www || wwwNames[info.www];
+        if (wwwconf === "enforce" || wwwconf === "always") {
+            node._add('server_name', 'www.' + info.dom);
+        } else if (wwwconf == "on") {
+            node._add('server_name', 'www.' + info.dom + ' ' + info.dom);
+        } else {
+            node._add('server_name', info.dom);
+        }
         let sslconf = info.config.ssl || sslNames[info.ssl];
         let httpconf = info.config.http || info.http;
         if (sslconf !== "enforce" && sslconf !== "always") {
@@ -286,6 +294,7 @@ class NginxExecutor {
         }
         const data = {
             ssl: 0, // binary of 1 = HTTP, 2 = HTTPS
+            www: 1, // binary of 1 = apex, 2 = www
             http: 1, // http version (1 or 2)
             dom: null,
             ip: null,
@@ -318,6 +327,10 @@ class NginxExecutor {
         if (node.http2 && node.http2[0]._value == "on") {
             data.http = 2;
         }
+        let servernames = (node.server_name[0]?._value || '').split(' ');
+        let hasApex = servernames.includes(domain);
+        let hasWww = servernames.includes('www.' + domain);
+        data.www = (hasApex ? 1 : 0) + (hasWww ? 2 : 0);
         data.root = node.root ? node.root[0]._value : "";
         data.user = data.root.split('/')[2];
         data.home = `/home/${data.user}/`;
@@ -332,8 +345,10 @@ class NginxExecutor {
         delete data.config.match;
         delete data.config.alias;
         data.config.ssl = sslNames[data.ssl];
-        if (data.http !== 2)
+        if (data.http !== 1)
             data.config.http = data.http;
+        if (data.www !== 1)
+            data.config.www = wwwNames[data.www];
         if (!data.config.fastcgi)
             data.config.fastcgi = "off";
         if (node.error_page) {
