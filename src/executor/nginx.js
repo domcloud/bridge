@@ -53,6 +53,11 @@ class NginxExecutor {
                     node._add(key, config[key]);
                 }
             }
+            if (Array.isArray(config.rewrite_list)) {
+                for (const rewrite of config.rewrite_list) {
+                    node._add("rewrite", rewrite);
+                }
+            }
             if (config.passenger) {
                 for (const key of passengerKeys) {
                     if (config.passenger[key]) {
@@ -249,16 +254,27 @@ class NginxExecutor {
                     }
                 }
                 if (locationKeys.includes(k)) {
-                    r[k] = node[k][0]._value;
+                    const v = node[k][0]._value;
                     if (k === "root" || k === "alias") {
-                        r[k] = r[k].slice(info.home.length);
+                        r[k] = v.slice(info.home.length);
                     } else if (k === 'proxy_pass') {
                         const dockerProxy = 'http://' + info.docker_ip + ':';
                         if (r[k] == unitProxy) {
                             r[k] = "unit";
-                        } else if (r[k].startsWith(dockerProxy)) {
-                            r[k] = "docker:" + r[k].slice(dockerProxy.length);
+                        } else if (v.startsWith(dockerProxy)) {
+                            r[k] = "docker:" + v.slice(dockerProxy.length);
                         }
+                    } else if (k == "rewrite") {
+                        if (r["rewrite"]) {
+                            r["rewrite_list"] = [r["rewrite"], v]
+                            delete r["rewrite"];
+                        } else if (Array.isArray(r["rewrite_list"])) {
+                            r["rewrite_list"].push(v);
+                        } else {
+                            r["rewrite_list"] = [v]
+                        }
+                    } else {
+                        r[k] = v;
                     }
                 }
             }
