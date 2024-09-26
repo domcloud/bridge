@@ -304,7 +304,6 @@ switch (cli.args.shift()) {
             'ip6tables',
             'fail2ban',
             'earlyoom',
-            'unit',
         ]
         var statutes = exec(`systemctl is-failed ${services.join(' ')}`, { silent: true }).split('\n').filter((s) => s !== '');
 
