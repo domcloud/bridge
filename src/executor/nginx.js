@@ -347,13 +347,13 @@ class NginxExecutor {
         let hasApex = servernames.includes(domain);
         let hasWww = servernames.includes('www.' + domain);
         data.www = (hasApex ? 1 : 0) + (hasWww ? 2 : 0);
-        data.root = node.root ? node.root[0]._value : "";
+        data.root = node.root[0]?._value || "";
         data.user = data.root.split('/')[2];
         data.home = `/home/${data.user}/`;
-        data.access_log = node.access_log[0]._value;
-        data.error_log = node.error_log[0]._value;
-        data.ssl_certificate = node.ssl_certificate ? node.ssl_certificate[0]._value : data.home + `ssl.cert`;
-        data.ssl_certificate_key = node.ssl_certificate_key ? node.ssl_certificate_key[0]._value : data.home + `ssl.key`;
+        data.access_log = node.access_log[0]?._value;
+        data.error_log = node.error_log[0]?._value;
+        data.ssl_certificate = node.ssl_certificate[0]?._value || data.home + `ssl.cert`;
+        data.ssl_certificate_key = node.ssl_certificate_key[0]?._value || data.home + `ssl.key`;
 
         data.fcgi = findFastCgi(node);
         data.docker_ip = findDockerIp(node);
