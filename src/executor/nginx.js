@@ -263,6 +263,8 @@ class NginxExecutor {
                             r[k] = "unit";
                         } else if (v.startsWith(dockerProxy)) {
                             r[k] = "docker:" + v.slice(dockerProxy.length);
+                        } else {
+                            r[k] = v;
                         }
                     } else if (k == "rewrite") {
                         if (r["rewrite"]) {
