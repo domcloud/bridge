@@ -22,7 +22,8 @@ const passengerKeys = [
 ];
 const locationKeys = [
     "root", "alias", "rewrite", "try_files", "return", "index",
-    "expires", "allow", "deny", "autoindex", "proxy_pass"
+    "expires", "allow", "deny", "autoindex", "proxy_pass", 
+    "limit_except", "limit_rate", "limit_rate_after"
 ];
 const sslNames = ["", "off", "always", "on"];
 const wwwNames = ["", "off", "always", "on"];
@@ -49,6 +50,16 @@ class NginxExecutor {
                     } else if (/^http:\/\/127\.\d+\.\d+\.\d+:\d+(\$.+|\/.+)?$/.test(config[key])) {
                         node._add(key, config[key]);
                     }
+                } else if (key == "limit_except") {
+                    node._add(key, config[key], [{
+                        children: null,
+                        comments: null,
+                        isBlock: false,
+                        isVerbatim: false,
+                        name: "deny",
+                        parent: null,
+                        value: "all",
+                    }]);
                 } else {
                     node._add(key, config[key]);
                 }
