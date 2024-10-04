@@ -22,8 +22,8 @@ if [ ! -d "./phppgadmin" ]; then
     git clone https://github.com/ReimuHakurei/phpPgAdmin.git phppgadmin --filter=tree:0
     cd ./phppgadmin
     cp conf/config.inc.php-dist conf/config.inc.php
-    sed -i "s/['host'] = ''/['host'] = 'localhost'/" conf/config.inc.php
-    sed -i "s/['owned_only'] = false/['owned_only'] = true/g" conf/config.inc.php
+    sed -i "s/\['host'\] = ''/['host'] = 'localhost'/g" conf/config.inc.php
+    sed -i "s/\['owned_only'\] = false/['owned_only'] = true/g" conf/config.inc.php
     cd ..
 else
     cd ./phppgadmin
