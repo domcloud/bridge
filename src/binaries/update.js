@@ -6,7 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const pythonConstants = {
   // https://raw.githubusercontent.com/indygreg/python-build-standalone/latest-release/latest-release.json
-  tag: "20240107",
+  tag: "20241002",
   // NOTE: x86_64_v3 requires AVX2 CPU support
   match: {
     x64: /cpython-(\d+\.\d+\.\d+)\+\d+-x86_64_v3-unknown-linux-gnu-pgo\+lto-full\.tar\.zst/g,
@@ -26,6 +26,11 @@ const pythonConstants = {
     return `https://github.com/indygreg/python-build-standalone/releases/download/${this.tag}/${filename}`;
   },
 };
+
+const rubyBuilderUrl = 'https://github.com/ruby/ruby-builder/releases/expanded_assets/toolcache';
+
+const adoptiumList = 'https://api.adoptium.net/v3/info/available_releases';
+
 export const initUtils = async () => {
   // TODO: detect OS/arch?
 
@@ -48,18 +53,34 @@ export const initUtils = async () => {
      * @type {Record<string, string>}
      */
     let javaVersionsMap = {};
-    await request("https://rvm_io.global.ssl.fastly.net/binaries/centos/9/x86_64/")  // currently aarch64 have to rebuilt
+    /**
+     * @type {Record<string, string>}
+     */
+    let rubyVersionsMap = {};
+    await request(rubyBuilderUrl)  
       .then((res) => {
         // @ts-ignore
         var matches = [
-          ...("" + res.data).matchAll(/href="ruby-([.\d]+).tar.bz2"/g),
+          ...("" + res.data).matchAll(/href="[-\w/]+?\/ruby-([.\d]+)-ubuntu-24.04.tar.gz"/g),
         ];
         for (const match of matches) {
           if (!rubyVersionsList.includes(match[1])) {
             rubyVersionsList.push(match[1]);
+            rubyVersionsMap[match[1]] = `https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-${match[1]}-ubuntu-24.04.tar.gz`
           }
         }
         rubyVersionsList = sortSemver(rubyVersionsList).reverse();
+        // remove minor versions
+        rubyVersionsList = rubyVersionsList.filter((x, i) => rubyVersionsList.findIndex(y => y.startsWith(x.substring(0, 3))) == i);
+        if (arch == 'x64') {
+          for (const key of Object.keys(rubyVersionsMap)) {
+            if (!rubyVersionsList.includes(key)) {
+              delete rubyVersionsMap[key];
+            }
+          }
+        } else {
+          rubyVersionsMap = {}; // currently aarch64 have to rebuilt
+        }
       })
       .catch((err) => {
         console.error("error fetching Ruby releases", err.message);
@@ -96,12 +117,12 @@ export const initUtils = async () => {
       .catch((err) => {
         console.error("error fetching Python releases", err.message);
       });
-    await request("https://api.adoptium.net/v3/info/available_releases")
+    await request(adoptiumList)
       .then(async (res) => {
         for (const ver of res.data.available_releases) {
           await request(
-              `https://api.adoptium.net/v3/assets/latest/${ver}/hotspot?architecture=${archLinux[arch]}&image_type=jdk&os=linux&vendor=eclipse`
-            )
+            `https://api.adoptium.net/v3/assets/latest/${ver}/hotspot?architecture=${archLinux[arch]}&image_type=jdk&os=linux&vendor=eclipse`
+          )
             .then((x) => {
               for (const binary of x.data) {
                 javaVersionsMap[binary.version.semver] =
@@ -118,6 +139,7 @@ export const initUtils = async () => {
       javaVersionsList,
       pythonVersionsMap,
       javaVersionsMap,
+      rubyVersionsMap,
     };
   }
 
