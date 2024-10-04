@@ -47,7 +47,6 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                     await sshExec(`cd ~/tmp && mkdir -p ~/.pyenv/versions/${parg.version}`);
                     await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
                     await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} || true ; rm -rf ~/tmp/python`);
-                    await sshExec(`(cd ~/.pyenv/versions/${parg.version}/bin && ln -s python3 python) || true`);
                     await sshExec("cd ~/public_html", false);
                 } else if (parg.version !== "system") {
                     await sshExec(`pyenv install ${parg.version} -s`);

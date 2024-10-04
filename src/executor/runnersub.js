@@ -352,7 +352,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             await featureRunner("root public_html/public");
         }
         await writeLog("$> Removing docker compose services if exists");
-        await sshExec(`docker compose ${addFlags} down --remove-orphans --rmi all || true`);
+        await sshExec(`docker compose ${addFlags} down --remove-orphans || true`);
         await writeLog("$> Configuring NGINX forwarding for docker");
         let d = await dockerExec.executeServices(services, htmlDir, subdomain, writeLog);
         await writeLog("$> Writing docker compose services");
@@ -444,9 +444,12 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (source.credentials?.github?.ssh) {
                     const configFileContent = `Host github.com\n\tStrictHostKeyChecking no\n\tIdentityFile ~/.ssh/id_github_com\n`;
-                    await writeLog("$> writing SSH private key for cloning github.com repository");
+                    await writeLog("$> writing SSH keys for cloning github.com repository");
                     await sshExec(`mkdir -p ~/.ssh; touch $HOME/.ssh/{id_github_com,config}; chmod 0600 $HOME/.ssh/*`, false);
                     await sshExec(`echo "${Buffer.from(source.credentials.github.ssh).toString('base64')}" | base64 --decode > $HOME/.ssh/id_github_com`, false);
+                    if (source.credentials.github.sshPub) {
+                        await sshExec(`echo "${Buffer.from(source.credentials.github.sshPub).toString('base64')}" | base64 --decode > $HOME/.ssh/id_github_com.pub`, false);
+                    }
                     // delete old config https://stackoverflow.com/a/36111659/3908409
                     await sshExec(`sed 's/^Host/\\n&/' $HOME/.ssh/config | sed '/^Host '"github.com"'$/,/^$/d;/^$/d' > $HOME/.ssh/config`, false);
                     await sshExec(`echo "${Buffer.from(configFileContent).toString('base64')}" | base64 --decode >> ~/.ssh/config`, false);
