@@ -346,7 +346,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
 
     async function serviceRunner(/** @type {object|string} */ services) {
         const htmlDir = subdomaindata['Home directory'] + '/public_html';
-        const addFlags = typeof services == 'string' ? `-f ${services} --progress quiet` : '--progress quiet';
+        const addFlags = typeof services == 'string' ? `-f ${(
+            services.match(/^[^#]+/)[0]
+        )} --progress quiet` : '--progress quiet';
         if (htmlDir == subdomaindata['HTML directory']) {
             await writeLog("$> Changing root path for safety");
             await featureRunner("root public_html/public");

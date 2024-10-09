@@ -5,7 +5,7 @@ import {
 } from '../util.js';
 import { existsSync } from 'fs';
 import { nginxExec } from './nginx.js';
-import path from 'path';
+import path, { sep } from 'path';
 import * as yaml from 'yaml';
 import { ShellString } from 'shelljs';
 
@@ -69,8 +69,9 @@ class DockerExecutor {
      * 
      * @param {any} services 
      * @param {string} domain 
+     * @param {number | null} hint 
      */
-    async rewriteServices(services, domain) {
+    async rewriteServices(services, domain, hint) {
         // get IP data from nginx
         const nginxNode = await nginxExec.get(domain);
         const nginx = nginxExec.extractInfo(nginxNode, domain);
@@ -79,6 +80,9 @@ class DockerExecutor {
             nginx.docker_ip = this.generateRandomIPv4();
             nginxChanged = true;
         }
+        /**
+         * @type {number[]}
+         */
         var exposedPorts = [];
         // rewrite all ips
         for (const [name, service] of Object.entries(services)) {
@@ -87,21 +91,21 @@ class DockerExecutor {
             for (let i = 0; i < service.ports.length; i++) {
                 var port = service.ports[i];
                 var conf = {
-                    target: 0,
+                    target: '0',
                     host_ip: nginx.docker_ip,
                     protocol: 'tcp',
                     published: "" + Math.trunc(Math.random() * 30000 + 1025),
                 }
                 if (typeof port === 'string') {
                     if (/^\d+$/.test(port)) {
-                        conf.target = parseInt(port);
-                    } else if (/^\d+:\d+$/.test(port)) {
+                        conf.target = port;
+                    } else if (/^(\$\{?\w+\}?|\d+):(\$\{?\w+\}?|\d+)$/.test(port)) {
                         const [src, dst] = port.split(":");
-                        conf.target = parseInt(dst);
+                        conf.target = dst;
                         conf.published = src;
-                    } else if (/^127.0.0.1:\d+:\d+$/.test(port)) {
+                    } else if (/^127.0.0.1:(\$\{?\w+\}?|\d+)+:(\$\{?\w+\}?|\d+)+$/.test(port)) {
                         const [_, src, dst] = port.split(":");
-                        conf.target = parseInt(dst);
+                        conf.target = dst;
                         conf.published = src;
                     } else {
                         throw new Error("Unknown ports format: " + name);
@@ -110,7 +114,9 @@ class DockerExecutor {
                     conf.published = port.published;
                     conf.target = port.target;
                 }
-                exposedPorts.push(conf.published);
+                if (/^\d+$/.test(conf.published)) {
+                    exposedPorts.push(parseInt(conf.published));
+                }
                 service.ports[i] = conf;
             }
         }
@@ -124,10 +130,19 @@ class DockerExecutor {
             nginxChanged = true;
         }
         let proxyPass = matchedConf.proxy_pass + "";
-        if (!proxyPass || !proxyPass.startsWith('docker:') || !exposedPorts.includes(proxyPass.replace(/^docker:/, ''))) {
+        let proxyPassMatched = exposedPorts.includes(parseInt(proxyPass.replace(/^docker:/, '')));
+        var matchingProxy = proxyPass;
+        if (hint) {
+            matchingProxy = "docker:" + hint;
+        } else if (proxyPassMatched) {
+            matchingProxy = proxyPass;
+        } else {
             if (exposedPorts.length == 0) {
-                throw new Error("There are no exposed ports! Need atleast one to forward it into NGINX");
+                throw new Error("There are no exposed ports can be detected! Please tell use the port like `service: docker-compose.yml#8000`");
             }
+            matchingProxy = exposedPorts[0] + '';
+        }
+        if (matchingProxy != proxyPass) {
             matchedConf.proxy_pass = "docker:" + exposedPorts[exposedPorts.length - 1];
             nginxChanged = true;
         }
@@ -150,7 +165,16 @@ class DockerExecutor {
     async executeServices(services, home, domain, logWriter) {
         let filename = path.join(home, 'docker-compose.yml');
         let composeObject = {};
+        let hint = null;
         if (typeof services === 'string') {
+            let sepIdx = services.indexOf('#');
+            if (sepIdx > 0) {
+                hint = parseInt(services.substring(sepIdx + 1));
+                if (Number.isNaN(hint) || hint > 65535 || hint < 0) {
+                    hint = null;
+                }
+                services = services.substring(0, sepIdx);
+            }
             filename = path.join(home, services);
             // cat from file
             composeObject = yaml.parse(await executeLock('compose', () => {
@@ -164,7 +188,7 @@ class DockerExecutor {
             composeObject.services = services;
         }
         let nginxStatus = '';
-        [composeObject.services, nginxStatus] = await this.rewriteServices(composeObject.services, domain);
+        [composeObject.services, nginxStatus] = await this.rewriteServices(composeObject.services, domain, hint);
         if (logWriter) {
             await logWriter(nginxStatus)
         }
