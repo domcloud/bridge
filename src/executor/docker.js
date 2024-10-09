@@ -142,7 +142,7 @@ class DockerExecutor {
             nginxChanged = true;
         }
         let proxyPass = matchedConf.proxy_pass + "";
-        let proxyPassMatched = exposedPorts.includes(parseInt(proxyPass.replace(/^docker:/, '')));
+        let proxyPassMatched = proxyPass.startsWith('docker:') && exposedPorts.includes(parseInt(proxyPass.replace(/^docker:/, '')));
         var matchingProxy = proxyPass;
         if (hint) {
             matchingProxy = "docker:" + hint;
@@ -152,10 +152,10 @@ class DockerExecutor {
             if (exposedPorts.length == 0) {
                 throw new Error("There are no exposed ports can be detected! Please tell use the port like `service: docker-compose.yml#8000`");
             }
-            matchingProxy = exposedPorts[0] + '';
+            matchingProxy = "docker:" + exposedPorts[0];
         }
         if (matchingProxy != proxyPass) {
-            matchedConf.proxy_pass = "docker:" + exposedPorts[exposedPorts.length - 1];
+            matchedConf.proxy_pass = matchingProxy;
             nginxChanged = true;
         }
         let nginxStatus = '';
