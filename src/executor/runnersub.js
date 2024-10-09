@@ -353,6 +353,13 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             await writeLog("$> Changing root path for safety");
             await featureRunner("root public_html/public");
         }
+        if (typeof services == 'string' && services.includes('/')) {
+            const subDir = services.substring(0, services.lastIndexOf('/'));
+            await sshExec(`cd ${htmlDir}/${subDir}`, false);
+        } else {
+            await sshExec(`cd ${htmlDir}`, false);
+        }
+
         await writeLog("$> Removing docker compose services if exists");
         await sshExec(`docker compose ${addFlags} --progress quiet down --remove-orphans || true`);
         await writeLog("$> Configuring NGINX forwarding for docker");
