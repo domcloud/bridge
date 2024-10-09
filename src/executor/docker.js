@@ -10,6 +10,8 @@ import * as yaml from 'yaml';
 import { ShellString } from 'shelljs';
 
 const tmpFile = path.join(process.cwd(), '/.tmp/compose')
+const standardPortRegex = /^(\$\{?\w+\}?|\d+):(\$\{?\w+\}?|\d+)$/;
+const complexPortRegex = /^127\.0\.0\.1:(\$\{?\w+\}?|\d+):(\$\{?\w+\}?|\d+)$/;
 
 class DockerExecutor {
     LOGINLINGERDIR = '/var/lib/systemd/linger';
@@ -97,22 +99,32 @@ class DockerExecutor {
                     published: "" + Math.trunc(Math.random() * 30000 + 1025),
                 }
                 if (typeof port === 'string') {
+                    if (port.endsWith('/tcp') || port.endsWith('/udp')) {
+                        conf.protocol = port.substring(port.length - 3, port.length);
+                        port = port.substring(0, port.length - 4);
+                    }
                     if (/^\d+$/.test(port)) {
+                        // Simple port number
                         conf.target = port;
-                    } else if (/^(\$\{?\w+\}?|\d+):(\$\{?\w+\}?|\d+)$/.test(port)) {
-                        const [src, dst] = port.split(":");
-                        conf.target = dst;
-                        conf.published = src;
-                    } else if (/^127.0.0.1:(\$\{?\w+\}?|\d+)+:(\$\{?\w+\}?|\d+)+$/.test(port)) {
-                        const [_, src, dst] = port.split(":");
-                        conf.target = dst;
-                        conf.published = src;
+                    } else if (standardPortRegex.test(port)) {
+                        // Format: <published>:<target>
+                        const match = port.match(standardPortRegex);
+                        conf.published = match[1];
+                        conf.target = match[2];
+                    } else if (complexPortRegex.test(port)) {
+                        // Format: 127.0.0.1:<published>:<target>
+                        const match = port.match(complexPortRegex);
+                        conf.published = match[1];
+                        conf.target = match[2];
                     } else {
-                        throw new Error("Unknown ports format: " + name);
+                        throw new Error(`Unknown ports format in service ${name}: ${port}`);
                     }
                 } else if (typeof port === 'object' && port.target && port.published) {
                     conf.published = port.published;
                     conf.target = port.target;
+                    if (port.protocol) {
+                        conf.protocol = port.protocol;
+                    }
                 }
                 if (/^\d+$/.test(conf.published)) {
                     exposedPorts.push(parseInt(conf.published));
