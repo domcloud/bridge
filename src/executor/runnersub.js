@@ -348,19 +348,19 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         const htmlDir = subdomaindata['Home directory'] + '/public_html';
         const addFlags = typeof services == 'string' ? `-f ${(
             services.match(/^[^#]+/)[0]
-        )} --progress quiet` : '--progress quiet';
+        )}` : '';
         if (htmlDir == subdomaindata['HTML directory']) {
             await writeLog("$> Changing root path for safety");
             await featureRunner("root public_html/public");
         }
         await writeLog("$> Removing docker compose services if exists");
-        await sshExec(`docker compose ${addFlags} down --remove-orphans || true`);
+        await sshExec(`docker compose ${addFlags} --progress quiet down --remove-orphans || true`);
         await writeLog("$> Configuring NGINX forwarding for docker");
         let d = await dockerExec.executeServices(services, htmlDir, subdomain, writeLog);
         await writeLog("$> Writing docker compose services");
         await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
         await writeLog("$> Applying compose services");
-        await sshExec(`docker compose ${addFlags} up --build --detach`);
+        await sshExec(`docker compose ${addFlags} --progress plain up --build --detach`);
         await sshExec(`docker ps`);
     }
 
