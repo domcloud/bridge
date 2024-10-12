@@ -8,4 +8,4 @@ This service is used to control a server booted with DOM Cloud Instance. It's ac
 
 To understand DOM Cloud servers architecture, read it on [DOM Cloud docs](https://domcloud.co/docs/features/).
 
-To setup a VM from stratch and set up this service in that VM, see [Self hosting](https://domcloud.co/docs/integration/self-host). You'll see that this service is need to run as a Systemd service.
+To setup a VM from stratch and set up this service in that VM, see [Container](https://github.com/domcloud/container/) which contains a link to pre-made OS image.
