@@ -106,21 +106,13 @@ export default async function runConfig(config, domain, writer, sandbox = false)
      */
     let ssh;
     let sshExec;
+    let cb = null;
     if (process.env.NODE_ENV === 'development') {
         sshExec = async (cmd) => {
             await writeLog(cmd);
         }
     } else {
         ssh = spawnSudoUtilAsync('SHELL_INTERACTIVE', [domaindata['Username']]);
-        let cb = null;
-        setTimeout(async () => {
-            if (ssh == null) return;
-            // SSH prone to wait indefinitely, so we need to set a timeout
-            await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s, exiting gracefully.`);
-            await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
-            ssh = null;
-            if (cb) cb('', 124);
-        }, maxExecutionTime).unref();
         ssh.stdout.on('data', function (chunk) {
             if (cb) {
                 cb(chunk.toString())
@@ -250,13 +242,14 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         break;
                     case 'restore':
                         await writeLog("$> virtualmin restore-domain");
+                        if (!value.feature) {
+                            value.feature = ['virtualmin', 'unix', 'dir', 'dns', 'mysql', 'webmin', 'virtualmin-nginx'];
+                        }
                         await virtExec("restore-domain", value, {
-                            domain,
-                            option: (!value.feature || !value.feature.includes('home')) ? [['dir', 'delete', '1']] : false,
+                            option: [['dir', 'delete', '1']],
                             'fix': true,
                             'reuid': true,
                             'skip-warnings': true,
-                            'all-features': !value.feature,
                         });
                         break;
                     case 'delete':
@@ -289,6 +282,16 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     break;
             }
         }
+        
+        setTimeout(async () => {
+            if (ssh == null) return;
+            // SSH prone to wait indefinitely, so we need to set a timeout
+            await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s, exiting gracefully.`);
+            await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
+            ssh = null;
+            if (cb) cb('', 124);
+        }, maxExecutionTime).unref();
+
         await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 `, false);
         await sshExec(`export PIP_PROGRESS_BAR=off BUILDKIT_PROGRESS=plain`, false);
