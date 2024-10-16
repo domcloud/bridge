@@ -243,7 +243,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     case 'restore':
                         await writeLog("$> virtualmin restore-domain");
                         if (!value.feature) {
-                            value.feature = ['virtualmin', 'unix', 'dir', 'dns', 'mysql', 'webmin', 'virtualmin-nginx'];
+                            value.feature = ['dir', 'dns', 'mysql', 'virtualmin-nginx'];
                         }
                         await virtExec("restore-domain", value, {
                             option: [['dir', 'delete', '1']],
