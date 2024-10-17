@@ -299,7 +299,7 @@ switch (cli.args.shift()) {
             'sshd',
             'crond',
             'mariadb',
-            'postgresql-16',
+            'postgresql',
             'iptables',
             'ip6tables',
             'fail2ban',

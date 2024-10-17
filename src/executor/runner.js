@@ -55,17 +55,33 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         config.features = [config.features];
     }
     if (Array.isArray(config.features) && config.features.length > 0 && config.features[0].create && !sandbox) {
-        // create new domain
-        await writeLog("$> virtualmin create-domain");
-        await writeLog("Creating virtual domain. This will take a moment...");
-        await virtExec("create-domain", config.features[0].create,
-            {
-                dir: true,
-                'virtualmin-nginx': true,
-                'virtualmin-nginx-ssl': true,
-                webmin: !config.features[0].create.parent,
-                unix: !config.features[0].create.parent,
-            });
+        const createValues = config.features[0].create;
+        if (createValues.source) {
+            // restore domain from now
+            await writeLog("$> virtualmin restore-domain");
+            await writeLog("Creating virtual domain from backup. This will take a moment...");
+
+            await virtExec("restore-domain", config.features[0].create,
+                {
+                    'all-domains': true,
+                    'all-features': true,
+                    'reuid': true,
+                    'delete-existing': true,
+                    'skip-warnings': true,
+                });
+        } else {
+            // create new domain
+            await writeLog("$> virtualmin create-domain");
+            await writeLog("Creating virtual domain. This will take a moment...");
+            await virtExec("create-domain", config.features[0].create,
+                {
+                    dir: true,
+                    'virtualmin-nginx': true,
+                    'virtualmin-nginx-ssl': true,
+                    webmin: !config.features[0].create.parent,
+                    unix: !config.features[0].create.parent,
+                });
+        }
         // sometimes we need to wait for the domain to be created
         await writeLog("$> virtualmin list-domains");
         await new Promise((resolve, reject) => {
@@ -247,7 +263,6 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         await virtExec("restore-domain", value, {
                             option: [['dir', 'delete', '1']],
-                            'fix': true,
                             'reuid': true,
                             'skip-warnings': true,
                         });
@@ -282,7 +297,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                     break;
             }
         }
-        
+
         setTimeout(async () => {
             if (ssh == null) return;
             // SSH prone to wait indefinitely, so we need to set a timeout
