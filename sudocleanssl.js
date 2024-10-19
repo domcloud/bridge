@@ -10,7 +10,6 @@ const certsExpiryRegexp = /^\| (\S+)\s+\| (\/.+?)\s+\| (.+?)\s+\| (.*?)\s+\| (\S
 const cmdListCertsExpiry = 'virtualmin list-certs-expiry --all-domains';
 const cmdListCertsRenewals = 'virtualmin list-domains --name-only --with-feature letsencrypt_renew';
 const askDomainDetailPrefix = 'virtualmin list-domains --simple-multiline --domain ';
-const renewCmdPrefix = 'virtualmin generate-letsencrypt-cert --renew 2 --web --domain ';
 const test = process.env.NODE_ENV == "test";
 
 if (test) {
@@ -25,15 +24,6 @@ function cmd(str) {
         silent: true,
         fatal: true,
     }).stdout.trim();
-}
-
-/**
- * @param {string} str
- */
-function cmdReturnCode(str) {
-    return exec(str, {
-        silent: true,
-    }).code;
 }
 
 const listCertsExpiry = cmd(cmdListCertsExpiry).split('\n')
@@ -57,24 +47,20 @@ for (const domain of listCertsRenewals) {
         if (lastIssuedDateExp && domainFileExp) {
             const lastIssuedDate = Date.parse(lastIssuedDateExp[1]);
             const domainFile = domainFileExp[1];
-            if (Date.now() - lastIssuedDate > 86400000 * 60) {
+            if (Date.now() - lastIssuedDate > 86400000) {
                 if (test) {
                     console.log('TEST: This domain will be validated: ' + domain);
                     continue;
                 }
-                // try renewal one more time
-                const code = cmdReturnCode(renewCmdPrefix + domain);
-                count++;
-                if (code === 0) {
-                    console.log("Renew successfull: " + domain);
-                    continue;
-                }
-                console.log(`Renew failed, disabling renewal for ${domain}`);
+                console.log(`Disabling renewal for ${domain}`);
                 var c = cat(domainFile).replace(/\nletsencrypt_renew=1/, '');
                 new ShellString(c).to(domainFile);
+                count++;
+            } else {
+                if (test) {
+                    console.log(`TEST: Skipping ${domain} due to last issue ${Date.now() - lastIssuedDate / (86400000)} days`);
+                }
             }
-        } else {
-            console.log("Included in renewal list but having non valid metadata: " + domain)
         }
     }
 }
