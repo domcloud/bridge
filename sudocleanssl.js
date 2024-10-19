@@ -47,9 +47,10 @@ for (const domain of listCertsRenewals) {
         if (lastIssuedDateExp && domainFileExp) {
             const lastIssuedDate = Date.parse(lastIssuedDateExp[1]);
             const domainFile = domainFileExp[1];
-            if (Date.now() - lastIssuedDate > 86400000) {
+            const deltaHour = Math.trunc(Date.now() - lastIssuedDate / (3600000));
+            if (deltaHour > 24) {
                 if (test) {
-                    console.log('TEST: This domain will be validated: ' + domain);
+                    console.log(`TEST: Will check ${domain} due to last issue ${deltaHour} hours`);
                     continue;
                 }
                 console.log(`Disabling renewal for ${domain}`);
@@ -58,7 +59,7 @@ for (const domain of listCertsRenewals) {
                 count++;
             } else {
                 if (test) {
-                    console.log(`TEST: Skipping ${domain} due to last issue ${Date.now() - lastIssuedDate / (86400000)} days`);
+                    console.log(`TEST: Skipping ${domain} due to last issue ${deltaHour} hours`);
                 }
             }
         }
