@@ -132,6 +132,18 @@ class DockerExecutor {
                 service.ports[i] = conf;
             }
         }
+        // make sure to handle .well-known
+        let wellKnownConf = nginx.config.locations?.find(x => x.match == '/.well-known/');
+        if (!wellKnownConf) {
+            if (!nginx.config.locations)
+                nginx.config.locations = [];
+            nginx.config.locations.push({
+                match: '/.well-known/',
+                alias: nginx.root + '/.well-known/',
+            });
+            nginxChanged = true;
+        }
+
         // nginx replace port docker
         let matchedConf = nginx.config.locations?.find(x => x.match == '/');
         if (!matchedConf) {
