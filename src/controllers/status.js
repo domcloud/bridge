@@ -7,6 +7,7 @@ import {
 } from '../util.js';
 import express from 'express';
 import path from 'path';
+import { fixNGINX, fixPHP } from '../executor/pulse.js';
 
 const tmpCheck = path.join(process.cwd(), '/.tmp/check')
 const tmpTest = path.join(process.cwd(), '/.tmp/test')
@@ -19,7 +20,6 @@ let lastCheckOK = false;
 let lastTest = 0;
 let lastTestResult = {};
 let lastTestOK = false;
-
 
 export default function () {
     var router = express.Router();
@@ -39,6 +39,28 @@ export default function () {
                 lastCheck = Date.now();
             }
             res.status(lastCheckOK ? 200 : 500).json(lastCheckResult);
+            if (lastCheckOK) {
+                return;
+            }
+            let lastTestResult = null;
+            for (const [key, val] of Object.entries(lastCheckResult.statuses)) {
+                if (val != "failed") {
+                    continue;
+                }
+                if (key.endsWith("-php-fpm")) {
+                    if (!lastTestResult) {
+                        await spawnSudoUtil('SHELL_TEST');
+                        lastTestResult = JSON.parse(cat(tmpTest));
+                    }
+                    await fixPHP(lastTestResult);
+                } else if (key == "nginx") {
+                    if (!lastTestResult) {
+                        await spawnSudoUtil('SHELL_TEST');
+                        lastTestResult = JSON.parse(cat(tmpTest));
+                    }
+                    await fixNGINX(lastTestResult);
+                }
+            }
         } catch (error) {
             next(error);
         }

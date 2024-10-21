@@ -273,7 +273,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await virtExec("delete-domain", value, {
                             domain,
                         });
-                        await spawnSudoUtil('CLEAN_DOMAIN', [domaindata['ID'], domain]);
+                        await spawnSudoUtil('CLEAN_DOMAIN', ["rm", domaindata['ID'], domain]);
                         // no need to do other stuff
                         return;
                     default:

@@ -226,20 +226,37 @@ switch (cli.args.shift()) {
         ShellString(cnf).to(env.OPENSSL_OUT);
         exit(0);
     case 'CLEAN_DOMAIN':
+        if (cli.args.length < 3) {
+            console.error("CLEAN_DOMAIN [rm|mv] [id] [domain]");
+            exit(1);
+        }
+        const mode = cli.args.shift();
         const id = cli.args.shift();
         const domain = cli.args.shift();
         var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
         var fpmcleaned = '', nginxcleaned = '';
-        for (const f of fpmlist) {
-            var p = `${env.PHPFPM_REMICONF.replace('$', f)}/${id}.conf`;
-            if (existsSync(p)) {
+        /**
+         * @param {string} p
+         */
+        function cleanfile(p) {
+            if (mode == "rm") {
                 rm(p);
-                fpmcleaned = f;
-                break;
+            } else {
+                mv(p, p + ".bak");
             }
         }
-        if (existsSync(env.NGINX_PATH.replace('$', domain))) {
-            rm(p);
+        if (id) {
+            for (const f of fpmlist) {
+                var p = `${env.PHPFPM_REMICONF.replace('$', f)}/${id}.conf`;
+                if (existsSync(p)) {
+                    cleanfile(p);
+                    fpmcleaned = f;
+                    break;
+                }
+            }
+        }
+        if (domain && existsSync(env.NGINX_PATH.replace('$', domain))) {
+            cleanfile(p);
             nginxcleaned = '1';
         }
         if (fpmcleaned) {
@@ -371,14 +388,14 @@ switch (cli.args.shift()) {
                 quota: quotaOK ? 0 : 1,
             },
             logs: {
-                cpuinfo: chkcpu.stdout.trim().split('\n'),
+                cpuinfo: chkcpu.stdout.trimEnd().split('\n'),
                 meminfo: chkmem.stdout.trimEnd().split('\n'),
-                storage: storage.stdout.trim().split('\n'),
+                storage: storage.stdout.trimEnd().split('\n'),
                 quota,
-                nginx: nginx.stderr.trim().split('\n'),
-                fpms: fpms.map((f) => f.stderr.trim()),
-                iptables: iptables.stderr.trim().split('\n'),
-                ip6tables: ip6tables.stderr.trim().split('\n'),
+                nginx: nginx.stderr.trimEnd().split('\n'),
+                fpms: Object.fromEntries(fpmlist.map((_, i) => [fpmlist[i], fpms[i].stderr.trimEnd().split('\n')])),
+                iptables: iptables.stderr.trimEnd().split('\n'),
+                ip6tables: ip6tables.stderr.trimEnd().split('\n'),
             },
         })).to(env.SHELLTEST_TMP);
         exit(0);
