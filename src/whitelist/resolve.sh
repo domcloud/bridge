@@ -16,9 +16,9 @@ for RECORD_TYPE in A AAAA; do
         if [[ $q != "" ]]; then
           HOST_ADDRESSES+="$q $p"$'\n'
           if [[ $RECORD_TYPE == "A" ]]; then
-            IPV4_ADDRESSES+="$q"$'\n'
+            IPV4_ADDRESSES+="add whitelist $q"$'\n'
           else
-            IPV6_ADDRESSES+="$q"$'\n'
+            IPV6_ADDRESSES+="add whitelist-v6 $q"$'\n'
           fi
         fi
       done <<< "$FFI"
