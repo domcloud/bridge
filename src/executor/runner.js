@@ -61,12 +61,12 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             await writeLog("$> virtualmin restore-domain");
             await writeLog("Creating virtual domain from backup. This will take a moment...");
 
-            await virtExec("restore-domain", config.features[0].create,
+            await virtExec("restore-domain", createValues,
                 {
                     'all-domains': true,
                     'all-features': true,
                     'reuid': true,
-                    'delete-existing': true,
+                    [createValues['delete-existing'] ? 'delete-existing' : 'only-missing']: true,
                     'skip-warnings': true,
                 });
         } else {
@@ -263,6 +263,8 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         }
                         await virtExec("restore-domain", value, {
                             option: [['dir', 'delete', '1']],
+                            'all-domains': true,
+                            'only-existing': true,
                             'reuid': true,
                             'skip-warnings': true,
                         });
