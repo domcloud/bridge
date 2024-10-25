@@ -5,7 +5,7 @@ export async function fixPHP(test) {
         const [lastLog] = logs.splice(logs.length - 1);
         if (lastLog.endsWith("ERROR: FPM initialization failed")) {
             for (const element of logs) {
-                let m = element.match(/\[pool (\d+)\] cannot get uid for user '(.+)'/);
+                let m = element.match(/ALERT: \[pool (\d+)\]/);
                 if (m) {
                     await spawnSudoUtil("CLEAN_DOMAIN", ["mv", m[1], ""]);
                 }
