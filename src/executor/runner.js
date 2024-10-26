@@ -213,6 +213,24 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await virtExec("modify-domain", value, {
                             domain,
                         });
+                        if (value.pass) {
+                            await writeLog("$> virtualmin modify-database-pass mysql");
+                            if (domaindata['Features']?.includes('mysql')) {
+                                await virtExec("modify-database-pass", {
+                                    domain,
+                                    pass: value.pass,
+                                    type: 'mysql',
+                                });
+                            }
+                            if (domaindata['Features']?.includes('postgres')) {
+                                await writeLog("$> virtualmin modify-database-pass postgres");
+                                await virtExec("modify-database-pass", {
+                                    domain,
+                                    pass: value.pass,
+                                    type: 'postgres',
+                                });
+                            }
+                        }
                         break;
                     case 'rename':
                         if (value && value["new-user"] && await firewallStatus()) {
