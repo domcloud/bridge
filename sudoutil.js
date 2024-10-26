@@ -255,9 +255,12 @@ switch (cli.args.shift()) {
                 }
             }
         }
-        if (domain && existsSync(env.NGINX_PATH.replace('$', domain))) {
-            cleanfile(p);
-            nginxcleaned = '1';
+        if (domain) {
+            var p = env.NGINX_PATH.replace('$', domain);
+            if (existsSync(p)) {
+                cleanfile(p);
+                nginxcleaned = '1';
+            }
         }
         if (fpmcleaned) {
             exec(`systemctl restart ${fpmcleaned}-php-fpm`)
