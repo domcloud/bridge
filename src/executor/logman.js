@@ -30,12 +30,9 @@ class LogmanExecutor {
             case 'php':
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
                     "tail", "-n", n + '', `/home/${user}/logs/php_log`]);
-            case 'unit-stdout':
+            case 'proxfix':
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
-                    "tail", "-n", n + '', `/home/${user}/logs/unit_stdout_log`]);
-            case 'unit-stderr':
-                return await spawnSudoUtil("SHELL_SUDO", ["root",
-                    "tail", "-n", n + '', `/home/${user}/logs/unit_stderr_log`]);
+                    "tail", "-n", n + '', `/home/${user}/tmp/app.log`]);
             case 'passenger':
                 const procs = await this.getPassengerPids(user);
                 if (procs.code !== 0) {

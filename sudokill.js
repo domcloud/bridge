@@ -61,7 +61,7 @@ for (const item of whoOutput) {
 }
 
 // scan for any processes not in ssh sessions or longer than 3 hours
-let candidates = lists.filter(x =>(x.command[0] != ' ' && !ignoreUsers[x.user] && x.etimes > 10800));
+let candidates = lists.filter(x =>(!(x.command[0] == ' ' || ignoreUsers[x.user] || x.etimes < 10800)));
 
 if (opts.test) {
     console.table(candidates);
