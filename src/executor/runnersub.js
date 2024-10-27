@@ -241,9 +241,12 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
                 var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
                 var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : subdomaindata['SSL key file'];
+                if ((!expectCert || !expectKey) && !regenerateSsl) {
+                    expectedSslMode = 'off';
+                }
                 // if (force regenerate or no explicit command or ssl not match) AND it's shared, then must break.
                 if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl) || (expectCert != nginxInfos.ssl_certificate)) {
-                    if (subdomaindata['SSL shared with']) {
+                    if (subdomaindata['SSL shared with'] && expectedSslMode != 'off') {
                         await writeLog("$> Breaking ssl cert sharing with the global domain");
                         await virtExec("modify-web", {
                             domain: subdomain,
@@ -257,9 +260,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
                         expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : subdomaindata['SSL key file'];
                     }
-                }
-                if (!expectCert || !expectKey) {
-                    expectedSslMode = 'off';
                 }
                 if (expectCert != nginxInfos.ssl_certificate) {
                     nginxInfos.ssl_certificate = expectCert;
@@ -298,7 +298,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         }
                         // if LE ON AND force self-sign / shared on, must turn off
                         // if it was shared or ssl path don't match, just assume that's also LE ON
-                    } else if ((selfSignSsl || sharedSSL) && ((subdomaindata['SSL shared with'] && changed && !expectedSslMode) || subdomaindata['Lets Encrypt renewal'] == 'Enabled')) {
+                    } else if ((selfSignSsl || sharedSSL || expectedSslMode == 'off') && ((subdomaindata['SSL shared with'] && changed && !expectedSslMode) || subdomaindata['Lets Encrypt renewal'] == 'Enabled')) {
                         await writeLog("$> Generating self signed cert and turning off let's encrypt renewal");
                         await virtExec("generate-cert", {
                             domain: subdomain,
@@ -323,6 +323,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             'ssl_key': path.join(sharedSSL, 'ssl.key'),
                             'ssl_cert': path.join(sharedSSL, 'ssl.cert'),
                             'ssl_chain': path.join(sharedSSL, 'ssl.ca'),
+                            'ssl_combined': path.join(sharedSSL, 'ssl.combined'),
                         }));
                     }
                 }
