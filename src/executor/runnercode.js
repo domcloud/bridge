@@ -61,19 +61,18 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             if (arg == 'off') {
                 await writeLog("$> Removing Node engine");
                 await sshExec("rm -rf ~/.local/opt/node-* ~/.local/opt/node ~/Downloads/webi/node");
-                await sshExec("rm -rf ~/.cache/yarn ~/.cache/node ~/.config/yarn ~/.npm");
+                await sshExec("rm -rf ~/.cache/yarn ~/.cache/node ~/.config/yarn ~/.npm ~/.nvm");
                 await sshExec("pathman remove .local/opt/node/bin");
             } else {
                 if (value == "latest" || value == "current") {
                     arg = "";
                 } else if (!value || value == "stable") {
-                    arg = "@lts";
+                    arg = "lts";
                 } else {
-                    arg = "@" + value;
+                    arg = value;
                 }
                 await writeLog("$> Changing Node engine to " + (value || 'lts'));
-                await sshExec("pathman add .local/opt/node/bin ; source ~/.config/envman/PATH.env");
-                await sshExec(`curl -sS https://webinstall.dev/node${arg} | bash`);
+                await sshExec("command -v nvm &> /dev/null || (curl -o- https://github.com/nvm-sh/nvm/raw/refs/heads/master/install.sh | bash) && source ~/.bashrc");
                 await sshExec("command -v corepack &> /dev/null || npm i -g corepack && corepack enable");
                 await sshExec(`[[ -z $COREPACK_ENABLE_AUTO_PIN ]] && echo "export COREPACK_ENABLE_AUTO_PIN=0" >> ~/.bashrc`)
                 await sshExec("source ~/.bashrc", false);
