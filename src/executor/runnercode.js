@@ -73,6 +73,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 }
                 await writeLog("$> Changing Node engine to " + (value || 'lts'));
                 await sshExec("command -v nvm &> /dev/null || (curl -o- https://github.com/nvm-sh/nvm/raw/refs/heads/master/install.sh | bash) && source ~/.bashrc");
+                await sshExec(`nvm install ${arg} && nvm use ${arg}`);
                 await sshExec("command -v corepack &> /dev/null || npm i -g corepack && corepack enable");
                 await sshExec(`[[ -z $COREPACK_ENABLE_AUTO_PIN ]] && echo "export COREPACK_ENABLE_AUTO_PIN=0" >> ~/.bashrc`)
                 await sshExec("source ~/.bashrc", false);
