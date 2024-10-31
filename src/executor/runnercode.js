@@ -66,7 +66,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             } else {
                 if (value == "latest" || value == "current") {
                     arg = "node";
-                } else if (!value || value == "stable") {
+                } else if (!value || value == "stable" || value == "lts") {
                     arg = "--lts";
                 } else {
                     arg = value;
