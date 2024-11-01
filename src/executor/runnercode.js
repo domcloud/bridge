@@ -23,7 +23,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`, false);
                 await sshExec(`echo "export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock" >>  ~/.bashrc;`);
                 await sshExec(`mkdir -p ~/.config/docker; echo '{"exec-opts": ["native.cgroupdriver=cgroupfs"]}' > ~/.config/docker/daemon.json`);
-                await sshExec(`dockerd-rootless-setuptool.sh install`);
+                await sshExec(`dockerd-rootless-setuptool.sh install --skip-iptables`);
                 await sshExec(`export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`, false);
             } else if (value === 'off') {
                 await writeLog("$> Disabling docker features");
@@ -47,7 +47,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                     await sshExec(`cd ~/tmp && mkdir -p ~/.pyenv/versions/${parg.version}`);
                     await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
                     await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} || true ; rm -rf ~/tmp/python`);
-                    await sshExec(`echo "export LD_LIBRARY_PATH=~/.pyenv/versions/${parg.version}:$LD_LIBRARY_PATH" >> ~/.bashrc`)
+                    await sshExec(`echo "export LD_LIBRARY_PATH=~/.pyenv/versions/${parg.version}:$LD_LIBRARY_PATH" >> ~/.bashrc`) // fix venv
                     await sshExec("cd ~/public_html", false);
                 } else if (parg.version !== "system") {
                     await sshExec(`pyenv install ${parg.version} -s`);

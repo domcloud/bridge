@@ -84,7 +84,8 @@ export const getPythonVersion = (/** @type {string} */ status) => {
         }
     }
     if (/^\d+\.\d+\.\d+$/.test(status)) {
-        return expand(status);
+        // no binaries
+        return { version: status, binary: null };
     }
     switch (status) {
         case 'lts':
