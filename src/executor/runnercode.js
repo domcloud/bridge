@@ -67,14 +67,14 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 if (value == "latest" || value == "current") {
                     arg = "node";
                 } else if (!value || value == "stable" || value == "lts") {
-                    arg = "--lts";
+                    arg = "lts/*";
                 } else {
                     arg = value;
                 }
                 await writeLog("$> Changing Node engine to " + (value || 'lts'));
                 const nvmPath = `https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh`;
                 await sshExec(`command -v nvm &> /dev/null || (curl -o- ${nvmPath} | bash) && source ~/.bashrc`);
-                await sshExec(`nvm install ${arg} && nvm use ${arg}`);
+                await sshExec(`nvm install ${arg} && nvm use ${arg} && nvm alias default ${arg}`);
                 await sshExec("command -v corepack &> /dev/null || npm i -g corepack && corepack enable");
                 await sshExec(`[[ -z $COREPACK_ENABLE_AUTO_PIN ]] && echo "export COREPACK_ENABLE_AUTO_PIN=0" >> ~/.bashrc`)
                 await sshExec("source ~/.bashrc", false);
