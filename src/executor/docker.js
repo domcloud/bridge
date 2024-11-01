@@ -133,7 +133,7 @@ class DockerExecutor {
             }
         }
         // make sure to handle .well-known
-        let wellKnownConf = nginx.config.locations?.find(x => x.match == '/.well-known/');
+        let wellKnownConf = nginx.config.locations?.find(x => x.match.endsWith('/.well-known/'));
         if (!wellKnownConf) {
             if (!nginx.config.locations)
                 nginx.config.locations = [];
