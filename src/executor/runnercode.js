@@ -16,6 +16,22 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             await writeLog("$> Restarting passenger processes");
             await writeLog(await logmanExec.restartPassenger(domaindata));
             break;
+        case 'yum':
+        case 'dnf':
+            await writeLog("$> Setting up environment for yum installation");
+            await writeLog(await logmanExec.restartPassenger(domaindata));
+            await sshExec(`sed -i '/~/usr/lib64//d' ~/.bashrc`, false);
+            await sshExec(`pathman add ~/usr/bin`);
+            await sshExec(`echo "export LD_LIBRARY_PATH=~/usr/lib64/:$LD_LIBRARY_PATH" >> ~/.bashrc`)
+            if (value != "") {
+                await writeLog("$> Installing packages via yum");
+                await sshExec(`mkdir -p ~/Downloads; pushd ~/Downloads`, false);
+                await sshExec(`dnf download ${value} --resolve -y`);
+                await sshExec(`rpm2cpio *.rpm | cpio -idmD ~`);
+                await sshExec(`popd`, false);
+            }
+            await sshExec(`. ~/.bashrc`, false)
+            break;
         case 'docker':
             if (value === '' || value === 'on') {
                 await writeLog("$> Enabling docker features");
