@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 import { lock } from 'proper-lockfile';
 import fs from 'fs';
 import binaries from './binaries/metadata.cjs';
-import { virtualminExec } from './executor/virtualmin';
+import { virtualminExec } from './executor/virtualmin.js';
 const {
     javaVersionsList,
     javaVersionsMap,
