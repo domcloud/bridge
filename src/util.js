@@ -1,8 +1,9 @@
-import path from 'path';
+import path, { dirname } from 'path';
 import { spawn } from 'child_process';
 import { lock } from 'proper-lockfile';
 import fs from 'fs';
 import binaries from './binaries/metadata.cjs';
+import { virtualminExec } from './executor/virtualmin';
 const {
     javaVersionsList,
     javaVersionsMap,
@@ -16,7 +17,7 @@ let tokenSecret, allowIps, sudoutil, version, revision;
 // https://packagist.org/php-statistics
 let phpVersionsList = [];
 /**
- * @type {Record<string, string>}
+ * @type {Record<string, {domain: string, id: string, path: string}>}
  */
 let sslWildcardsMap = {};
 
@@ -31,13 +32,6 @@ export const initUtils = () => {
     const rev = cat('.git/HEAD').trim();
     revision = rev.indexOf(':') === -1 ? rev : cat('.git/' + rev.substring(5)).trim();
     revision = revision.substring(0, 7);
-    sslWildcardsMap = (process.env.SSL_WILDCARDS || '').split(',').reduce((a, b) => {
-        var splits = b.split(':', 2);
-        if (splits.length == 2) {
-            a[splits[0].toLowerCase()] = splits[1];
-        }
-        return a;
-    }, {});
     try {
         const phpPath = process.env.PHPFPM_REMILIST || '/etc/opt/remi/';
         const phpFiles = fs.readdirSync(phpPath, { withFileTypes: true });
@@ -48,7 +42,32 @@ export const initUtils = () => {
     } catch (error) {
         phpVersionsList = [];
     }
+    updateWildcardData();
+}
 
+async function updateWildcardData() {
+    sslWildcardsMap = {};
+    var cachepath = path.join(process.cwd(), '/.tmp/wildcardssl.json');
+    try {
+        sslWildcardsMap = JSON.parse(cat(cachepath));
+        for (const domain of (process.env.SSL_WILDCARDS || '').split(',')) {
+            if (!(domain in sslWildcardsMap) || ['id', 'domain', 'path'].every(k => !(k in sslWildcardsMap[domain]))) {
+                throw new Error();
+            }
+        }
+        return
+    } catch (error) {
+
+    }
+    const domains = (process.env.SSL_WILDCARDS || '').split(',').map(x => x.split(':')[0]);
+    for (const [domain, d] of Object.entries(await virtualminExec.getDomainInfo(domains, true))) {
+        sslWildcardsMap[domain] = {
+            id: d['ID'] + '',
+            path: dirname(d['SSL key file'] + ''),
+            domain,
+        }
+    }
+    writeTo(cachepath, JSON.stringify(sslWildcardsMap))
 }
 
 export const getLtsPhp = (/** @type {string} */ major) => {
