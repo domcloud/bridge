@@ -59,15 +59,19 @@ async function updateWildcardData() {
     } catch (error) {
 
     }
-    const domains = (process.env.SSL_WILDCARDS || '').split(',').map(x => x.split(':')[0]);
-    for (const [domain, d] of Object.entries(await virtualminExec.getDomainInfo(domains, true))) {
-        sslWildcardsMap[domain] = {
-            id: d['ID'] + '',
-            path: dirname(d['SSL key file'] + ''),
-            domain,
+    try {
+        const domains = (process.env.SSL_WILDCARDS || '').split(',').map(x => x.split(':')[0]);
+        for (const [domain, d] of Object.entries(await virtualminExec.getDomainInfo(domains, true))) {
+            sslWildcardsMap[domain] = {
+                id: d['ID'] + '',
+                path: dirname(d['SSL key file'] + ''),
+                domain,
+            }
         }
+        writeTo(cachepath, JSON.stringify(sslWildcardsMap))
+    } catch (error) {
+        console.error("Cant get valid ssl domain", error)
     }
-    writeTo(cachepath, JSON.stringify(sslWildcardsMap))
 }
 
 export const getLtsPhp = (/** @type {string} */ major) => {
