@@ -509,6 +509,10 @@ export function writeTo(path, content) {
     });
 }
 
+/**
+ * 
+ * @param {string} subdomain 
+ */
 export function detectCanShareSSL(subdomain) {
     const subdomainParts = subdomain.split('.');
     for (const domain of Object.keys(sslWildcardsMap)) {

@@ -239,8 +239,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 var sharedSSL = regenerateSsl ? null : detectCanShareSSL(subdomain);
                 nginxNodes = await nginxExec.get(subdomain);
                 nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
-                var expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
-                var expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : subdomaindata['SSL key file'];
+                var expectCert = sharedSSL ? path.join(sharedSSL.path, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
+                var expectKey = sharedSSL ? path.join(sharedSSL.path, 'ssl.key') : subdomaindata['SSL key file'];
                 if ((!expectCert || !expectKey) && !regenerateSsl) {
                     expectedSslMode = 'off';
                 }
@@ -257,8 +257,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         subdomaindata = await virtualminExec.getDomainInfo(subdomain);
                         nginxNodes = await nginxExec.get(subdomain);
                         nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
-                        expectCert = sharedSSL ? path.join(sharedSSL, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
-                        expectKey = sharedSSL ? path.join(sharedSSL, 'ssl.key') : subdomaindata['SSL key file'];
+                        expectCert = sharedSSL ? path.join(sharedSSL.path, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
+                        expectKey = sharedSSL ? path.join(sharedSSL.path, 'ssl.key') : subdomaindata['SSL key file'];
                     }
                 }
                 if (expectCert != nginxInfos.ssl_certificate) {
@@ -315,17 +315,14 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 } finally {
                     await writeLog("$> Applying nginx ssl config on " + subdomain);
                     await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
-                    if (sharedSSL && sharedSSL.match(/\/(\d{10,})\//)) {
-                        await writeLog("$> Applying SSL links with global domain");
-                        let id = sharedSSL.match(/\/(\d{10,})\//)[1];
-                        await writeLog(await virtualminExec.pushVirtualServerConfig(subdomaindata['ID'], {
-                            'ssl_same': id,
-                            'ssl_key': path.join(sharedSSL, 'ssl.key'),
-                            'ssl_cert': path.join(sharedSSL, 'ssl.cert'),
-                            'ssl_chain': path.join(sharedSSL, 'ssl.ca'),
-                            'ssl_combined': path.join(sharedSSL, 'ssl.combined'),
-                        }));
-                    }
+                    await writeLog("$> Applying SSL links with global domain");
+                    await writeLog(await virtualminExec.pushVirtualServerConfig(subdomaindata['ID'], {
+                        'ssl_same': sharedSSL.id,
+                        'ssl_key': path.join(sharedSSL.path, 'ssl.key'),
+                        'ssl_cert': path.join(sharedSSL.path, 'ssl.cert'),
+                        'ssl_chain': path.join(sharedSSL.path, 'ssl.ca'),
+                        'ssl_combined': path.join(sharedSSL.path, 'ssl.combined'),
+                    }));
                 }
                 break;
             case 'root':
