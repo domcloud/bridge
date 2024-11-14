@@ -100,7 +100,7 @@ switch (cli.args.shift()) {
         if (existsSync(ngpath)) {
             cat(ngpath).to(env.NGINX_TMP);
         } else if (existsSync(ngpath + '.bak')) {
-            ShellString("// Restored from .bak file, meaning this site was disabled due to NGINX bug\n").to(env.NGINX_TMP);
+            ShellString("# Restored from .bak file, meaning this site was disabled due to NGINX bug\n\n").to(env.NGINX_TMP);
             cat(ngpath + '.bak').toEnd(env.NGINX_TMP);
         } else {
             // TODO: doesn't know what would it get if not exists
