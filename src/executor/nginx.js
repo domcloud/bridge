@@ -11,6 +11,7 @@ import path from 'path';
 import {
     NginxConfFile
 } from 'nginx-conf';
+import deepEqual from 'deep-equal';
 
 const tmpFile = path.join(process.cwd(), '/.tmp/nginx')
 
@@ -22,7 +23,7 @@ const passengerKeys = [
 ];
 const locationKeys = [
     "root", "alias", "rewrite", "try_files", "return", "index",
-    "expires", "allow", "deny", "autoindex", "proxy_pass", 
+    "expires", "allow", "deny", "autoindex", "proxy_pass",
     "limit_except", "limit_rate", "limit_rate_after"
 ];
 const sslNames = ["", "off", "always", "on"];
@@ -425,24 +426,36 @@ class NginxExecutor {
                     const info = this.extractInfo(node, domain);
                     if (typeof config === 'string') {
                         // experimental parse from string
-                        new Promise((resolve, reject) => {
-                            NginxConfFile.createFromSource(config, (err, rawConf) => {
-                                if (err)
-                                    return reject(err);
-                                const rawNode = rawConf.nginx.server?.[0] || rawConf.nginx;
-                                const rawInfo = this.extractInfo(rawNode, domain);
+                        NginxConfFile.createFromSource(config, (err, rawConf) => {
+                            if (err)
+                                return reject(err);
+                            const rawNode = rawConf.nginx.server?.[0] || rawConf.nginx;
+                            const rawInfo = this.extractInfo(rawNode, domain);
+                            if (deepEqual(info.config, rawInfo.config)) {
+                                resolve(null);
+                            } else {
                                 info.config = rawInfo.config;
                                 this.applyInfo(node, info);
                                 resolve(conf);
-                            })
-                        }).then(resolve).catch(reject);
+                            }
+                        })
                     } else {
+                        if (deepEqual(info.config, config)) {
+                            resolve(null);
+                        } else {
+                            info.config = config;
+                            this.applyInfo(node, info);
+                            resolve(conf);
+                        }
                         info.config = config;
                         this.applyInfo(node, info);
                         resolve(conf);
                     }
                 });
             });
+            if (conf == null) {
+                return "Nothing changed";
+            }
             writeTo(tmpFile, conf.toString());
             await spawnSudoUtil('NGINX_SET', [domain]);
             return "Done updated\n" + conf.toString();
@@ -463,6 +476,10 @@ class NginxExecutor {
                     const node = conf.nginx.server[0];
                     if (!node) {
                         return reject(new Error(`Cannot find domain ${domain}`));
+                    }
+                    const oldInfo = this.extractInfo(node, domain);
+                    if (deepEqual(oldInfo, info)) {
+                        return resolve("Nothing changed");
                     }
                     this.applyInfo(node, info);
                     writeTo(tmpFile, conf.toString());

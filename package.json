@@ -20,6 +20,7 @@
   "type": "module",
   "dependencies": {
     "cli": "^1.0.1",
+    "deep-equal": "^2.2.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "fast-xml-parser": "^4.3.6",
