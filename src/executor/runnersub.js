@@ -301,9 +301,14 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             });
                             subdomaindata['SSL cert expiry'] = new Date().toISOString()
                         }
-                        // if LE ON AND force self-sign / shared on, must turn off
-                        // if it was shared or ssl path don't match, just assume that's also LE ON
-                    } else if ((selfSignSsl || sharedSSL || expectedSslMode == 'off') && ((subdomaindata['SSL shared with'] && changed && !expectedSslMode) || subdomaindata['Lets Encrypt renewal'] == 'Enabled')) {
+                        // Regenerate self sign if
+                        // 1. Explicit request || SSL off
+                        // 2. Let's Encrypt renewal enabled
+                        // 3. sharing SSL and was not
+                    } else if ((selfSignSsl || expectedSslMode == 'off') || (subdomaindata['Lets Encrypt renewal'] == 'Enabled') || ((sharedSSL && !subdomaindata['SSL shared with'] && !expectedSslMode))) {
+                        if (subdomaindata['SSL shared with']) {
+                            throw new Error('Cannot turn off SSL while using shared domain!')
+                        }
                         await writeLog("$> Generating self signed cert and turning off let's encrypt renewal");
                         await virtExec("generate-cert", {
                             domain: subdomain,
