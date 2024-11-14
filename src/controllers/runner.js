@@ -51,6 +51,12 @@ function trimPayload(payload) {
         return payload;
     }
 }
+/**
+ * @param {any} body
+ * @param {string} domain
+ * @param {boolean} sandbox
+ * @param {string} callback
+ */
 export async function runConfigInBackground(body, domain, sandbox, callback) {
     let fullLogData = [],
         chunkedLogData = ['Running deployment script... Please wait...\n'],
@@ -84,24 +90,24 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             setTimeout(periodicSender, delay).unref();
         }
     }
-    periodicSender();
+    if (callback) {
+        periodicSender();
+    }
     write.on('data', (chunk) => {
         if (!callback) return;
         chunkedLogData.push(chunk);
         fullLogData.push(chunk);
     });
     write.on('end', () => {
-        // and finish message with full log
-        if (callback) {
-            chunkedLogData = [];
-            const data = trimPayload(normalizeShellOutput(fullLogData));
-            request(callback, { data, headers, ...options })
-                .then(e => {
-                    console.log('callback response:', e.statusCode)
-                }).catch(e => {
-                    console.error(e);
-                });
-        }
+        if (!callback) return;
+        chunkedLogData = [];
+        const data = trimPayload(normalizeShellOutput(fullLogData));
+        request(callback, { data, headers, ...options })
+            .then(e => {
+                console.log('callback response:', e.statusCode)
+            }).catch(e => {
+                console.error(e);
+            });
     });
     try {
         await runConfig(body || {}, domain + "", (s) => {
