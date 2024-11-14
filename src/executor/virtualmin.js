@@ -173,7 +173,7 @@ class VirtualminExecutor {
             return new Promise((resolve, reject) => {
                 spawnSudoUtil('VIRTUAL_SERVER_GET', [id]).then(() => {
                     const fileConf = cat(tmpFile);
-                    const config = cat(tmpFile).trimEnd().split("\n");
+                    const config = fileConf.trimEnd().split("\n");
                     for (const [key, value] of Object.entries(props)) {
                         let i = config.findIndex(x => x.startsWith(key + '='));
                         if (i >= 0) {

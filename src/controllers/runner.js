@@ -155,16 +155,62 @@ export async function runConfigInBackgroundSingleton(payload) {
     }).unref();
 }
 
+export async function runConfigInForeground(payload) {
+    return new Promise((resolve, reject) => {
+        let child = spawn('node', [path.join(process.cwd(), '/runner.js')], {
+            stdio: 'pipe',
+            env: {
+                RUNNER_PAYLOAD: JSON.stringify(payload),
+            }
+        })
+
+        let stdoutData = '';
+
+        // Collect stdout data
+        child.stdout.on('data', (data) => {
+            stdoutData += data.toString();
+        });
+
+        // Collect stderr data
+        child.stderr.on('data', (data) => {
+            stdoutData += data.toString();
+        });
+
+        // Handle process exit
+        child.on('exit', (exitCode) => {
+            if (exitCode !== 0) {
+                reject(new Error(`Process exited with code ${exitCode}\n${stdoutData}`));
+            } else {
+                resolve(stdoutData.trim()); // Resolve with collected stdout
+            }
+        });
+
+        // Handle spawn errors
+        child.on('error', (error) => {
+            reject(error);
+        });
+    })
+}
+
 export default function () {
     var router = express.Router();
     router.post('/', checkGet(['domain']), async function (req, res, next) {
-        runConfigInBackgroundSingleton({
-            body: req.body,
-            domain: req.query.domain + "",
-            sandbox: !!parseInt(req.query.sandbox + '' || '0'),
-            callback: req.header('x-callback'),
-        });
-        res.send('OK');
+        const callback = req.header('x-callback');
+        if (callback) {
+            runConfigInBackgroundSingleton({
+                body: req.body,
+                domain: req.query.domain + "",
+                sandbox: !!parseInt(req.query.sandbox + '' || '0'),
+                callback: req.header('x-callback'),
+            });
+            res.send('OK');
+        } else {
+            res.send(await runConfigInForeground({
+                body: req.body,
+                domain: req.query.domain + "",
+                sandbox: !!parseInt(req.query.sandbox + '' || '0'),
+            }));
+        }
     });
     return router;
 }
