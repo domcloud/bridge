@@ -315,14 +315,16 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 } finally {
                     await writeLog("$> Applying nginx ssl config on " + subdomain);
                     await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
-                    await writeLog("$> Applying SSL links with global domain");
-                    await writeLog(await virtualminExec.pushVirtualServerConfig(subdomaindata['ID'], {
-                        'ssl_same': sharedSSL.id,
-                        'ssl_key': path.join(sharedSSL.path, 'ssl.key'),
-                        'ssl_cert': path.join(sharedSSL.path, 'ssl.cert'),
-                        'ssl_chain': path.join(sharedSSL.path, 'ssl.ca'),
-                        'ssl_combined': path.join(sharedSSL.path, 'ssl.combined'),
-                    }));
+                    if (sharedSSL) {
+                        await writeLog("$> Applying SSL links with global domain");
+                        await writeLog(await virtualminExec.pushVirtualServerConfig(subdomaindata['ID'], {
+                            'ssl_same': sharedSSL.id,
+                            'ssl_key': path.join(sharedSSL.path, 'ssl.key'),
+                            'ssl_cert': path.join(sharedSSL.path, 'ssl.cert'),
+                            'ssl_chain': path.join(sharedSSL.path, 'ssl.ca'),
+                            'ssl_combined': path.join(sharedSSL.path, 'ssl.combined'),
+                        }));
+                    }
                 }
                 break;
             case 'root':
