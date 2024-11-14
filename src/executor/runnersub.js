@@ -245,7 +245,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     expectedSslMode = 'off';
                 }
                 // if (force regenerate or no explicit command or ssl not match) AND it's shared ssl differ, then must break.
-                if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl) || (expectCert != nginxInfos.ssl_certificate)) {
+                if (regenerateSsl || (!expectedSslMode && !selfSignSsl) || (expectCert != nginxInfos.ssl_certificate)) {
                     if (subdomaindata['SSL shared with'] && (!sharedSSL || subdomaindata['SSL shared with'] != sharedSSL.domain)) {
                         await writeLog("$> Breaking ssl cert sharing");
                         await virtExec("modify-web", {
@@ -257,8 +257,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         subdomaindata = await virtualminExec.getDomainInfo(subdomain);
                         nginxNodes = await nginxExec.get(subdomain);
                         nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
-                        expectCert = sharedSSL ? path.join(sharedSSL.path, 'ssl.combined') : (subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file']);
-                        expectKey = sharedSSL ? path.join(sharedSSL.path, 'ssl.key') : subdomaindata['SSL key file'];
+                        if (!sharedSSL) {
+                            expectCert = subdomaindata['SSL cert and CA file'] || subdomaindata['SSL cert file'];
+                            expectKey = subdomaindata['SSL key file'];
+                        }
                     }
                 }
                 if (expectCert != nginxInfos.ssl_certificate) {
@@ -277,9 +279,12 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     nginxInfos.config.ssl = expectedSslMode;
                     changed = true;
                 }
+                if (sharedSSL && sharedSSL.domain != subdomaindata['SSL shared with']) {
+                    changed = true;
+                }
                 try {
-                    // if force LE or no explicit command AND not shared, check regeration
-                    if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl)) {
+                    // if NOT shared AND force LE or no explicit command, check regeration
+                    if (!sharedSSL && (regenerateSsl || (!expectedSslMode && !selfSignSsl))) {
                         const remaining = subdomaindata['SSL cert expiry'] ? (Date.parse(subdomaindata['SSL cert expiry']) - Date.now()) / 86400000 : 0;
                         // if force LE or remaining > 30 days, get fresh one
                         if (!regenerateSsl && subdomaindata['SSL candidate hostnames'] == subdomain && subdomaindata['Lets Encrypt renewal'] == 'Enabled' && (remaining > 30)) {
@@ -315,7 +320,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 } finally {
                     await writeLog("$> Applying nginx ssl config on " + subdomain);
                     await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
-                    if (sharedSSL) {
+                    if (sharedSSL && changed) {
                         await writeLog("$> Applying SSL links with global domain");
                         await writeLog(await virtualminExec.pushVirtualServerConfig(subdomaindata['ID'], {
                             'ssl_same': sharedSSL.id,
@@ -323,6 +328,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             'ssl_cert': path.join(sharedSSL.path, 'ssl.cert'),
                             'ssl_chain': path.join(sharedSSL.path, 'ssl.ca'),
                             'ssl_combined': path.join(sharedSSL.path, 'ssl.combined'),
+                            'ssl_everything': path.join(sharedSSL.path, 'ssl.everything'),
                         }));
                     }
                 }
