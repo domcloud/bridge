@@ -244,10 +244,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 if ((!expectCert || !expectKey) && !regenerateSsl) {
                     expectedSslMode = 'off';
                 }
-                // if (force regenerate or no explicit command or ssl not match) AND it's shared, then must break.
+                // if (force regenerate or no explicit command or ssl not match) AND it's shared ssl differ, then must break.
                 if (regenerateSsl || (!expectedSslMode && !sharedSSL && !selfSignSsl) || (expectCert != nginxInfos.ssl_certificate)) {
-                    if (subdomaindata['SSL shared with'] && expectedSslMode != 'off') {
-                        await writeLog("$> Breaking ssl cert sharing with the global domain");
+                    if (subdomaindata['SSL shared with'] && (!sharedSSL || subdomaindata['SSL shared with'] != sharedSSL.domain)) {
+                        await writeLog("$> Breaking ssl cert sharing");
                         await virtExec("modify-web", {
                             domain: subdomain,
                             'break-ssl-cert': true,
