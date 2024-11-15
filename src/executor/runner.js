@@ -1,4 +1,5 @@
 import {
+    detectCanShareSSL,
     executeLock,
     getRevision,
     getVersion,
@@ -289,6 +290,19 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         break;
                     case 'delete':
                         await writeLog("$> virtualmin delete-domain");
+                        const sharedSSL = detectCanShareSSL(domain);
+                        if (sharedSSL && !domaindata['SSL shared with']) {
+                            // OMG!
+                            await writeLog("$> Applying SSL links with global domain before deleting");
+                            await writeLog(await virtualminExec.pushVirtualServerConfig(domaindata['ID'], {
+                                'ssl_same': sharedSSL.id,
+                                'ssl_key': path.join(sharedSSL.path, 'ssl.key'),
+                                'ssl_cert': path.join(sharedSSL.path, 'ssl.cert'),
+                                'ssl_chain': path.join(sharedSSL.path, 'ssl.ca'),
+                                'ssl_combined': path.join(sharedSSL.path, 'ssl.combined'),
+                                'ssl_everything': path.join(sharedSSL.path, 'ssl.everything'),
+                            }));
+                        }
                         await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u', user]);
                         await virtExec("delete-domain", value, {
                             domain,
