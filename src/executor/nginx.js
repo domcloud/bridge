@@ -162,7 +162,7 @@ class NginxExecutor {
             }
             if (httpconf == 3) {
                 node._add('http3', "on");
-                node._add('add_header', `Alt-Svc 'h3=":8443"; ma=86400'`);
+                node._add('add_header', `Alt-Svc 'h3=":443"; ma=86400'`);
             }
         } {
             node._add('root', info.root);
