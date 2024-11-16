@@ -160,6 +160,10 @@ class NginxExecutor {
             if (httpconf == 2) {
                 node._add('http2', "on");
             }
+            if (httpconf == 3) {
+                node._add('http3', "on");
+                node._add('add_header', `Alt-Svc 'h3=":8443"; ma=86400'`);
+            }
         } {
             node._add('root', info.root);
             node._add('access_log', info.access_log);
@@ -354,7 +358,9 @@ class NginxExecutor {
             data[ip.startsWith("[") ? "ip6" : "ip"] = ip;
             data.ssl |= x._value.includes("ssl") ? 2 : 1;
         });
-        if (node.http2 && node.http2[0]._value == "on") {
+        if (node.http3?.[0]._value == "on") {
+            data.http = 3;
+        } else if (node.http2?.[0]._value == "on") {
             data.http = 2;
         }
         let servernames = (node.server_name[0]?._value || '').split(' ');
