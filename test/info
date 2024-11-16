@@ -1,58 +1,82 @@
-suba.example.com
-    ID: 16183677691482684
-    File: /etc/webmin/virtual-server/domains/16183677691482684
-    Type: Sub-server
-    URL: http://suba.example.com/
-    Parent domain: example.com
-    Description:
-    Template ID: 1
-    Template: Settings For Sub-Servers
-    Plan ID: 159145729063211
-    Plan: Pro
-    Username: example
-    User ID: 1255
-    Group name: example
-    Group ID: 1255
-    Mailbox username prefix: api-test
+famraco.sga.dom.my.id
+    ID: 17184128941340131
+    File: /etc/webmin/virtual-server/domains/17184128941340131
+    Type: Top-level server
+    URL: http://famraco.sga.dom.my.id/
+    Description: famraco.sga.dom.my.id
+    Template ID: 0
+    Template: Default Settings
+    Plan ID: 0
+    Plan: Default Plan
+    Username: cuddly-pop-vou
+    User ID: 1096
+    Group name: cuddly-pop-vou
+    Group ID: 1096
+    Mailbox username prefix: cuddly-pop-vou
     Password storage: Plain text
-    Password: abcdefgh
-    Username for mysql: example
-    Password for mysql: abcdefgh
-    Home directory: /home/example/domains/suba.example.com
-    HTML directory: /home/example/domains/suba.example.com/public_html/nodeapi/public
-    CGI directory: /home/example/domains/suba.example.com/cgi-bin
-    Access log: /var/log/virtualmin/suba.example.com_access_log
-    Error log: /var/log/virtualmin/suba.example.com_error_log
-    Contact email: hello@example.com
-    Contact address: hello@example.com
-    Created on: 14/Apr/2021 02:36
-    Created Unix time: 1618367786
-    Created by: example
-    IP address: 1.2.3.4 (Shared)
-    IPv6 address: 1:2:3:4::5:6
-    Features: dir dns mysql
+    Password: 8SiZl9oR7iN2Jd2_+(
+    Username for mysql: cuddly-pop-vou
+    Password for mysql: 8SiZl9oR7iN2Jd2_+(
+    Hostname for mysql: localhost
+    Port for mysql: 3306
+    Home directory: /home/cuddly-pop-vou
+    HTML directory: /home/cuddly-pop-vou/public_html/public
+    CGI directory: /home/cuddly-pop-vou/cgi-bin
+    Access log: /var/log/virtualmin/famraco.sga.dom.my.id_access_log
+    Error log: /var/log/virtualmin/famraco.sga.dom.my.id_error_log
+    Contact email: hafizamin8116@gmail.com
+    Contact address: hafizamin8116@gmail.com
+    Created on: 06/15/2024 12:54 AM
+    Created Unix time: 1718412895
+    Created by: root
+    IP address: 10.0.0.229 (Shared)
+    IPv6 address: 2603:c024:4510:c400:91e:8bc4:92c3:7cb6
+    External IP address: 138.2.103.58
+    Features: unix dir mysql webmin
     Plugins: virtualmin-nginx virtualmin-nginx-ssl
+    Server quota: Unlimited
+    Server block quota: Unlimited
+    User quota: Unlimited
+    User block quota: Unlimited
+    Bandwidth limit: Unlimited
+    Bandwidth byte limit: Unlimited
+    Bandwidth start: 10/15/2024
+    Bandwidth usage: 0 bytes
+    Bandwidth byte usage: 0
     PHP execution mode: fpm
-    Possible PHP execution modes: fcgid fpm
-    SuExec for CGIs: disabled
-Use of uninitialized value $childs in numeric eq (==) at /usr/libexec/webmin/virtualmin-nginx/virtual_feature.pl line 1548
-    PHP fCGId subprocesses: 64
     PHP max execution time: 30
-    PHP version: 7.4
-    Webmail redirects: No
-    Match all web sub-domains: No
-    Server-side includes: Disabled
-    Default website for IP: No
-    SSL key file: /home/example/domains/suba.example.com/ssl.key
-    SSL cert file: /home/example/domains/suba.example.com/ssl.cert
-    SSL CA file: /home/example/domains/suba.example.com/ssl.ca
-    SSL candidate hostnames: suba.example.com
-    SSL cert expiry: 22/Sep/2021 11:16
-    Lets Encrypt renewal: Enabled
-    Lets Encrypt cert issued: 24/Jun/2021 12:17
-    SSL cert used by: webmin (suba.example.com)
+    SSL key file: /var/lib/ssl/17061000713099961/ssl.key
+    SSL cert file: /var/lib/ssl/17061000713099961/ssl.cert
+    SSL CA file: /var/lib/ssl/17061000713099961/ssl.ca
+    SSL cert and CA file: /var/lib/ssl/17061000713099961/ssl.combined
+    SSL cert and key file: /var/lib/ssl/17061000713099961/ssl.everything
+    SSL shared with: sga.dom.my.id
+    SSL cert expiry: 11/06/2024 03:49 AM
+    SSL cert expiry time: 1730864976
+    Lets Encrypt renewal: Disabled
+    Lets Encrypt cert issued: 11/13/2024 12:02 AM
     Provisioning for dns: Local
     Provisioning for mysql: Local
     Provisioning for spam: Local
     Provisioning for virus: Local
-    Parent DNS virtual server: example.com
+    Maximum sub-servers: Unlimited
+    Maximum alias servers: *
+    Maximum non-alias servers: *
+    Maximum mailboxes: Unlimited
+    Maximum databases: Unlimited
+    Maximum aliases: Unlimited
+    Maximum Mongrel instances: Unlimited
+    Can choose database names: Yes
+    Can rename servers: No
+    Can migrate backups: No
+    Sub-servers must be under main domain: Yes
+    Sub-servers cannot be under other domains: Yes
+    Sub-servers inherit IP address: No
+    Read-only mode: No
+    Allowed features: unix dir virtualmin-nginx virtualmin-nginx-ssl
+    Edit capabilities: domain users aliases dbs scripts ip dnsip ssl forward redirect admins spam phpver phpmode mail backup sched restore sharedips catchall html allowedhosts passwd spf records disable delete
+    Allowed scripts: All
+    Shell type: ssh
+    Login permissions: Email, FTP and SSH
+    Shell command: /bin/bash
+    Last login: Never

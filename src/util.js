@@ -48,9 +48,13 @@ export const initUtils = () => {
 async function updateWildcardData() {
     sslWildcardsMap = {};
     var cachepath = path.join(process.cwd(), '/.tmp/wildcardssl.json');
+    var sslWildcardStr = process.env.SSL_WILDCARDS || '';
+    if (!sslWildcardStr) {
+        return;
+    }
     try {
         sslWildcardsMap = JSON.parse(cat(cachepath));
-        for (const domain of (process.env.SSL_WILDCARDS || '').split(',')) {
+        for (const domain of sslWildcardStr.split(',').map(x => x.split(':')[0])) {
             if (!(domain in sslWildcardsMap) || ['id', 'domain', 'path'].every(k => !(k in sslWildcardsMap[domain]))) {
                 throw new Error();
             }
@@ -60,7 +64,7 @@ async function updateWildcardData() {
 
     }
     try {
-        const domains = (process.env.SSL_WILDCARDS || '').split(',').map(x => x.split(':')[0]);
+        const domains = sslWildcardStr.split(',').map(x => x.split(':')[0]);
         for (const [domain, d] of Object.entries(await virtualminExec.getDomainInfo(domains, true))) {
             sslWildcardsMap[domain] = {
                 id: d['ID'] + '',
