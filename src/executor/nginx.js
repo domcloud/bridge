@@ -161,6 +161,9 @@ class NginxExecutor {
                 node._add('http2', "on");
             }
             if (httpconf == 3) {
+                node._add('listen', info.ip ? info.ip + ":443 quic reuseport" : "443 quic reuseport");
+                node._add('listen', (info.ip6 || '[::]') + ":443 quic reuseport");
+                node._add('http2', "on");
                 node._add('http3', "on");
                 node._add('add_header', `Alt-Svc 'h3=":443"; ma=86400'`);
             }
