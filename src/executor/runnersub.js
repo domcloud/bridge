@@ -212,8 +212,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 var nginxNodes = await nginxExec.get(subdomain);
                 var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
                 value = parseInt(value);
-                if (![1, 2, 3].includes(value)) {
-                    throw new Error(`http option invalid. specify "http 1", "http 2" or "http 3"`);
+                if (![1, 3].includes(value)) {
+                    throw new Error(`http option invalid. specify "http 1" or "http 3"`);
                 }
                 if (value === nginxInfos.http) {
                     await writeLog("$> http version config is set unchanged");

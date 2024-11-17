@@ -157,15 +157,11 @@ class NginxExecutor {
         if (sslconf !== "off") {
             node._add('listen', info.ip ? info.ip + ":443 ssl" : "443 ssl");
             node._add('listen', (info.ip6 || '[::]') + ":443 ssl");
-            if (httpconf == 2) {
-                node._add('http2', "on");
-            }
             if (httpconf == 3) {
                 node._add('listen', info.ip ? info.ip + ":443 quic" : "443 quic");
                 node._add('listen', (info.ip6 || '[::]') + ":443 quic");
-                node._add('http2', "on");
                 node._add('http3', "on");
-                node._add('add_header', `Alt-Svc 'h3=":443"; ma=86400, h3-29=":443"'`);
+                node._add('add_header', `Alt-Svc 'h3=":443"; ma=86400'`);
             }
         } {
             node._add('root', info.root);
@@ -363,8 +359,6 @@ class NginxExecutor {
         });
         if (node.http3?.[0]._value == "on") {
             data.http = 3;
-        } else if (node.http2?.[0]._value == "on") {
-            data.http = 2;
         }
         let servernames = (node.server_name[0]?._value || '').split(' ');
         let hasApex = servernames.includes(domain);
