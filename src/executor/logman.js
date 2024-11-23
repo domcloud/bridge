@@ -17,19 +17,24 @@ class LogmanExecutor {
     /**
      * @param {string} user
      * @param {string} type
+     * @param {string} sub
      * @param {number} n
      */
-    async getLog(user, type, n) {
+    async getLog(user, type, sub, n) {
+        let home = `/home/${user}`;
+        if (sub) {
+            home += `/domains/${sub}`
+        }
         switch (type) {
             case 'access':
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
-                    "tail", "-n", n + '', `/home/${user}/logs/access_log`]);
+                    "tail", "-n", n + '', `${home}/logs/access_log`]);
             case 'error':
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
-                    "tail", "-n", n + '', `/home/${user}/logs/error_log`]);
+                    "tail", "-n", n + '', `${home}/logs/error_log`]);
             case 'php':
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
-                    "tail", "-n", n + '', `/home/${user}/logs/php_log`]);
+                    "tail", "-n", n + '', `${home}/logs/php_log`]);
             case 'proxfix':
                 return await spawnSudoUtil("SHELL_SUDO", ["root",
                     "tail", "-n", n + '', `/home/${user}/tmp/app.log`]);
