@@ -1,7 +1,7 @@
 {
   "x64": {
     "rubyVersionsList": [
-      "3.3.5",
+      "3.3.6",
       "3.2.6",
       "3.1.6",
       "3.0.7",
@@ -62,12 +62,12 @@
       "3.0.7": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.0.7-ubuntu-24.04.tar.gz",
       "3.1.6": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.1.6-ubuntu-24.04.tar.gz",
       "3.2.6": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.2.6-ubuntu-24.04.tar.gz",
-      "3.3.5": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.3.5-ubuntu-24.04.tar.gz"
+      "3.3.6": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.3.6-ubuntu-24.04.tar.gz"
     }
   },
   "arm64": {
     "rubyVersionsList": [
-      "3.3.5",
+      "3.3.6",
       "3.2.6",
       "3.1.6",
       "3.0.7",
