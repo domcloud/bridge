@@ -339,9 +339,9 @@ switch (cli.args.shift()) {
         if (statutes.some((s) => s !== 'active'))
             exitcode = 1;
         ShellString(JSON.stringify({
-            timestamp: Date.now(),
             status: exitcode === 0 ? 'OK' : 'ERROR',
-            statuses: Object.fromEntries(services.map((k, i) => [k, statutes[i]]))
+            statuses: Object.fromEntries(services.map((k, i) => [k, statutes[i]])),
+            timestamp: Date.now(),
         })).to(env.SHELLCHECK_TMP);
         exit(0);
     case 'SHELL_TEST':
@@ -388,7 +388,6 @@ switch (cli.args.shift()) {
             fpms.some((f) => f.code !== 0) || storagefull || !quotaOK)
             exitcode = 1;
         ShellString(JSON.stringify({
-            timestamp: Date.now(),
             status: exitcode === 0 ? 'OK' : 'ERROR',
             codes: {
                 nginx: nginx.code,
@@ -408,6 +407,7 @@ switch (cli.args.shift()) {
                 iptables: iptables.stderr.trimEnd().split('\n'),
                 ip6tables: ip6tables.stderr.trimEnd().split('\n'),
             },
+            timestamp: Date.now(),
         })).to(env.SHELLTEST_TMP);
         exit(0);
     default:
