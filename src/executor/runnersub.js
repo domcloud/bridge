@@ -90,6 +90,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         name: dbname,
                         type: 'mysql',
                     });
+                } else if (!value) {
+                    await writeLog(`$> MySQL is already initialized. To create another database, use "mysql create dbname"`);
                 }
                 break;
             case 'postgres':
@@ -132,6 +134,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         type: 'postgres',
                     }
                     );
+                } else if (!value) {
+                    await writeLog(`$> PostgreSQL is already initialized. To create another database, use "postgresql create dbname"`);
                 }
                 break;
             case 'dns':
