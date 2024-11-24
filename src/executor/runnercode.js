@@ -19,7 +19,6 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
         case 'yum':
         case 'dnf':
             await writeLog("$> Setting up environment for yum installation");
-            await writeLog(await logmanExec.restartPassenger(domaindata));
             await sshExec(`sed -i '/~/usr/lib64//d' ~/.bashrc`, false);
             await sshExec(`pathman add ~/usr/bin`);
             await sshExec(`echo "export LD_LIBRARY_PATH=~/usr/lib64/:$LD_LIBRARY_PATH" >> ~/.bashrc`)
