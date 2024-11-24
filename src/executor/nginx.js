@@ -11,7 +11,6 @@ import path from 'path';
 import {
     NginxConfFile
 } from 'nginx-conf';
-import deepEqual from 'deep-equal';
 
 const tmpFile = path.join(process.cwd(), '/.tmp/nginx')
 
@@ -422,8 +421,8 @@ class NginxExecutor {
     set(domain, config) {
         return executeLock('nginx', async () => {
             await spawnSudoUtil('NGINX_GET', [domain]);
+            const src = cat(tmpFile).toString();
             const conf = await new Promise((resolve, reject) => {
-                var src = cat(tmpFile).toString();
                 NginxConfFile.createFromSource(src, (err, conf) => {
                     if (err)
                         return reject(err);
@@ -439,29 +438,19 @@ class NginxExecutor {
                                 return reject(err);
                             const rawNode = rawConf.nginx.server?.[0] || rawConf.nginx;
                             const rawInfo = this.extractInfo(rawNode, domain);
-                            if (deepEqual(info.config, rawInfo.config)) {
-                                resolve(null);
-                            } else {
-                                info.config = rawInfo.config;
-                                this.applyInfo(node, info);
-                                resolve(conf);
-                            }
-                        })
-                    } else {
-                        if (deepEqual(info.config, config)) {
-                            resolve(null);
-                        } else {
-                            info.config = config;
+                            info.config = rawInfo.config;
                             this.applyInfo(node, info);
                             resolve(conf);
-                        }
+                        })
+                    } else {
                         info.config = config;
                         this.applyInfo(node, info);
                         resolve(conf);
                     }
                 });
             });
-            if (conf == null) {
+            const dst = conf.toString();
+            if (src === dst) {
                 return "Nothing changed";
             }
             writeTo(tmpFile, conf.toString());
@@ -485,12 +474,12 @@ class NginxExecutor {
                     if (!node) {
                         return reject(new Error(`Cannot find domain ${domain}`));
                     }
-                    const oldInfo = this.extractInfo(node, domain);
-                    if (deepEqual(oldInfo, info)) {
+                    this.applyInfo(node, info);
+                    const dst = conf.toString();
+                    if (src === dst) {
                         return resolve("Nothing changed");
                     }
-                    this.applyInfo(node, info);
-                    writeTo(tmpFile, conf.toString());
+                    writeTo(tmpFile, dst);
                     spawnSudoUtil('NGINX_SET', [domain]).then(() => {
                         resolve("Done updated\n" + node.toString());
                     }).catch((err) => {
