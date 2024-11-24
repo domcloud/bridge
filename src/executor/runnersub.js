@@ -210,6 +210,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         domain: subdomain,
                         mode: 'none',
                     });
+                    subdomain['PHP execution mode'] = 'none';
                     await sshExec(`rm -f ~/.local/bin/php`, false);
                     await writeLog("$> Updating nginx config");
                     const nginxNodes = await nginxExec.get(subdomain);
@@ -226,6 +227,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         mode: 'fpm',
                         'php-fpm-mode': 'ondemand',
                     });
+                    subdomain['PHP execution mode'] = 'fpm';
                 }
 
                 await virtExec("modify-web", {
