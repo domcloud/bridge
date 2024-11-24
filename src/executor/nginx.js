@@ -203,6 +203,11 @@ class NginxExecutor {
             loc.location[loc.location.length - 1]._add('internal')
         }
     }
+    /**
+     * 
+     * @param {import('nginx-conf/dist/src/conf').NginxConfItem} node
+     * @param {string} domain 
+     */
     extractInfo(node, domain) {
         const extractLocations = (node, info) => {
             const r = {};
@@ -355,12 +360,12 @@ class NginxExecutor {
             else if (ip === "80" || ip === "443")
                 ip = "";
             data[ip.startsWith("[") ? "ip6" : "ip"] = ip;
-            data.ssl |= x._value.includes("ssl") ? 2 : 1;
+            data.ssl |= ("" + x._value).includes("ssl") ? 2 : 1;
         });
         if (node.http3?.[0]._value == "on") {
             data.http = 3;
         }
-        let servernames = (node.server_name[0]?._value || '').split(' ');
+        let servernames = ((node.server_name[0]?._value || '') + '').split(' ');
         let hasApex = servernames.includes(domain);
         let hasWww = servernames.includes('www.' + domain);
         data.www = (hasApex ? 1 : 0) + (hasWww ? 2 : 0);
@@ -369,8 +374,8 @@ class NginxExecutor {
         data.home = `/home/${data.user}/`;
         data.access_log = node.access_log[0]?._value;
         data.error_log = node.error_log[0]?._value;
-        data.ssl_certificate = node.ssl_certificate[0]?._value || data.home + `ssl.cert`;
-        data.ssl_certificate_key = node.ssl_certificate_key[0]?._value || data.home + `ssl.key`;
+        data.ssl_certificate = node.ssl_certificate[0]?._value;
+        data.ssl_certificate_key = node.ssl_certificate_key[0]?._value;
 
         data.fcgi = findFastCgi(node);
         data.docker_ip = findDockerIp(node);
