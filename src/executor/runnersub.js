@@ -194,20 +194,44 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             case 'php':
                 if (value == 'lts' || value == 'latest') {
                     value = getLtsPhp();
+                } else if (value == 'off') {
+                    value = 'off';
                 } else if (!value.includes('.')) {
                     value = getLtsPhp(value);
                 }
+
                 if (!value) {
                     throw new Error(`php version ${value} not found`);
                 }
 
-                await writeLog("$> Changing PHP engine to " + value);
-                if (process.env.MODE !== 'dev') {
+                if (value == 'off') {
+                    await writeLog("$> Turning off PHP engine");
                     await virtExec("modify-web", {
                         domain: subdomain,
-                        'php-version': value,
+                        mode: 'none',
+                    });
+                    await sshExec(`rm -f ~/.local/bin/php`, false);
+                    await writeLog("$> Updating nginx config");
+                    const nginxNodes = await nginxExec.get(subdomain);
+                    nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
+                    await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
+                    break;
+                }
+
+                await writeLog("$> Changing PHP engine to " + value);
+
+                if (subdomain['PHP execution mode'] == 'none') {
+                    await virtExec("modify-web", {
+                        domain: subdomain,
+                        mode: 'fpm',
+                        'php-fpm-mode': 'ondemand',
                     });
                 }
+
+                await virtExec("modify-web", {
+                    domain: subdomain,
+                    'php-version': value,
+                });
 
                 var phpVer = value.replace('.', '');
                 await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);

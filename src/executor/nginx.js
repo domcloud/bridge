@@ -24,7 +24,7 @@ const passengerKeys = [
 const locationKeys = [
     "root", "alias", "rewrite", "try_files", "return", "index",
     "expires", "allow", "deny", "autoindex", "proxy_pass",
-    "limit_except", "limit_rate", "limit_rate_after"
+    "limit_except", "limit_rate", "limit_rate_after", "default_type"
 ];
 const sslNames = ["", "off", "always", "on"];
 const wwwNames = ["", "off", "always", "on"];
@@ -209,8 +209,8 @@ class NginxExecutor {
             if (node.location) {
                 r.locations = [];
                 for (const l of (node.location)) {
-                    if (l.fastcgi_pass) {
-                        if (l.return) {
+                    if (l.fastcgi_pass || /^~ "?\.php/.test(l._value)) {
+                        if (l.return || !l.fastcgi_pass) {
                             r.fastcgi = "off";
                         } else if (l.try_files) {
                             r.fastcgi = "on";
