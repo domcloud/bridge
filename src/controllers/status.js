@@ -73,13 +73,13 @@ export default function () {
                 lastTestOK = lastTestResult.status == 'OK';
                 lastTest = Date.now();
             }
-            res.status(lastTestOK ? 200 : 500).json(lastTestResult);
             if (lastTestResult.codes.nginx === 1) {
                 await fixNGINX(lastTestResult);
             }
             if (lastTestResult.codes.fpms.some(x => x === 1)) {
                 await fixPHP(lastTestResult);
             }
+            res.status(lastTestOK ? 200 : 500).json(lastTestResult);
         } catch (error) {
             next(error);
         }
