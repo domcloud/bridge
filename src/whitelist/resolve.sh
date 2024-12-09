@@ -8,7 +8,7 @@ HOST_ADDRESSES=""
 for RECORD_TYPE in A AAAA; do
   while read -r p; do
     if [[ $p != "#"* ]]; then
-      if [[ -v TERM ]]; then
+      if [ -n "$TERM" ]; then
         printf '\r%s Fetching NS %s of %s' "$(tput el)" $RECORD_TYPE $p
       fi
       FFI=$(dig +short $RECORD_TYPE $p @1.1.1.1 | grep -v '\.$')
