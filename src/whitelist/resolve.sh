@@ -8,10 +8,14 @@ HOST_ADDRESSES=""
 for RECORD_TYPE in A AAAA; do
   while read -r p; do
     if [[ $p != "#"* ]]; then
-      if [[ -v TERMINFO ]]; then
+      if [[ -v TERM ]]; then
         printf '\r%s Fetching NS %s of %s' "$(tput el)" $RECORD_TYPE $p
       fi
-      FFI=$(dig +short $RECORD_TYPE $(echo "$p" | xargs) | grep -v '\.$')
+      FFI=$(dig +short $RECORD_TYPE $p @1.1.1.1 | grep -v '\.$')
+      if [ -z "$FFI" ]; then
+        echo "No records found for $p, exiting."
+        exit 1
+      fi
       while read -r q; do
         if [[ $q != "" ]]; then
           HOST_ADDRESSES+="$q $p"$'\n'
