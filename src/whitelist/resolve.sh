@@ -12,7 +12,7 @@ for RECORD_TYPE in A AAAA; do
         printf '\r%s Fetching NS %s of %s' "$(tput el)" $RECORD_TYPE $p
       fi
       FFI=$(dig +short $RECORD_TYPE $p @1.1.1.1 | grep -v '\.$')
-      if [ -z "$FFI" ]; then
+      if [ -z "$FFI" ] && [ "$RECORD_TYPE" = "A" ]; then
         echo "No records found for $p, exiting."
         exit 1
       fi
