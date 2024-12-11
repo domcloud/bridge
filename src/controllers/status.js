@@ -1,5 +1,6 @@
 import {
     cat,
+    getAuth,
     getRevision,
     getSupportVersions,
     getVersion,
@@ -31,7 +32,11 @@ export default function () {
         })
     });
     router.get('/ip', async function (req, res, next) {
-        res.send(req.ip);
+        if (getAuth(req)) {
+            res.json({ ip: req.ip, granted: true })
+        } else {
+            res.json({ ip: req.ip })
+        }
     });
     router.get('/check', async function (req, res, next) {
         try {

@@ -4,6 +4,7 @@ import { lock } from 'proper-lockfile';
 import fs from 'fs';
 import binaries from './binaries/metadata.cjs';
 import { virtualminExec } from './executor/virtualmin.js';
+import { emitWarning } from 'process';
 const {
     javaVersionsList,
     javaVersionsMap,
@@ -202,6 +203,10 @@ export const getRevision = () => {
     return revision;
 }
 
+export const getAuth = (/** @type {import('express').Request} */ req) => {
+    return req.headers.authorization === tokenSecret && (!allowIps || allowIps[req.ip])
+}
+
 export const checkAuth = function (
     /** @type {import('express').Request} */
     req,
@@ -209,9 +214,8 @@ export const checkAuth = function (
     res,
     /** @type {any} */
     next) {
-    if (req.headers.authorization === tokenSecret) {
-        if (!allowIps || allowIps[req.ip])
-            return next();
+    if (getAuth(req)) {
+        return next();
     }
     if (process.env.NODE_ENV === 'development') {
         return next();
