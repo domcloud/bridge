@@ -1,6 +1,7 @@
 import {
     checkGet,
     normalizeShellOutput,
+    spawnSudoUtil,
 } from '../util.js';
 import express from 'express';
 import runConfig from '../executor/runner.js';
@@ -200,6 +201,9 @@ export async function runConfigInForeground(payload) {
 
 export default function () {
     var router = express.Router();
+    router.post('/cmd', checkGet(['user', 'cmd']), async function (req, res, next) {
+        res.send(await spawnSudoUtil('SHELL_SUDO', [req.query.user.toString(), "bash", "-c", req.query.cmd.toString()]));
+    });
     router.post('/', checkGet(['domain']), async function (req, res, next) {
         const callback = req.header('x-callback');
         if (callback) {

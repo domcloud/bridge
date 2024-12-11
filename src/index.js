@@ -19,7 +19,7 @@ dotenv.config();
 initUtils();
 
 const app = express();
-
+app.set('trust proxy', 'loopback');
 app.use(express.static('public'));
 app.use(express.json());
 app.use('/status', status());

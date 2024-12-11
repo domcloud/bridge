@@ -13,7 +13,7 @@ export default function () {
             const node = await executor.get(req.query.domain + "");
             const raw = node.toString();
             res.json({
-                ...executor.extractInfo(node, req.query.domain),
+                ...executor.extractInfo(node, req.query.domain.toString()),
                 raw,
             });
         } catch (error) {

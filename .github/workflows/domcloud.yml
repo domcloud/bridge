@@ -32,6 +32,14 @@ jobs:
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_AMS }}
           data: >-
             {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
+      - name: Invoke WDC deployment hook
+        uses: distributhor/workflow-webhook@v3
+        env:
+          webhook_url: https://my.domcloud.co/api/githubdeploy
+          webhook_secret: ${{ secrets.WEBHOOK_SECRET_WDC }}
+          webhook_auth: ${{ secrets.WEBHOOK_AUTH_WDC }}
+          data: >-
+            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
       - name: Invoke NUE deployment hook
         uses: distributhor/workflow-webhook@v3
         env:

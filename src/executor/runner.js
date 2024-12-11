@@ -326,6 +326,23 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         firewallStatusCache = false;
                     }
                     break;
+                case 'sshpass':
+                    if (value === '' || value === 'on') {
+                        await writeLog("$> Changing ssh password login to " + (value || 'on'));
+                        await virtExec("modify-users", {
+                            domain,
+                            'all-users': true,
+                            'enable': true,
+                        });
+                    } else if (value === 'off') {
+                        await writeLog("$> Changing ssh password login to " + value);
+                        await virtExec("modify-users", {
+                            domain,
+                            'all-users': true,
+                            'disable': true,
+                        });
+                    }
+                    break;
                 default:
                     await runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec);
                     break;

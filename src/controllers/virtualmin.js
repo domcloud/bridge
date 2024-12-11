@@ -35,5 +35,19 @@ export default function () {
             next(error);
         }
     });
+    router.get('/list-databases', checkGet(['domain']), async function (req, res, next) {
+        try {
+            res.send(await virtualminExec.getDatabaseInfo(req.query.domain.toString()));
+        } catch (error) {
+            next(error);
+        }
+    });
+    router.get('/list-users', checkGet(['domain']), async function (req, res, next) {
+        try {
+            res.send(await virtualminExec.getUserInfo(req.query.domain.toString()));
+        } catch (error) {
+            next(error);
+        }
+    });
     return router;
 }

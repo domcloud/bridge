@@ -99,6 +99,83 @@ class VirtualminExecutor {
         return result;
     }
     /**
+     * @param {string} domain
+     */
+    async getDatabaseInfo(domain) {
+        let r = await virtualminExec.execFormatted("list-databases", {
+            domain,
+            multiline: true,
+        });
+        if (process.env.NODE_ENV === 'development')
+            r = {
+                code: 0,
+                stdout: cat('./test/database'),
+                stderr: '',
+            }
+        if (r.code === 255)
+            throw r;
+        let data = r.stdout.split('\n'),
+            result = {},
+            neskey = '',
+            nesval = {};
+        for (let line of data) {
+            line = line.trimEnd();
+            if (line.length >= 4 && line[0] === ' ') {
+                let pair = splitLimit(line.trimStart(), /:/g, 2);
+                if (pair.length === 2) {
+                    nesval[pair[0]] = pair[1].trimStart();
+                }
+            } else if (line.length >= 1 && !line.includes(' ')) {
+                if (neskey) {
+                    result[neskey] = nesval;
+                    nesval = {};
+                }
+                neskey = line;
+            }
+        }
+        result[neskey] = nesval;
+        return result;
+    }
+    /**
+     * @param {string} domain
+     */
+    async getUserInfo(domain) {
+        let r = await virtualminExec.execFormatted("list-users", {
+            domain,
+            multiline: true,
+            'include-owner': true,
+        });
+        if (process.env.NODE_ENV === 'development')
+            r = {
+                code: 0,
+                stdout: cat('./test/user'),
+                stderr: '',
+            }
+        if (r.code === 255)
+            throw r;
+        let data = r.stdout.split('\n'),
+            result = {},
+            neskey = '',
+            nesval = {};
+        for (let line of data) {
+            line = line.trimEnd();
+            if (line.length >= 4 && line[0] === ' ') {
+                let pair = splitLimit(line.trimStart(), /:/g, 2);
+                if (pair.length === 2) {
+                    nesval[pair[0]] = pair[1].trimStart();
+                }
+            } else if (line.length >= 1 && !line.includes(' ')) {
+                if (neskey) {
+                    result[neskey] = nesval;
+                    nesval = {};
+                }
+                neskey = line;
+            }
+        }
+        result[neskey] = nesval;
+        return result;
+    }
+    /**
      * @param {string} program
      * @param {object[]} opts
      */

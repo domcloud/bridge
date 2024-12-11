@@ -301,7 +301,7 @@ switch (cli.args.shift()) {
             // just in case
             if (!sudo.killed)
                 sudo.kill();
-        }, 1000 * 60 * 60).unref();
+        }, 1000 * 60).unref();
         break;
     case 'SHELL_INTERACTIVE':
         arg = cli.args.shift();
