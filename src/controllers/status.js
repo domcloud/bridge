@@ -30,6 +30,9 @@ export default function () {
             supportVersions: getSupportVersions(),
         })
     });
+    router.get('/ip', async function (req, res, next) {
+        res.send(req.ip);
+    });
     router.get('/check', async function (req, res, next) {
         try {
             if (lastCheck < Date.now() - refreshTime) {
