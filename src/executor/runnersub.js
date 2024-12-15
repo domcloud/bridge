@@ -90,7 +90,26 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         name: dbname,
                         type: 'mysql',
                     });
-                } else if (!value) {
+                } else if (value.startsWith("drop ")) {
+                    let dropdb = value.substr("drop ".length).trim();
+                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? dropdb : domainprefix + '_' + dropdb);
+                    await virtExec("delete-database", {
+                        domain: subdomain,
+                        name: dbname,
+                        type: 'mysql',
+                    });
+                } else if (value.startsWith("modify-pass ")) {
+                    let pass = value.substr("modify-pass ".length).trim();
+                    if (pass) {
+                        await virtExec("modify-database-pass", {
+                            domain: subdomain,
+                            pass,
+                            type: 'mysql',
+                        });
+                        subdomaindata['Password for mysql'] = pass;
+                        await sshExec(` MY_PASSWORD='${pass}'`, false);
+                    }
+                }  else if (!value) {
                     await writeLog(`$> MySQL is already initialized. To create another database, use "mysql create dbname"`);
                 }
                 break;
@@ -134,6 +153,25 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         type: 'postgres',
                     }
                     );
+                } else if (value.startsWith("drop ")) {
+                    let dropdb = value.substr("drop ".length).trim();
+                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? dropdb : domainprefix + '_' + dropdb);
+                    await virtExec("delete-database", {
+                        domain: subdomain,
+                        name: dbname,
+                        type: 'postgres',
+                    });
+                } else if (value.startsWith("modify-pass ")) {
+                    let pass = value.substr("modify-pass ".length).trim();
+                    if (pass) {
+                        await virtExec("modify-database-pass", {
+                            domain: subdomain,
+                            pass,
+                            type: 'postgres',
+                        });
+                        subdomaindata['Password for postgres'] = pass;
+                        await sshExec(` PG_PASSWORD='${pass}'`, false);
+                    }
                 } else if (!value) {
                     await writeLog(`$> PostgreSQL is already initialized. To create another database, use "postgresql create dbname"`);
                 }

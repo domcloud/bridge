@@ -215,21 +215,27 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                             domain,
                         });
                         if (value.pass) {
-                            await writeLog("$> virtualmin modify-database-pass mysql");
-                            if (domaindata['Features']?.includes('mysql')) {
-                                await virtExec("modify-database-pass", {
-                                    domain,
-                                    pass: value.pass,
-                                    type: 'mysql',
-                                });
+                            if (domaindata['Password for mysql'] == domaindata['Password']) {
+                                if (domaindata['Features']?.includes('mysql')) {
+                                    await writeLog("$> virtualmin modify-database-pass mysql");
+                                    await virtExec("modify-database-pass", {
+                                        domain,
+                                        pass: value.pass,
+                                        type: 'mysql',
+                                    });
+                                    domaindata['Password for mysql'] = value.pass;
+                                }
                             }
-                            if (domaindata['Features']?.includes('postgres')) {
-                                await writeLog("$> virtualmin modify-database-pass postgres");
-                                await virtExec("modify-database-pass", {
-                                    domain,
-                                    pass: value.pass,
-                                    type: 'postgres',
-                                });
+                            if (domaindata['Password for postgres'] == domaindata['Password']) {
+                                if (domaindata['Features']?.includes('postgres')) {
+                                    await writeLog("$> virtualmin modify-database-pass postgres");
+                                    await virtExec("modify-database-pass", {
+                                        domain,
+                                        pass: value.pass,
+                                        type: 'postgres',
+                                    });
+                                    domaindata['Password for postgres'] = value.pass;
+                                }
                             }
                         }
                         break;
@@ -358,17 +364,15 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             if (cb) cb('', 124);
         }, maxExecutionTime).unref();
 
-        const pw = domaindata['Password for mysql'] || domaindata['Password or postgres'] || domaindata['Password'];
-
         await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 `, false);
         await sshExec(`export PIP_PROGRESS_BAR=off BUILDKIT_PROGRESS=plain`, false);
-        await sshExec(` USERNAME='${domaindata['Username']}' PASSWORD='${pw}'`, false);
+        await sshExec(` USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
         if (domaindata['Password for mysql']) {
-            await sshExec(` MY_PASSWORD='${domaindata['Password for mysql']}'`, false);
+            await sshExec(` MYPASSWD='${domaindata['Password for mysql']}'`, false);
         }
         if (domaindata['Password or postgres']) {
-            await sshExec(` PG_PASSWORD='${domaindata['Password or postgres']}'`, false);
+            await sshExec(` PGPASSWD='${domaindata['Password or postgres']}'`, false);
         }
         const firewallOn = await firewallStatus();
         if (config.subdomain) {
