@@ -196,11 +196,14 @@ class NginxExecutor {
                 idx = node.location.length - 1;
             }
             node.location[idx]._add('if', `($http_referer !~ "^https?://${info.dom}")`);
-            node.location[idx].if[0]._add('rewrite', '^ /deceptive.html last');
+            node.location[idx]._add('if', `($http_user_agent ~ "^Mozilla")`);
+            node.location[idx]._add('if', `$reject = "12"`);
+            node.location[idx].if[0]._add('set', '$reject "${reject}1"');
+            node.location[idx].if[1]._add('set', '$reject "${reject}2"');
+            node.location[idx].if[2]._add('rewrite', '^ /deceptive.html last');
             node._add('location', '= /deceptive.html', []);
             const iloc = node.location[node.location.length - 1]
-            iloc._add('if', `($http_user_agent ~ "^Mozilla")`);
-            iloc.if[0]._add('root', '/usr/local/share/www');
+            iloc._add('root', '/usr/local/share/www');
             iloc._add('internal');
         }
     }
