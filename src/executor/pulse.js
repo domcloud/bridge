@@ -3,10 +3,10 @@ import { spawnSudoUtil } from "../util.js";
 export async function fixPHP(test) {
     const edits = [];
     for (const [name, logs] of Object.entries(test.logs.fpms)) {
-        const [lastLog] = logs.splice(logs.length - 1);
+        const lastLog = logs[logs.length - 1];
         if (lastLog && lastLog.endsWith("ERROR: FPM initialization failed")) {
             for (const element of logs) {
-                let m = element.match(/ALERT: \[pool (\d+)\]/);
+                let m = element.match(/ERROR: \[pool (\d+)\]/);
                 if (m) {
                     await spawnSudoUtil("CLEAN_DOMAIN", ["mv", m[1], ""]);
                     edits.push(m[1]);
@@ -20,7 +20,7 @@ export async function fixPHP(test) {
 
 export async function fixNGINX(test) {
     const logs = test.logs.nginx;
-    const [lastLog] = logs.splice(logs.length - 1);
+    const lastLog = logs[logs.length - 1];
     const edits = [];
     if (lastLog == "nginx: configuration file /etc/nginx/nginx.conf test failed") {
         for (const element of logs) {
