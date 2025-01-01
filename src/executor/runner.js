@@ -313,6 +313,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                         await virtExec("delete-domain", value, {
                             domain,
                         });
+                        if (await firewallStatus()) {
+                            await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
+                        }
                         await spawnSudoUtil('CLEAN_DOMAIN', ["rm", domaindata['ID'], domain]);
                         // no need to do other stuff
                         return;
