@@ -46,29 +46,28 @@ export default function () {
                 lastCheckOK = lastCheckResult.status == 'OK';
                 lastCheck = Date.now();
             }
-            res.status(lastCheckOK ? 200 : 500).json(lastCheckResult);
-            if (lastCheckOK) {
-                return;
-            }
             let lastTestResult = null;
-            for (const [key, val] of Object.entries(lastCheckResult.statuses)) {
-                if (val != "failed") {
-                    continue;
-                }
-                if (key.endsWith("-php-fpm")) {
-                    if (!lastTestResult) {
-                        await spawnSudoUtil('SHELL_TEST');
-                        lastTestResult = JSON.parse(cat(tmpTest));
+            if (!lastCheckOK) {
+                for (const [key, val] of Object.entries(lastCheckResult.statuses)) {
+                    if (val != "failed") {
+                        continue;
                     }
-                    await fixPHP(lastTestResult);
-                } else if (key == "nginx") {
-                    if (!lastTestResult) {
-                        await spawnSudoUtil('SHELL_TEST');
-                        lastTestResult = JSON.parse(cat(tmpTest));
+                    if (key.endsWith("-php-fpm")) {
+                        if (!lastTestResult) {
+                            await spawnSudoUtil('SHELL_TEST');
+                            lastTestResult = JSON.parse(cat(tmpTest));
+                        }
+                        await fixPHP(lastTestResult);
+                    } else if (key == "nginx") {
+                        if (!lastTestResult) {
+                            await spawnSudoUtil('SHELL_TEST');
+                            lastTestResult = JSON.parse(cat(tmpTest));
+                        }
+                        await fixNGINX(lastTestResult);
                     }
-                    await fixNGINX(lastTestResult);
                 }
             }
+            res.status(lastCheckOK ? 200 : 500).json({ ...lastCheckResult, test: lastTestResult });
         } catch (error) {
             next(error);
         }
@@ -84,7 +83,7 @@ export default function () {
             if (lastTestResult.codes.nginx === 1) {
                 await fixNGINX(lastTestResult);
             }
-            if (lastTestResult.codes.fpms.some(x => x === 1)) {
+            if (lastTestResult.codes.fpms.some(x => x > 0)) {
                 await fixPHP(lastTestResult);
             }
             res.status(lastTestOK ? 200 : 500).json(lastTestResult);
