@@ -67,7 +67,7 @@ export default function () {
                     }
                 }
             }
-            res.status(lastCheckOK ? 200 : 500).json({ ...lastCheckResult, test: lastTestResult });
+            res.status(lastCheckOK ? 200 : 500).json({ ...lastCheckResult, test: lastTestResult || undefined });
         } catch (error) {
             next(error);
         }

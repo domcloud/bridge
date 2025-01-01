@@ -4,7 +4,7 @@ export async function fixPHP(test) {
     const edits = [];
     for (const [name, logs] of Object.entries(test.logs.fpms)) {
         const [lastLog] = logs.splice(logs.length - 1);
-        if (lastLog.endsWith("ERROR: FPM initialization failed")) {
+        if (lastLog && lastLog.endsWith("ERROR: FPM initialization failed")) {
             for (const element of logs) {
                 let m = element.match(/ALERT: \[pool (\d+)\]/);
                 if (m) {
