@@ -5,7 +5,7 @@ import request from "../request.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const pythonConstants = {
-  // https://raw.githubusercontent.com/indygreg/python-build-standalone/latest-release/latest-release.json
+  // https://raw.githubusercontent.com/astral-sh/python-build-standalone/latest-release/latest-release.json
   tag: "20241002",
   // NOTE: x86_64_v3 requires AVX2 CPU support
   match: {
@@ -14,16 +14,16 @@ const pythonConstants = {
       /cpython-(\d+\.\d+\.\d+)\+\d+-aarch64-unknown-linux-gnu-lto-full\.tar\.zst/g,
   },
   index() {
-    return `https://github.com/indygreg/python-build-standalone/releases/expanded_assets/${this.tag}`;
+    return `https://github.com/astral-sh/python-build-standalone/releases/expanded_assets/${this.tag}`;
   },
   latestTagUrl() {
-    return "https://raw.githubusercontent.com/indygreg/python-build-standalone/latest-release/latest-release.json";
+    return "https://raw.githubusercontent.com/astral-sh/python-build-standalone/latest-release/latest-release.json";
   },
   /**
    * @param {string} filename
    */
   asset_url(filename) {
-    return `https://github.com/indygreg/python-build-standalone/releases/download/${this.tag}/${filename}`;
+    return `https://github.com/astral-sh/python-build-standalone/releases/download/${this.tag}/${filename}`;
   },
 };
 
@@ -98,7 +98,7 @@ export const initUtils = async () => {
       headers: {
         'user-agent': 'curl/7.81.0',
         'Host': 'github.com',
-        'accept': '*/*',
+        'accept': 'text/html',
       }
     })
       .then((res) => {
