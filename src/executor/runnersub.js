@@ -242,17 +242,24 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     throw new Error(`php version ${value} not found`);
                 }
 
-                if (value == 'off') {
-                    await writeLog("$> Turning off PHP engine");
-                    await virtExec("modify-web", {
-                        domain: subdomain,
-                        mode: 'none',
-                    });
-                    subdomaindata['PHP execution mode'] = 'none';
-                    await sshExec(`rm -f ~/.local/bin/php`, false);
+                if (value == 'off' || value.endsWith('.sock')) {
+                    if (subdomaindata['PHP execution mode'] != 'none') {
+                        await writeLog("$> Turning off PHP engine");
+                        await virtExec("modify-web", {
+                            domain: subdomain,
+                            mode: 'none',
+                        });
+                        subdomaindata['PHP execution mode'] = 'none';
+                    }
+                    if (value == 'off') {
+                        await sshExec(`rm -f ~/.local/bin/php`, false);
+                    }
                     await writeLog("$> Updating nginx config");
                     const nginxNodes = await nginxExec.get(subdomain);
                     nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
+                    if (value != 'off') {
+                        nginxInfos.fcgi = `unix:/home/${path.join(subdomaindata['Username'], value)}`
+                    }
                     await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
                     break;
                 }
