@@ -76,7 +76,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         mysql: true,
                     });
                     dbneedcreate = true;
-                    subdomaindata['Features'] += ' ' + key;
+                    // need password
+                    subdomaindata = await virtualminExec.getDomainInfo(subdomain);
+                    domaindata['Password for mysql'] = subdomaindata['Password for mysql'];
+                    await sshExec(` MYPASSWD='${subdomaindata['Password for mysql']}'`, false);
                 }
                 if (value.startsWith("create ")) {
                     let newdb = value.substr("create ".length).trim();
@@ -107,9 +110,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             type: 'mysql',
                         });
                         subdomaindata['Password for mysql'] = pass;
-                        await sshExec(` MY_PASSWORD='${pass}'`, false);
+                        await sshExec(` MYPASSWD='${pass}'`, false);
                     }
-                }  else if (!value) {
+                } else if (!value) {
                     await writeLog(`$> MySQL is already initialized. To create another database, use "mysql create dbname"`);
                 }
                 break;
@@ -137,7 +140,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         domain: subdomain,
                         postgres: true,
                     });
-                    subdomaindata['Features'] += ' ' + key;
+                    // need password
+                    subdomaindata = await virtualminExec.getDomainInfo(subdomain);
+                    domaindata['Password for postgres'] = subdomaindata['Password for postgres'];
+                    await sshExec(` PGPASSWD='${subdomaindata['Password for postgres']}'`, false);
                     dbneedcreate = true;
                 }
                 if (value.startsWith("create ")) {
@@ -170,7 +176,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             type: 'postgres',
                         });
                         subdomaindata['Password for postgres'] = pass;
-                        await sshExec(` PG_PASSWORD='${pass}'`, false);
+                        await sshExec(` PGPASSWD='${pass}'`, false);
                     }
                 } else if (!value) {
                     await writeLog(`$> PostgreSQL is already initialized. To create another database, use "postgresql create dbname"`);
