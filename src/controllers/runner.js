@@ -4,7 +4,7 @@ import {
     spawnSudoUtil,
 } from '../util.js';
 import express from 'express';
-import runConfig from '../executor/runner.js';
+import runConfig, { RunnerPayload } from '../executor/runner.js';
 import {
     PassThrough
 } from 'stream';
@@ -53,12 +53,10 @@ function trimPayload(payload) {
     }
 }
 /**
- * @param {any} body
- * @param {string} domain
- * @param {boolean} sandbox
- * @param {string} callback
+ * @param {RunnerPayload} payload
  */
-export async function runConfigInBackground(body, domain, sandbox, callback) {
+export async function runConfigInBackground(payload) {
+    const callback = payload.callback;
     let fullLogData = [],
         chunkedLogData = ['Running deployment script... Please wait...\n'],
         startTime = Date.now();
@@ -83,6 +81,9 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             request(callback, { data, headers, ...options })
                 .then(e => {
                     console.log('callback response:', e.statusCode)
+                    if (payload.sender && e.headers['content-type']?.includes('application/json') && typeof e.data?.payload == 'string') {
+                        return payload.sender(e.data.payload)
+                    }
                 }).catch(e => {
                     console.error(e);
                 });
@@ -111,10 +112,11 @@ export async function runConfigInBackground(body, domain, sandbox, callback) {
             });
     });
     try {
-        await runConfig(body || {}, domain + "", (s) => {
+        payload.writer = (s) => {
             console.log('> ' + s);
             return writeAsync(write, s);
-        }, sandbox);
+        }
+        await runConfig(payload);
     } catch (error) {
         console.log('!> ', error);
         if (error.stdout !== undefined) {

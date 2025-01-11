@@ -1,10 +1,7 @@
 import dotenv from 'dotenv';
-import {
-    runConfigInBackground
-} from "./src/controllers/runner.js";
-import {
-    initUtils
-} from './src/util.js';
+import { runConfigInBackground } from "./src/controllers/runner.js";
+import { initUtils } from './src/util.js';
+import { RunnerPayload } from './src/executor/runner.js';
 
 dotenv.config();
 initUtils();
@@ -21,15 +18,7 @@ const cleanUpServer = ( /** @type {any} */ code, msg) => {
     process.on(eventType, cleanUpServer.bind(null, eventType));
 })
 
-// @ts-ignore
-const {
-    body,
-    domain,
-    sandbox,
-    callback
-} = payload;
-
-runConfigInBackground(body, domain, sandbox, callback).catch(err => {
+runConfigInBackground(new RunnerPayload(payload)).catch(err => {
     console.error(err);
 });
 

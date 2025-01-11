@@ -17,15 +17,41 @@ import { runConfigCodeFeatures } from "./runnercode.js";
 import { runConfigSubdomain } from "./runnersub.js";
 import path from "path";
 
-// TODO: Need to able to customize this
-const maxExecutionTime = 900000;
+/**
+ * Represents a payload object with body, domain, sandbox, and callback properties.
+ */
+export class RunnerPayload {
+    /**
+     * Creates a new Payload instance.
+     * @param {Object} options - The payload options.
+     * @param {any} options.body - The body content of the payload.
+     * @param {string} options.domain - The domain associated with the payload.
+     * @param {boolean} options.sandbox - Whether the payload is in sandbox mode.
+     * @param {string} [options.callback] - Optional callback function to execute.
+     */
+    constructor({ body, domain, sandbox, callback }) {
+        this.body = body || {};
+        this.domain = domain + "";
+        this.sandbox = !!sandbox;
+        /** @type {string | undefined} */
+        this.callback = callback;
+        this.maxExecutionTime = 900000 // harcoded for now
+        /**
+         * @type {(log: string) => Promise<void>}
+         */
+        this.writer = async () => { }
+        /**
+         * @type {(payload: string) => Promise<void>}
+         */
+        this.sender = async () => { }
+    }
+}
 
 /**
- * @param {any} config
- * @param {string} domain
- * @param {(log: string) => Promise<void>} writer
+ * @param {RunnerPayload} payload
  */
-export default async function runConfig(config, domain, writer, sandbox = false) {
+export default async function runConfig(payload) {
+    let { body: config, domain, writer, sandbox, maxExecutionTime } = payload;
     const writeLog = async ( /** @type {string} */ s) => {
         await writer(s + "\n");
     }
@@ -142,9 +168,9 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         })
         ssh.on('close', async function (code) {
             if (cb) {
-                ssh = null;
                 cb('', code);
             }
+            ssh = null;
         });
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise(function (resolve, reject) {
@@ -195,6 +221,15 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         }
         await sshExec('', false); // drop initial message
         await sshExec('set -e', false); // early exit on error
+        payload.sender = async (s) => {
+            if (!ssh) return;
+            if (s == "!ABORT!") {
+                await writeLog(`\n$> Execution aborted by user, exiting SSH session gracefully.`);
+                await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
+            } else {
+                ssh.stdin.write(s);
+            }
+        }
     }
     try {
         let firewallStatusCache = undefined;
@@ -361,7 +396,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
         setTimeout(async () => {
             if (ssh == null) return;
             // SSH prone to wait indefinitely, so we need to set a timeout
-            await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s, exiting gracefully.`);
+            await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s, exiting SSH session gracefully.`);
             await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
             ssh = null;
             if (cb) cb('', 124);
