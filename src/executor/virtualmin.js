@@ -107,6 +107,10 @@ class VirtualminExecutor {
             }
         if (r.code === 255)
             throw r;
+        r.stdout = r.stdout.trim();
+        if (r.stdout == "") {
+            return {};
+        }
         return extractYaml(r.stdout);
     }
     /**
