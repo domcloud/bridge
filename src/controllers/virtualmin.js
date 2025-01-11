@@ -20,6 +20,13 @@ export default function () {
             next(error);
         }
     });
+    router.get('/list-subdomains', checkGet(['domain']), async function (req, res, next) {
+        try {
+            res.send(await virtualminExec.getDomainParentInfo(req.query.domain.toString()));
+        } catch (error) {
+            next(error);
+        }
+    });
     router.get('/list-all-domains', async function (req, res, next) {
         try {
             let proc = await virtualminExec.execFormatted('list-domains', { 'name-only': true, 'toplevel': true });

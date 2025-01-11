@@ -27,36 +27,29 @@ class VirtualminExecutor {
             }
         if (r.code === 255)
             throw r;
-        /**
-         * @type {Record<string, Record<string, string>>}
-         */
-        let result = {};
-        /**
-         * @type {Record<string, string>}
-         */
-        let nesval = {};
-        let data = r.stdout.split('\n'),
-            neskey = '';
-        for (let line of data) {
-            line = line.trimEnd();
-            if (line.length >= 4 && line[0] === ' ') {
-                let pair = splitLimit(line.trimStart(), /:/g, 2);
-                if (pair.length === 2) {
-                    nesval[pair[0]] = pair[1].trimStart();
-                }
-            } else if (line.length >= 1 && !line.includes(' ')) {
-                if (neskey) {
-                    result[neskey] = nesval;
-                    nesval = {};
-                }
-                neskey = line;
-            }
-        }
-        result[neskey] = nesval;
+        let result = extractYaml(r.stdout);
         if (typeof domain === 'string') {
             return result[domain];
         }
         return result;
+    }
+    /**
+     * @param {string} domain
+     */
+    async getDomainParentInfo(domain) {
+        let r = await virtualminExec.execFormatted("list-domains", {
+            parent: domain,
+            'name-only': true
+        });
+        if (process.env.NODE_ENV === 'development')
+            r = {
+                code: 0,
+                stdout: 'example.com\n',
+                stderr: '',
+            }
+        if (r.code === 255)
+            throw r;
+        return r.stdout.split('\n').filter(x => x);
     }
     /**
      * @param {string | string[]} domain
@@ -114,27 +107,7 @@ class VirtualminExecutor {
             }
         if (r.code === 255)
             throw r;
-        let data = r.stdout.split('\n'),
-            result = {},
-            neskey = '',
-            nesval = {};
-        for (let line of data) {
-            line = line.trimEnd();
-            if (line.length >= 4 && line[0] === ' ') {
-                let pair = splitLimit(line.trimStart(), /:/g, 2);
-                if (pair.length === 2) {
-                    nesval[pair[0]] = pair[1].trimStart();
-                }
-            } else if (line.length >= 1 && !line.includes(' ')) {
-                if (neskey) {
-                    result[neskey] = nesval;
-                    nesval = {};
-                }
-                neskey = line;
-            }
-        }
-        result[neskey] = nesval;
-        return result;
+        return extractYaml(r.stdout);
     }
     /**
      * @param {string} domain
@@ -153,27 +126,7 @@ class VirtualminExecutor {
             }
         if (r.code === 255)
             throw r;
-        let data = r.stdout.split('\n'),
-            result = {},
-            neskey = '',
-            nesval = {};
-        for (let line of data) {
-            line = line.trimEnd();
-            if (line.length >= 4 && line[0] === ' ') {
-                let pair = splitLimit(line.trimStart(), /:/g, 2);
-                if (pair.length === 2) {
-                    nesval[pair[0]] = pair[1].trimStart();
-                }
-            } else if (line.length >= 1 && !line.includes(' ')) {
-                if (neskey) {
-                    result[neskey] = nesval;
-                    nesval = {};
-                }
-                neskey = line;
-            }
-        }
-        result[neskey] = nesval;
-        return result;
+        return extractYaml(r.stdout);
     }
     /**
      * @param {string} program
@@ -278,3 +231,35 @@ class VirtualminExecutor {
 }
 
 export const virtualminExec = new VirtualminExecutor();
+
+/**
+ * @param {string} str
+ */
+function extractYaml(str) {
+    /**
+     * @type {Record<string, Record<string, string>>}
+     */
+    let result = {};
+    /**
+     * @type {Record<string, string>}
+     */
+    let nesval = {};
+    let data = str.split('\n'), neskey = '';
+    for (let line of data) {
+        line = line.trimEnd();
+        if (line.length >= 4 && line[0] === ' ') {
+            let pair = splitLimit(line.trimStart(), /:/g, 2);
+            if (pair.length === 2) {
+                nesval[pair[0]] = pair[1].trimStart();
+            }
+        } else if (line.length >= 1 && !line.includes(' ')) {
+            if (neskey) {
+                result[neskey] = nesval;
+                nesval = {};
+            }
+            neskey = line;
+        }
+    }
+    result[neskey] = nesval;
+    return result;
+}
