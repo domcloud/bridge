@@ -50,6 +50,48 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         let enabled = domaindata['Features'].includes(key);
         let subenabled = subdomaindata['Features'].includes(key);
         let dbneedcreate = false;
+
+        if (!stillroot) {
+            switch (key) {
+                case 'modify':
+                    await writeLog("$> virtualmin modify-domain");
+                    await virtExec("modify-domain", value, {
+                        domain: subdomain,
+                    });
+                    break;
+                case 'rename':
+                    await writeLog("$> virtualmin rename-domain");
+                    if (value && typeof value["new-domain"] == 'string') {
+                        if (!value["new-domain"].endsWith('.' + subdomaindata['Parent domain'])) {
+                            throw new Error("The new domain name must ends with parent domain");
+                        }
+                    }
+                    if (value && typeof value["new-user"] == 'string') {
+                        throw new Error("Can't rename username for subserver");
+                    }
+                    await virtExec("rename-domain", value, {
+                        domain: subdomain,
+                    });
+                    // in case if we change domain name
+                    if (value && value["new-domain"])
+                        subdomain = value["new-domain"];
+                    await new Promise(r => setTimeout(r, 1000));
+                    // @ts-ignore
+                    subdomaindata = await virtualminExec.getDomainInfo(subdomain);
+                    break;
+                case 'delete':
+                    await writeLog("$> virtualmin delete-domain");
+                    await virtExec("delete-domain", value, {
+                        domain: subdomain,
+                    });
+                    // no need to do other stuff
+                    return;
+                default:
+                    break;
+
+            }
+        }
+
         switch (key) {
             case 'mysql':
                 if (!stillroot && !enabled) {

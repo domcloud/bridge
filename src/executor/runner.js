@@ -203,7 +203,7 @@ export default async function runConfig(config, domain, writer, sandbox = false)
                 firewallStatusCache = !!iptablesExec.getByUser(await iptablesExec.getParsed(), domaindata['Username'], domaindata['User ID']);
             return firewallStatusCache;
         };
-        for (const feature of Array.isArray(config.features) ? config.features : []) {
+        for (const feature of Array.isArray(config.features) && !config.subdomain ? config.features : []) {
             const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
             const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
             const user = domaindata['Username'];
@@ -382,9 +382,11 @@ export default async function runConfig(config, domain, writer, sandbox = false)
             await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, virtExec, firewallOn);
         } else {
             await runConfigSubdomain(config, domaindata, domain, sshExec, writeLog, virtExec, firewallOn, true);
-            if (Array.isArray(config.subdomains)) {
-                for (const sub of config.subdomains) {
+            for (const sub of Array.isArray(config.subdomains) ? config.subdomains : []) {
+                if (sub.subdomain) {
                     await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog, virtExec, firewallOn);
+                } else {
+                    await writeLog(`\nERROR: subdomains require subdomain on each item.`);
                 }
             }
         }
