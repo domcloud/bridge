@@ -24,6 +24,8 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             await sshExec(`echo "export LD_LIBRARY_PATH=~/usr/lib64/:$LD_LIBRARY_PATH" >> ~/.bashrc`)
             if (value != "") {
                 await writeLog("$> Installing packages via yum");
+                await sshExec(`DNFDIR="/var/tmp/dnf-$USER-dwnlddir"`, false);
+                await sshExec(`[ ! -d  $DNFDIR] && cp -r /var/cache/dnf $DNFDIR && chmod -R 0700 $DNFDIR`, false);
                 await sshExec(`mkdir -p ~/Downloads; pushd ~/Downloads`, false);
                 await sshExec(`dnf download ${value} --resolve -y`);
                 await sshExec(`rpm2cpio *.rpm | cpio -idmD ~`);
@@ -162,9 +164,20 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`rm -rf ~/.rvm`);
                 await sshExec("sed -i '/rvm\\|RVM/d' ~/.bashrc");
             } else {
-                await writeLog(value ? "$> Changing Ruby engine to " + value : "$> installing Ruby engine");
+                const rarg = getRubyVersion(value);
+                await writeLog("$> Changing Ruby engine to " + rarg.version);
                 await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://rvm.io/mpapis.asc | gpg --import -; curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -; }`);
                 await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://get.rvm.io | bash -s stable; source ~/.rvm/scripts/rvm; rvm autolibs disable; }`);
+                // GLIBC Compability issue -- Need to wait until RHEL 10?
+                // if (rarg.binary) {
+                //     await sshExec(`cd ~/tmp && mkdir -p ~/.rvm/rubies/ruby-${rarg.version}`);
+                //     await sshExec(`wget -O ruby.tar.gz "${rarg.binary}" && tar -axf ruby.tar.gz && rm $_`);
+                //     const rsubdir = process.arch;
+                //     await sshExec(`mv ~/tmp/${rsubdir}/* ~/.rvm/rubies/ruby-${rarg.version} || true ; rm -rf ~/tmp/${rsubdir}`);
+                //     await sshExec(`find ~/.rvm/rubies/ruby-${rarg.version}/bin -type f -exec sed -i 's|^#!/opt/hostedtoolcache/.*|#!/bin/env ruby|' {} +`);
+                //     await sshExec(`echo "export LD_LIBRARY_PATH=~/.rvm/rubies/ruby-${rarg.version}/lib:$LD_LIBRARY_PATH" >> ~/.bashrc`) // fix venv
+                //     await sshExec("cd ~/public_html", false);
+                // }                
                 await sshExec(`rvm install ${getRubyVersion(value)} --no-docs`);
                 await sshExec("ruby --version");
             }

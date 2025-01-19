@@ -31,16 +31,21 @@ const rubyBuilderUrl = 'https://github.com/ruby/ruby-builder/releases/expanded_a
 
 const adoptiumList = 'https://api.adoptium.net/v3/info/available_releases';
 
+const archLinux = {
+  x64: "x64",
+  arm64: "aarch64",
+};
+
 export const initUtils = async () => {
   // TODO: detect OS/arch?
 
   const result = {};
 
+  const rubyBuilderData = await request(rubyBuilderUrl);
+
+  const adoptiumListData = await request(adoptiumList);
+
   for (const arch of ["x64", "arm64"]) {
-    const archLinux = {
-      x64: "x64",
-      arm64: "aarch64",
-    };
     // https://packagist.org/php-statistics
     let rubyVersionsList = [];
     let pythonVersionsList = [];
@@ -57,34 +62,31 @@ export const initUtils = async () => {
      * @type {Record<string, string>}
      */
     let rubyVersionsMap = {};
-    await request(rubyBuilderUrl)  
-      .then((res) => {
-        // @ts-ignore
-        var matches = [
-          ...("" + res.data).matchAll(/href="[-\w/]+?\/ruby-([.\d]+)-ubuntu-24.04.tar.gz"/g),
-        ];
-        for (const match of matches) {
-          if (!rubyVersionsList.includes(match[1])) {
-            rubyVersionsList.push(match[1]);
-            rubyVersionsMap[match[1]] = `https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-${match[1]}-ubuntu-24.04.tar.gz`
-          }
+    {
+      const fileName = arch == 'x64' ? 'ubuntu-24.04.tar.gz' : 'ubuntu-24.04-arm64.tar.gz';
+      const hrefRegex = new RegExp(`href="[-\\w/]+?\\/ruby-([.\\d]+)-${fileName}"`, 'g');
+      const toolcachePrefix = `https://github.com/ruby/ruby-builder/releases/download/toolcache`;
+
+      // @ts-ignore
+      var matches = [
+        ...("" + rubyBuilderData.data).matchAll(hrefRegex),
+      ];
+      for (const match of matches) {
+        if (!rubyVersionsList.includes(match[1])) {
+          rubyVersionsList.push(match[1]);
+          rubyVersionsMap[match[1]] = `${toolcachePrefix}/ruby-${match[1]}-${fileName}`
         }
-        rubyVersionsList = sortSemver(rubyVersionsList).reverse();
-        // remove minor versions
-        rubyVersionsList = rubyVersionsList.filter((x, i) => rubyVersionsList.findIndex(y => y.startsWith(x.substring(0, 3))) == i);
-        if (arch == 'x64') {
-          for (const key of Object.keys(rubyVersionsMap)) {
-            if (!rubyVersionsList.includes(key)) {
-              delete rubyVersionsMap[key];
-            }
-          }
-        } else {
-          rubyVersionsMap = {}; // currently aarch64 have to rebuilt
+      }
+      rubyVersionsList = sortSemver(rubyVersionsList).reverse();
+      // remove minor versions
+      rubyVersionsList = rubyVersionsList.filter((x, i) => rubyVersionsList.findIndex(y => y.startsWith(x.substring(0, 3))) == i);
+      for (const key of Object.keys(rubyVersionsMap)) {
+        if (!rubyVersionsList.includes(key)) {
+          delete rubyVersionsMap[key];
         }
-      })
-      .catch((err) => {
-        console.error("error fetching Ruby releases", err.message);
-      });
+      }
+    }
+    ;
 
     await request(pythonConstants.latestTagUrl()).then((res) => {
       res.data = JSON.parse(res.data)
@@ -117,21 +119,19 @@ export const initUtils = async () => {
       .catch((err) => {
         console.error("error fetching Python releases", err.message);
       });
-    await request(adoptiumList)
-      .then(async (res) => {
-        for (const ver of res.data.available_releases) {
-          await request(
-            `https://api.adoptium.net/v3/assets/latest/${ver}/hotspot?architecture=${archLinux[arch]}&image_type=jdk&os=linux&vendor=eclipse`
-          )
-            .then((x) => {
-              for (const binary of x.data) {
-                javaVersionsMap[binary.version.semver] =
-                  binary.binary.package.link;
-              }
-            });
-        }
-        javaVersionsList = sortSemver(Object.keys(javaVersionsMap)).reverse();
-      });
+
+    for (const ver of adoptiumListData.data.available_releases) {
+      await request(
+        `https://api.adoptium.net/v3/assets/latest/${ver}/hotspot?architecture=${archLinux[arch]}&image_type=jdk&os=linux&vendor=eclipse`
+      )
+        .then((x) => {
+          for (const binary of x.data) {
+            javaVersionsMap[binary.version.semver] =
+              binary.binary.package.link;
+          }
+        });
+    }
+    javaVersionsList = sortSemver(Object.keys(javaVersionsMap)).reverse();
 
     result[arch] = {
       rubyVersionsList,
