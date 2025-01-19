@@ -25,7 +25,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             if (value != "") {
                 await writeLog("$> Installing packages via yum");
                 await sshExec(`DNFDIR="/var/tmp/dnf-$USER-dwnlddir"`, false);
-                await sshExec(`[ ! -d $DNFDIR ] && cp -r /var/cache/dnf $DNFDIR && chmod -R 0700 $DNFDIR`, false);
+                await sshExec(`[ ! -d $DNFDIR ] && { cp -r /var/cache/dnf $DNFDIR ; chmod -R 0700 $DNFDIR ; }`, false);
                 await sshExec(`mkdir -p ~/Downloads; pushd ~/Downloads`, false);
                 await sshExec(`dnf download ${value} --resolve -y`);
                 await sshExec(`rpm2cpio *.rpm | cpio -idmD ~`);
