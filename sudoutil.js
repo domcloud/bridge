@@ -76,7 +76,7 @@ const env = Object.assign({}, {
     PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',
     SHELLCHECK_TMP: path.join(__dirname, '.tmp/check'),
     SHELLTEST_TMP: path.join(__dirname, '.tmp/test'),
-    SSL_WILDCARDS: path.join(__dirname, '.tmp/wildcardssl.json'),
+    SSL_WILDCARDS_TMP: path.join(__dirname, '.tmp/wildcardssl.json'),
     SCRIPT: path.join(__dirname, 'sudoutil.js'),
 }, process.env);
 
@@ -389,7 +389,7 @@ switch (cli.args.shift()) {
             fpms.some((f) => f.code !== 0) || storagefull || !quotaOK)
             exitcode = 1;
         var sslcode = undefined, ssldata = undefined;
-        if (existsSync(env.SSL_WILDCARDS) && (ssldata = JSON.parse(cat(env.SSL_WILDCARDS).toString()))) {
+        if (existsSync(env.SSL_WILDCARDS_TMP) && (ssldata = JSON.parse(cat(env.SSL_WILDCARDS_TMP).toString()))) {
             sslcode = Object.values(ssldata).every(el => {
                 var combinedPath = path.join(el.path, 'ssl.combined');
                 if (!existsSync(combinedPath)) return false;
