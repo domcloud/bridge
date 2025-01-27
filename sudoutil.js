@@ -76,6 +76,7 @@ const env = Object.assign({}, {
     PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',
     SHELLCHECK_TMP: path.join(__dirname, '.tmp/check'),
     SHELLTEST_TMP: path.join(__dirname, '.tmp/test'),
+    SSL_WILDCARDS: path.join(__dirname, '.tmp/wildcardssl.json'),
     SCRIPT: path.join(__dirname, 'sudoutil.js'),
 }, process.env);
 
@@ -381,12 +382,24 @@ switch (cli.args.shift()) {
         var storagefull = isDfFull(storage.stdout);
         var quotaOK = quota.every(x => x.includes('usrquota') && x.includes('grpquota'));
         var chkmem = exec(`free -h`, { silent: true });
-        var chkcpu = exec(`uptime`, { silent: true })
+        var chkcpu = exec(`uptime`, { silent: true });
 
         var exitcode = 0;
         if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
             fpms.some((f) => f.code !== 0) || storagefull || !quotaOK)
             exitcode = 1;
+        var sslcode = undefined, ssldata = undefined;
+        if (existsSync(env.SSL_WILDCARDS) && (ssldata = JSON.parse(cat(env.SSL_WILDCARDS).toString()))) {
+            sslcode = Object.values(ssldata).every(el => {
+                var combinedPath = path.join(el.path, 'ssl.combined');
+                if (!existsSync(combinedPath)) return false;
+                var combinedContent = cat(combinedPath).toString();
+                return (combinedContent.match(/BEGIN CERTIFICATE/g) || []).length > 1
+            }) ? 0 : 1;
+            if (sslcode !== 0) {
+                exitcode = 1
+            }
+        }
         ShellString(JSON.stringify({
             status: exitcode === 0 ? 'OK' : 'ERROR',
             codes: {
@@ -396,6 +409,7 @@ switch (cli.args.shift()) {
                 ip6tables: ip6tables.code,
                 storage: storagefull ? 1 : 0,
                 quota: quotaOK ? 0 : 1,
+                ssl: sslcode,
             },
             logs: {
                 cpuinfo: chkcpu.stdout.trimEnd().split('\n'),

@@ -111,9 +111,7 @@ export default async function runConfig(payload) {
         }
         // sometimes we need to wait for the domain to be created
         await writeLog("$> virtualmin list-domains");
-        await new Promise((resolve, reject) => {
-            setTimeout(resolve, 1000);
-        });
+        await new Promise(r => setTimeout(r, 1000));
         await new Promise((resolve, reject) => {
             let tries = 0;
             const check = () => {
