@@ -16,14 +16,6 @@ jobs:
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGA }}
           data: >-
             {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
-      - name: Invoke NYC deployment hook
-        uses: distributhor/workflow-webhook@v3
-        env:
-          webhook_url: https://my.domcloud.co/api/githubdeploy
-          webhook_secret: ${{ secrets.WEBHOOK_SECRET_NYC }}
-          webhook_auth: ${{ secrets.WEBHOOK_AUTH_NYC }}
-          data: >-
-            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
       - name: Invoke WDC deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
