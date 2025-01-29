@@ -165,10 +165,10 @@ export default async function runConfig(payload) {
             }
         })
         ssh.on('close', async function (code) {
+            ssh = null;
             if (cb) {
                 cb('', code);
             }
-            ssh = null;
         });
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise(function (resolve, reject) {

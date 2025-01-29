@@ -572,7 +572,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             if (source.url !== 'clear') {
                 url = new URL(source.url);
                 if (!source.type || !['clone', 'extract'].includes(source.type)) {
-                    if (url.protocol == 'ssh' || url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab)\.com$/) && !url.pathname.endsWith('.zip') && !url.pathname.endsWith('.tar.gz'))) {
+                    if (url.protocol == 'ssh' || url.pathname.endsWith('.git') || (url.hostname.match(/^(www\.)?(github|gitlab|bitbucket)\.com$/) && !url.pathname.endsWith('.zip') && !url.pathname.endsWith('.tar.gz'))) {
                         source.type = 'clone';
                     } else {
                         source.type = 'extract';
