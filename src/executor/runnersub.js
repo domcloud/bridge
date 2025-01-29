@@ -422,7 +422,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                                 'renew': 2,
                                 'web': true,
                             });
-                            subdomaindata['SSL cert expiry'] = new Date().toISOString()
+                            const nextDate = new Date();
+                            nextDate.setMonth(nextDate.getMonth() + 3);
+                            subdomaindata['SSL cert expiry'] =  nextDate.toISOString();
                         }
                         // Regenerate self sign if
                         // 1. Explicit request || SSL off
@@ -448,7 +450,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 } finally {
                     await writeLog("$> Applying nginx ssl config on " + subdomain);
                     await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
-                    if (sharedSSL && changed) {
+                    if (sharedSSL && subdomaindata['SSL shared with'] !== sharedSSL.domain) {
                         await writeLog("$> Applying SSL links with global domain");
                         await writeLog(await virtualminExec.pushVirtualServerConfig(subdomaindata['ID'], {
                             'ssl_same': sharedSSL.id,
@@ -458,6 +460,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             'ssl_combined': path.join(sharedSSL.path, 'ssl.combined'),
                             'ssl_everything': path.join(sharedSSL.path, 'ssl.everything'),
                         }));
+                        subdomaindata['SSL shared with'] = sharedSSL.domain
                     }
                 }
                 break;
