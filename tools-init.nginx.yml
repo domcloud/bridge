@@ -10,6 +10,11 @@ nginx:
       passenger:
         enabled: 'off'
       match: /phppgadmin/
+    - fastcgi: 'on'
+      root: public_html/
+      passenger:
+        enabled: 'off'
+      match: /phprdadmin/
     - root: public_html/webssh/webssh/static
       passenger:
         app_root: public_html/webssh

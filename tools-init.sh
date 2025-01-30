@@ -31,21 +31,23 @@ else
     cd ..
 fi
 
-# if [ ! -d "./webssh" ]; then
-#     git clone https://github.com/huashengdun/webssh.git webssh --filter=tree:0
-#     cd ./webssh
-#     pip install --user -r requirements.txt
-#     cd ..
-# else
-#     cd ./webssh
-#     git pull
-#     pip install --user -r requirements.txt
-#     cd ..
-# fi
-rm -rf webssh
+
+if [ ! -d "./phprdadmin" ]; then
+    git clone https://github.com/willnode/phpRedisAdmin phprdadmin --filter=tree:0
+    cd ./phprdadmin
+    composer install -o
+    cp includes/config.sample.inc.php includes/config.inc.php
+    sed -i "s/'cookie_auth' => false/'cookie_auth' => true/g" includes/config.inc.php
+    cd ..
+else
+    cd ./phprdadmin
+    git pull
+    cd ..
+fi
+
 
 if [ ! -d "./webssh2" ]; then
-    git clone https://github.com/billchurch/webssh2.git webssh2 --filter=tree:0
+    git clone https://github.com/willnode/webssh2.git webssh2 --filter=tree:0
     cd ./webssh2/app
     npm install --omit=dev
     cp config.json.sample config.json
