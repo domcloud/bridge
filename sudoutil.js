@@ -71,6 +71,8 @@ const env = Object.assign({}, {
     OPENSSL_OUT: '/etc/pki/tls/openssl.cnf',
     VIRTUALMIN: 'virtualmin',
     LOGINLINGERDIR: '/var/lib/systemd/linger',
+    REDIS_ACLMAP: '/etc/valkey/usermap.acl',
+    REDIS_ACLTMP: path.join(__dirname, '.tmp/redis-acl'),
     PHPFPM_REMILIST: '/etc/opt/remi/',
     PHPFPM_REMICONF: '/etc/opt/remi/$/php-fpm.d',
     PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',
@@ -184,6 +186,18 @@ switch (cli.args.shift()) {
     case 'VIRTUAL_SERVER_SET':
         arg = cli.args.shift();
         cat(env.VIRTUAL_SERVER_TMP).to(env.VIRTUAL_SERVER_OUT.replace('$', arg));
+        exit(0);
+    case 'REDIS_GETUSER':
+        arg = cli.args.shift();
+        cat(env.REDIS_ACLMAP).grep('', '^' + arg + ':').toString();
+        exit(0);
+    case 'REDIS_GET':
+        arg = cli.args.shift();
+        cat(env.REDIS_ACLMAP).to(env.REDIS_ACLTMP);
+        fixOwner(env.REDIS_ACLTMP);
+        exit(0);
+    case 'REDIS_SET':
+        cat(env.REDIS_ACLTMP).to(env.REDIS_ACLMAP);
         exit(0);
     case 'NGINX_START':
         exec(env.NGINX_START);

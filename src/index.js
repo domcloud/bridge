@@ -5,6 +5,7 @@ import named from './controllers/named.js';
 import nginx from './controllers/nginx.js';
 import status from './controllers/status.js';
 import iptables from './controllers/iptables.js';
+import redis from './controllers/redis.js';
 import screend from './controllers/screend.js';
 import {
     checkAuth,
@@ -29,6 +30,7 @@ app.use('/named', named());
 app.use('/nginx', nginx());
 app.use('/iptables', iptables());
 app.use('/screend', screend());
+app.use('/redis', redis());
 app.use('/docker', docker());
 app.use('/runner', runner());
 app.use('/virtualmin', virtualmin());

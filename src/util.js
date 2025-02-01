@@ -4,7 +4,6 @@ import { lock } from 'proper-lockfile';
 import fs from 'fs';
 import binaries from './binaries/metadata.cjs';
 import { virtualminExec } from './executor/virtualmin.js';
-import { emitWarning } from 'process';
 const {
     javaVersionsList,
     javaVersionsMap,
