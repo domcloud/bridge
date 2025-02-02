@@ -251,12 +251,12 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                     throw new Error(`No Java with version ${value} is available to install`);
                 }
                 await writeLog("$> Changing Java engine to " + jarg.version);
-                await sshExec(`cd ~/tmp && mkdir -p ~/.local/java/jdk-${jarg.version}`);
-                await sshExec(`wget "${jarg.binary}" -O ~/tmp/jdk.tar.gz && tar -axf jdk.tar.gz && rm $_`);
-                await sshExec(`mv ~/tmp/jdk-*/* ~/.local/java/jdk-${jarg.version} || true ; rm -rf ~/tmp/jdk-*`);
-                await sshExec(`ln -sfn ~/.local/java/jdk-${jarg.version} ~/.local/java/jdk`);
+                await sshExec(`JDKTMP=~/tmp/jdk.tar.gz; JDKDST=~/.local/java/jdk-${jarg.version}`);
+                await sshExec(`mkdir -p $JDKDST`, false);
+                await sshExec(`wget "${jarg.binary}" -O $JDKTMP && tar -axf $JDKTMP -C $JDKDST`);
+                await sshExec(`mv $JDKDST/*/* $JDKDST/ && rm $JDKTMP`, false);
+                await sshExec(`ln -sfn $JDKDST ~/.local/java/jdk`);
                 await sshExec(`pathman add ~/.local/java/jdk/bin ; source ~/.config/envman/PATH.env`);
-                await sshExec("cd ~/public_html", false);
                 await sshExec("java --version");
             }
             break;
