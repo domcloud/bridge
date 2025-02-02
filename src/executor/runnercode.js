@@ -62,7 +62,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash); source ~/.config/envman/PATH.env");
                 if (parg.binary) {
                     await sshExec(`cd ~/tmp && mkdir -p ~/.pyenv/versions/${parg.version}`);
-                    await sshExec(`wget -O python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
+                    await sshExec(`curl -sSLo python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
                     await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} || true ; rm -rf ~/tmp/python`);
                     await sshExec(`echo "export LD_LIBRARY_PATH=~/.pyenv/versions/${parg.version}:$LD_LIBRARY_PATH" >> ~/.bashrc`) // fix venv
                     await sshExec("cd ~/public_html", false);
@@ -196,7 +196,6 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 }
                 await writeLog("$> Changing Bun engine to " + (value || 'latest'));
                 await sshExec(`curl -sS https://webinstall.dev/bun${arg} | bash ; source ~/.config/envman/PATH.env`);
-                await sshExec(`(cd ~/.local/bin/; wget -qO- https://github.com/domcloud/proxy-fix/releases/download/v0.1.3/proxy-fix-linux-amd64.tar.gz | tar xz && mv proxy-fix-linux-amd64 bunfix)`);
                 await sshExec("bun --version");
             }
             break;
@@ -252,8 +251,8 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 }
                 await writeLog("$> Changing Java engine to " + jarg.version);
                 await sshExec(`JDKTMP=~/tmp/jdk.tar.gz; JDKDST=~/.local/java/jdk-${jarg.version}`);
-                await sshExec(`mkdir -p $JDKDST`, false);
-                await sshExec(`wget "${jarg.binary}" -O $JDKTMP && tar -axf $JDKTMP -C $JDKDST`);
+                await sshExec(`mkdir -p $JDKDST; rm -rf $JDKDST/*`, false);
+                await sshExec(`curl -sSLo $JDKTMP "${jarg.binary}"  && tar -axf $JDKTMP -C $JDKDST`);
                 await sshExec(`mv $JDKDST/*/* $JDKDST/ && rm $JDKTMP && find $JDKDST -type d -empty -delete`, false);
                 await sshExec(`ln -sfn $JDKDST ~/.local/java/jdk`);
                 await sshExec(`pathman add ~/.local/java/jdk/bin ; source ~/.config/envman/PATH.env`);
