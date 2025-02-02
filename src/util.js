@@ -1,6 +1,6 @@
 import path, { dirname } from 'path';
 import { spawn } from 'child_process';
-import { lock } from 'proper-lockfile';
+import lock from './helpers/lockfile.js';
 import fs from 'fs';
 import binaries from './binaries/metadata.cjs';
 import { virtualminExec } from './executor/virtualmin.js';
@@ -334,6 +334,9 @@ export const executeLock = function (
     callback) {
     const realfile = path.join(process.cwd(), '.tmp', file + '.lock');
     return new Promise((resolve, reject) => {
+        /**
+         * @type {() => Promise<void>}}
+         */
         let release;
         lock(realfile, {
             retries: 10,
@@ -342,11 +345,11 @@ export const executeLock = function (
             release = releaseCall;
             return callback();
         }).then(arg => {
-            if (release) release();
-            resolve(arg);
+            if (release) release().finally(() => resolve(arg));
+            else resolve(arg);
         }).catch(err => {
-            if (release) release();
-            reject(err);
+            if (release) release().finally(() => reject(err));
+            else reject(err);
         });
     });
 }

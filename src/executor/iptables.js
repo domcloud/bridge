@@ -3,7 +3,7 @@ import {
     deleteIfRecordExist,
     encodeIptablesDoc,
     genRules, parseIptablesDoc
-} from '../parsers/iptables.js';
+} from '../helpers/iptables.js';
 import {
     cat,
     executeLock,

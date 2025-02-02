@@ -9,6 +9,7 @@ import { nginxExec } from "./nginx.js";
 import { virtualminExec } from "./virtualmin.js";
 import { unitExec } from "./unit.js";
 import { dockerExec } from "./docker.js";
+import { redisExec } from "./redis.js";
 
 /**
  * @param {{source: any;features: any;commands: any;services: any;nginx: any;unit: any;envs: any,directory:any, root:any}} config
@@ -46,6 +47,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
         if (key == 'postgresql') {
             key = 'postgres';
+        }
+        if (key == 'valkey') {
+            key = 'redis';
         }
         let enabled = domaindata['Features'].includes(key);
         let subenabled = subdomaindata['Features'].includes(key);
@@ -222,6 +226,44 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     }
                 } else if (!value) {
                     await writeLog(`$> PostgreSQL is already initialized. To create another database, use "postgresql create dbname"`);
+                }
+                break;
+            case 'redis':
+                if (value === "off") {
+                    await writeLog("$> Disabling Redis");
+                    let instances = await redisExec.show(domaindata['Username']);
+                    if (instances.length > 0) {
+                        for (const db of instances) {
+                            await redisExec.delraw(domaindata['Username'], db)
+                        }
+                    } else {
+                        await writeLog("Already disabled");
+                    }
+                    break;
+                }
+                if (!subenabled) {
+                    await writeLog("$> Enabling Redis");
+                    dbneedcreate = true;
+                }
+                if (value.startsWith("create ")) {
+                    let newdb = value.substr("create ".length).trim();
+                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? newdb : domainprefix + '_' + newdb);
+                    dbneedcreate = true;
+                }
+                if (dbneedcreate) {
+                    await writeLog(`$> Creating db instance ${dbname} on Redis`);
+                    await writeLog(await redisExec.add(domaindata['Username'], dbname));
+                } else if (value.startsWith("drop ")) {
+                    let dropdb = value.substr("drop ".length).trim();
+                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? dropdb : domainprefix + '_' + dropdb);
+                    await writeLog(await redisExec.del(domaindata['Username'], dbname));
+                } else if (value.startsWith("modify-pass ")) {
+                    let pass = value.substr("modify-pass ".length).trim();
+                    if (pass) {
+                    await writeLog(await redisExec.passwd(domaindata['Username'], dbname, pass));
+                    }
+                } else if (!value) {
+                    await writeLog(`$> Redis is already initialized. To create another database, use "redis create dbname"`);
                 }
                 break;
             case 'dns':

@@ -9,7 +9,7 @@ import {
 import {
     generate,
     parse
-} from '../parsers/named.js';
+} from '../helpers/named.js';
 import path from 'path';
 
 const tmpFile = path.join(process.cwd(), '/.tmp/named')
