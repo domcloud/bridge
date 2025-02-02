@@ -60,7 +60,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash); source ~/.config/envman/PATH.env");
                 if (parg.binary) {
                     await sshExec(`mkdir -p ~/.pyenv/versions/${parg.version}`);
-                    await sshExec(`curl -sSL "${parg.binary}" | tar -zaxf - -C ~/tmp`);
+                    await sshExec(`curl -sSL "${parg.binary}" | tar --zstd -axf - -C ~/tmp`);
                     await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} || true ; rm -rf ~/tmp/python`);
                     await sshExec(`echo "export LD_LIBRARY_PATH=~/.pyenv/versions/${parg.version}:$LD_LIBRARY_PATH" >> ~/.bashrc`) // fix venv
                 } else if (parg.version !== "system") {
