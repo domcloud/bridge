@@ -1,18 +1,15 @@
 {
   "x64": {
     "rubyVersionsList": [
-      "3.4.1",
-      "3.3.7",
-      "3.2.6",
-      "3.1.6",
-      "3.0.7",
-      "2.7.8",
-      "2.6.10",
-      "2.5.9",
-      "2.4.10",
-      "2.3.8",
-      "2.2.10",
-      "2.1.9"
+      "truffleruby-24.1.2",
+      "truffleruby-24.0.2",
+      "ruby-3.4.1",
+      "ruby-3.3.7",
+      "ruby-3.2.6",
+      "ruby-3.1.6",
+      "ruby-3.0.7",
+      "jruby-9.4.11.0",
+      "jruby-9.3.15.0"
     ],
     "pythonVersionsList": [
       "3.13.1",
@@ -22,16 +19,16 @@
       "3.9.21"
     ],
     "javaVersionsList": [
-      "23.0.1+11",
+      "23.0.2+7",
       "22.0.2+9",
-      "21.0.5+11.0.LTS",
+      "21.0.6+7.0.LTS",
       "20.0.2+9",
       "19.0.2+7",
       "18.0.2+101",
-      "17.0.13+11",
+      "17.0.14+7",
       "16.0.2+7",
-      "11.0.25+9",
-      "8.0.432+6"
+      "11.0.26+4",
+      "8.0.442+6"
     ],
     "pythonVersionsMap": {
       "3.10.16": "https://github.com/astral-sh/python-build-standalone/releases/download/20250115/cpython-3.10.16+20250115-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst",
@@ -41,44 +38,40 @@
       "3.9.21": "https://github.com/astral-sh/python-build-standalone/releases/download/20250115/cpython-3.9.21+20250115-x86_64_v3-unknown-linux-gnu-pgo+lto-full.tar.zst"
     },
     "javaVersionsMap": {
-      "8.0.432+6": "https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u432-b06/OpenJDK8U-jdk_x64_linux_hotspot_8u432b06.tar.gz",
-      "11.0.25+9": "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_x64_linux_hotspot_11.0.25_9.tar.gz",
+      "8.0.442+6": "https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u442-b06/OpenJDK8U-jdk_x64_linux_hotspot_8u442b06.tar.gz",
+      "11.0.26+4": "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.26%2B4/OpenJDK11U-jdk_x64_linux_hotspot_11.0.26_4.tar.gz",
       "16.0.2+7": "https://github.com/adoptium/temurin16-binaries/releases/download/jdk-16.0.2%2B7/OpenJDK16U-jdk_x64_linux_hotspot_16.0.2_7.tar.gz",
-      "17.0.13+11": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jdk_x64_linux_hotspot_17.0.13_11.tar.gz",
+      "17.0.14+7": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.14%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.14_7.tar.gz",
       "18.0.2+101": "https://github.com/adoptium/temurin18-binaries/releases/download/jdk-18.0.2.1%2B1/OpenJDK18U-jdk_x64_linux_hotspot_18.0.2.1_1.tar.gz",
       "19.0.2+7": "https://github.com/adoptium/temurin19-binaries/releases/download/jdk-19.0.2%2B7/OpenJDK19U-jdk_x64_linux_hotspot_19.0.2_7.tar.gz",
       "20.0.2+9": "https://github.com/adoptium/temurin20-binaries/releases/download/jdk-20.0.2%2B9/OpenJDK20U-jdk_x64_linux_hotspot_20.0.2_9.tar.gz",
-      "21.0.5+11.0.LTS": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz",
+      "21.0.6+7.0.LTS": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.6%2B7/OpenJDK21U-jdk_x64_linux_hotspot_21.0.6_7.tar.gz",
       "22.0.2+9": "https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_x64_linux_hotspot_22.0.2_9.tar.gz",
-      "23.0.1+11": "https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.1%2B11/OpenJDK23U-jdk_x64_linux_hotspot_23.0.1_11.tar.gz"
+      "23.0.2+7": "https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jdk_x64_linux_hotspot_23.0.2_7.tar.gz"
     },
     "rubyVersionsMap": {
-      "2.1.9": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.1.9-ubuntu-24.04.tar.gz",
-      "2.2.10": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.2.10-ubuntu-24.04.tar.gz",
-      "2.3.8": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.3.8-ubuntu-24.04.tar.gz",
-      "2.4.10": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.4.10-ubuntu-24.04.tar.gz",
-      "2.5.9": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.5.9-ubuntu-24.04.tar.gz",
-      "2.6.10": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.6.10-ubuntu-24.04.tar.gz",
-      "2.7.8": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.7.8-ubuntu-24.04.tar.gz",
-      "3.0.7": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.0.7-ubuntu-24.04.tar.gz",
-      "3.1.6": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.1.6-ubuntu-24.04.tar.gz",
-      "3.2.6": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.2.6-ubuntu-24.04.tar.gz",
-      "3.3.7": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.3.7-ubuntu-24.04.tar.gz",
-      "3.4.1": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.4.1-ubuntu-24.04.tar.gz"
+      "truffleruby-24.1.2": "https://ruby-builder-amd64.domcloud.dev/truffleruby-24.1.2.tar.gz",
+      "truffleruby-24.0.2": "https://ruby-builder-amd64.domcloud.dev/truffleruby-24.0.2.tar.gz",
+      "ruby-3.4.1": "https://ruby-builder-amd64.domcloud.dev/ruby-3.4.1.tar.gz",
+      "ruby-3.3.7": "https://ruby-builder-amd64.domcloud.dev/ruby-3.3.7.tar.gz",
+      "ruby-3.2.6": "https://ruby-builder-amd64.domcloud.dev/ruby-3.2.6.tar.gz",
+      "ruby-3.1.6": "https://ruby-builder-amd64.domcloud.dev/ruby-3.1.6.tar.gz",
+      "ruby-3.0.7": "https://ruby-builder-amd64.domcloud.dev/ruby-3.0.7.tar.gz",
+      "jruby-9.4.11.0": "https://ruby-builder-amd64.domcloud.dev/jruby-9.4.11.0.tar.gz",
+      "jruby-9.3.15.0": "https://ruby-builder-amd64.domcloud.dev/jruby-9.3.15.0.tar.gz"
     }
   },
   "arm64": {
     "rubyVersionsList": [
-      "3.4.1",
-      "3.3.7",
-      "3.2.6",
-      "3.1.6",
-      "3.0.7",
-      "2.7.8",
-      "2.6.10",
-      "2.5.9",
-      "2.4.10",
-      "2.3.8"
+      "truffleruby-24.1.2",
+      "truffleruby-24.0.2",
+      "ruby-3.4.1",
+      "ruby-3.3.7",
+      "ruby-3.2.6",
+      "ruby-3.1.6",
+      "ruby-3.0.7",
+      "jruby-9.4.11.0",
+      "jruby-9.3.15.0"
     ],
     "pythonVersionsList": [
       "3.13.1",
@@ -88,16 +81,16 @@
       "3.9.21"
     ],
     "javaVersionsList": [
-      "23.0.1+11",
+      "23.0.2+7",
       "22.0.2+9",
-      "21.0.5+11.0.LTS",
+      "21.0.6+7.0.LTS",
       "20.0.2+9",
       "19.0.2+7",
       "18.0.2+101",
-      "17.0.13+11",
+      "17.0.14+7",
       "16.0.2+7",
-      "11.0.25+9",
-      "8.0.432+6"
+      "11.0.26+4",
+      "8.0.442+6"
     ],
     "pythonVersionsMap": {
       "3.10.16": "https://github.com/astral-sh/python-build-standalone/releases/download/20250115/cpython-3.10.16+20250115-aarch64-unknown-linux-gnu-lto-full.tar.zst",
@@ -107,28 +100,27 @@
       "3.9.21": "https://github.com/astral-sh/python-build-standalone/releases/download/20250115/cpython-3.9.21+20250115-aarch64-unknown-linux-gnu-lto-full.tar.zst"
     },
     "javaVersionsMap": {
-      "8.0.432+6": "https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u432-b06/OpenJDK8U-jdk_aarch64_linux_hotspot_8u432b06.tar.gz",
-      "11.0.25+9": "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_aarch64_linux_hotspot_11.0.25_9.tar.gz",
+      "8.0.442+6": "https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u442-b06/OpenJDK8U-jdk_aarch64_linux_hotspot_8u442b06.tar.gz",
+      "11.0.26+4": "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.26%2B4/OpenJDK11U-jdk_aarch64_linux_hotspot_11.0.26_4.tar.gz",
       "16.0.2+7": "https://github.com/adoptium/temurin16-binaries/releases/download/jdk-16.0.2%2B7/OpenJDK16U-jdk_aarch64_linux_hotspot_16.0.2_7.tar.gz",
-      "17.0.13+11": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.13_11.tar.gz",
+      "17.0.14+7": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.14%2B7/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.14_7.tar.gz",
       "18.0.2+101": "https://github.com/adoptium/temurin18-binaries/releases/download/jdk-18.0.2.1%2B1/OpenJDK18U-jdk_aarch64_linux_hotspot_18.0.2.1_1.tar.gz",
       "19.0.2+7": "https://github.com/adoptium/temurin19-binaries/releases/download/jdk-19.0.2%2B7/OpenJDK19U-jdk_aarch64_linux_hotspot_19.0.2_7.tar.gz",
       "20.0.2+9": "https://github.com/adoptium/temurin20-binaries/releases/download/jdk-20.0.2%2B9/OpenJDK20U-jdk_aarch64_linux_hotspot_20.0.2_9.tar.gz",
-      "21.0.5+11.0.LTS": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.5_11.tar.gz",
+      "21.0.6+7.0.LTS": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.6%2B7/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.6_7.tar.gz",
       "22.0.2+9": "https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_aarch64_linux_hotspot_22.0.2_9.tar.gz",
-      "23.0.1+11": "https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.1%2B11/OpenJDK23U-jdk_aarch64_linux_hotspot_23.0.1_11.tar.gz"
+      "23.0.2+7": "https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jdk_aarch64_linux_hotspot_23.0.2_7.tar.gz"
     },
     "rubyVersionsMap": {
-      "2.3.8": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.3.8-ubuntu-24.04-arm64.tar.gz",
-      "2.4.10": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.4.10-ubuntu-24.04-arm64.tar.gz",
-      "2.5.9": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.5.9-ubuntu-24.04-arm64.tar.gz",
-      "2.6.10": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.6.10-ubuntu-24.04-arm64.tar.gz",
-      "2.7.8": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-2.7.8-ubuntu-24.04-arm64.tar.gz",
-      "3.0.7": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.0.7-ubuntu-24.04-arm64.tar.gz",
-      "3.1.6": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.1.6-ubuntu-24.04-arm64.tar.gz",
-      "3.2.6": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.2.6-ubuntu-24.04-arm64.tar.gz",
-      "3.3.7": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.3.7-ubuntu-22.04-arm64.tar.gz",
-      "3.4.1": "https://github.com/ruby/ruby-builder/releases/download/toolcache/ruby-3.4.1-ubuntu-24.04-arm64.tar.gz"
+      "truffleruby-24.1.2": "https://ruby-builder-arm64.domcloud.dev/truffleruby-24.1.2.tar.gz",
+      "truffleruby-24.0.2": "https://ruby-builder-arm64.domcloud.dev/truffleruby-24.0.2.tar.gz",
+      "ruby-3.4.1": "https://ruby-builder-arm64.domcloud.dev/ruby-3.4.1.tar.gz",
+      "ruby-3.3.7": "https://ruby-builder-arm64.domcloud.dev/ruby-3.3.7.tar.gz",
+      "ruby-3.2.6": "https://ruby-builder-arm64.domcloud.dev/ruby-3.2.6.tar.gz",
+      "ruby-3.1.6": "https://ruby-builder-arm64.domcloud.dev/ruby-3.1.6.tar.gz",
+      "ruby-3.0.7": "https://ruby-builder-arm64.domcloud.dev/ruby-3.0.7.tar.gz",
+      "jruby-9.4.11.0": "https://ruby-builder-arm64.domcloud.dev/jruby-9.4.11.0.tar.gz",
+      "jruby-9.3.15.0": "https://ruby-builder-arm64.domcloud.dev/jruby-9.3.15.0.tar.gz"
     }
   }
 }

@@ -9,7 +9,8 @@ const {
     javaVersionsMap,
     pythonVersionsList,
     pythonVersionsMap,
-    rubyVersionsList
+    rubyVersionsList,
+    rubyVersionsMap,
 } = binaries;
 
 
@@ -129,36 +130,36 @@ export const getPythonVersion = (/** @type {string} */ status) => {
 }
 
 export const getRubyVersion = (/** @type {string} */ status) => {
-    // get latest stable version
-    var stable = rubyVersionsList[0];
+    const expand = (/** @type {string} */ version) => ({
+        version,
+        binary: rubyVersionsMap[version] || null,
+    })
+    var stable = rubyVersionsList.filter(x => x.startsWith('ruby-'))[0];
     if (!status) {
-        return stable;
-    }
-    if (/^ruby-/.test(status)) {
-        status = status.substring(5);
+        return expand(stable);
     }
     if (/^\d+(\.\d+)?$/.test(status)) {
         var m = rubyVersionsList.find(x => {
-            return x.startsWith(status);
+            return x.startsWith('ruby-' + status);
         });
         if (m) {
-            return m;
+            return expand(m);
         }
     }
     if (/^\d+\.\d+\.\d+$/.test(status)) {
-        return status;
+        return expand('ruby-' + status);
     }
     switch (status) {
         case 'lts':
         case 'security':
-            var security = rubyVersionsList.find(x => {
+            var security = rubyVersionsList.filter(x => x.startsWith('ruby-')).find(x => {
                 return !x.startsWith(stable.substring(0, stable.lastIndexOf('.')));
             });
-            return security || stable;
+            return expand(security || stable);
         case 'latest':
         case 'stable':
         default:
-            return stable;
+            return expand(stable);
     }
 }
 

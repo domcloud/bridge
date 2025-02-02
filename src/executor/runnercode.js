@@ -167,18 +167,13 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 const rarg = getRubyVersion(value);
                 await writeLog("$> Changing Ruby engine to " + rarg.version);
                 await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://rvm.io/mpapis.asc | gpg --import -; curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -; }`);
-                await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://get.rvm.io | bash -s stable; source ~/.rvm/scripts/rvm; rvm autolibs disable; }`);
-                // GLIBC Compability issue -- Need to wait until RHEL 10?
-                // if (rarg.binary) {
-                //     await sshExec(`cd ~/tmp && mkdir -p ~/.rvm/rubies/ruby-${rarg.version}`);
-                //     await sshExec(`wget -O ruby.tar.gz "${rarg.binary}" && tar -axf ruby.tar.gz && rm $_`);
-                //     const rsubdir = process.arch;
-                //     await sshExec(`mv ~/tmp/${rsubdir}/* ~/.rvm/rubies/ruby-${rarg.version} || true ; rm -rf ~/tmp/${rsubdir}`);
-                //     await sshExec(`find ~/.rvm/rubies/ruby-${rarg.version}/bin -type f -exec sed -i 's|^#!/opt/hostedtoolcache/.*|#!/bin/env ruby|' {} +`);
-                //     await sshExec(`echo "export LD_LIBRARY_PATH=~/.rvm/rubies/ruby-${rarg.version}/lib:$LD_LIBRARY_PATH" >> ~/.bashrc`) // fix venv
-                //     await sshExec("cd ~/public_html", false);
-                // }                
-                await sshExec(`rvm install ${getRubyVersion(value)} --no-docs`);
+                await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://get.rvm.io | bash -s master; source ~/.rvm/scripts/rvm; rvm autolibs disable; }`);
+                if (rarg.binary) {
+                    await sshExec(`wget -O ~/tmp/ruby.tar.gz "${rarg.binary}" && tar -axf ~/tmp/ruby.tar.gz -C ~/.rvm/rubies && rm ~/tmp/ruby.tar.gz`);
+                    await sshExec("rvm alias create default " + rarg.version);
+                } else {
+                    await sshExec(`rvm install ${getRubyVersion(value)} --no-docs`);
+                }
                 await sshExec("ruby --version");
             }
             break;

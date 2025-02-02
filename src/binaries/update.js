@@ -1,5 +1,5 @@
 import fs from "fs";
-import { dirname } from "path";
+import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import request from "../request.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -27,7 +27,10 @@ const pythonConstants = {
   },
 };
 
-const rubyBuilderUrl = 'https://github.com/ruby/ruby-builder/releases/expanded_assets/toolcache';
+const rubyBuilderUrl = {
+  x64: 'https://ruby-builder-amd64.domcloud.dev',
+  arm64: 'https://ruby-builder-arm64.domcloud.dev',
+}
 
 const adoptiumList = 'https://api.adoptium.net/v3/info/available_releases';
 
@@ -41,11 +44,11 @@ export const initUtils = async () => {
 
   const result = {};
 
-  const rubyBuilderData = await request(rubyBuilderUrl);
-
   const adoptiumListData = await request(adoptiumList);
 
   for (const arch of ["x64", "arm64"]) {
+    const rubyBuilderData = await request(rubyBuilderUrl[arch] + '/metadata.json');
+
     // https://packagist.org/php-statistics
     let rubyVersionsList = [];
     let pythonVersionsList = [];
@@ -63,30 +66,13 @@ export const initUtils = async () => {
      */
     let rubyVersionsMap = {};
     {
-      const fileName = arch == 'x64' ? 'ubuntu-24.04.tar.gz' : 'ubuntu-24.04-arm64.tar.gz';
-      const hrefRegex = new RegExp(`href="[-\\w/]+?\\/ruby-([.\\d]+)-${fileName}"`, 'g');
-      const toolcachePrefix = `https://github.com/ruby/ruby-builder/releases/download/toolcache`;
-
       // @ts-ignore
-      var matches = [
-        ...("" + rubyBuilderData.data).matchAll(hrefRegex),
-      ];
-      for (const match of matches) {
-        if (!rubyVersionsList.includes(match[1])) {
-          rubyVersionsList.push(match[1]);
-          rubyVersionsMap[match[1]] = `${toolcachePrefix}/ruby-${match[1]}-${fileName}`
-        }
+      rubyVersionsList = rubyBuilderData.data.versions;
+      for (const v of rubyVersionsList) {
+        rubyVersionsMap[v] = rubyBuilderUrl[arch] + "/" + v + ".tar.gz";
       }
       rubyVersionsList = sortSemver(rubyVersionsList).reverse();
-      // remove minor versions
-      rubyVersionsList = rubyVersionsList.filter((x, i) => rubyVersionsList.findIndex(y => y.startsWith(x.substring(0, 3))) == i);
-      for (const key of Object.keys(rubyVersionsMap)) {
-        if (!rubyVersionsList.includes(key)) {
-          delete rubyVersionsMap[key];
-        }
-      }
     }
-    ;
 
     await request(pythonConstants.latestTagUrl()).then((res) => {
       res.data = JSON.parse(res.data)
