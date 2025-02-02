@@ -234,7 +234,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     let instances = await redisExec.show(domaindata['Username']);
                     if (instances.length > 0) {
                         for (const db of instances) {
-                            await redisExec.delraw(domaindata['Username'], db)
+                            await redisExec.del(domaindata['Username'], db)
                         }
                     } else {
                         await writeLog("Already disabled");
@@ -650,7 +650,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 executedCMD.push(`git clone ${escapeShell(url.toString())}` +
                     `${source.branch ? ` -b ${escapeShell(source.branch)}` : ''}` +
-                    `${source.shallow ? ` --depth 1` : ''}` +
+                    `${!source.depth || source.depth == 'blobless' ? ` --filter=blob:none` : ''}` +
+                    `${source.depth == 'treeless' ? ` --filter=tree:0` : ''}` +
+                    `${source.depth == 'shallow' ? ` --depth 1` : ''}` +
                     `${source.submodules ? ` --recurse-submodules` : ''}` + ' .');
                 executedCMDNote = 'Cloning files';
             } else if (source.type === 'extract') {

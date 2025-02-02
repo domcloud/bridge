@@ -62,22 +62,33 @@ class RedisExecutor {
     return await executeLock("redis", async () => {
       await spawnSudoUtil("REDIS_GET", []);
       var lines = cat(tmpFile).trim().split("\n");
+      var existsUserSame = false;
       var exists = lines.some((e) => {
         const parts = e.split(":");
         if (parts.length != 2) {
           return;
         }
-        return parts[1] == name;
+        if (parts[1] == name) {
+          existsUserSame = parts[0] == uid;
+          return true;
+        }
+        return false;
       });
       if (exists) {
-        throw new Error("Error: This key is already exists");
+        if (existsUserSame) {
+          return "This account is already exists on this domain";
+        } else {
+          throw new Error(
+            "Error: This account is already exists and belongs to other domain"
+          );
+        }
       }
       lines.push(uid + ":" + name);
       const pass = await redCon.aclGenPass();
       await redCon.aclSetUser(name, aclSetUser(name, pass).split(" "));
       ShellString(lines.join("\n") + "\n").to(tmpFile);
       await spawnSudoUtil("REDIS_SET", []);
-      return "Done created account " + name + ", password is " + pass;
+      return "Done created account " + name + ", password is:\n" + pass;
     });
   }
   /**
@@ -115,11 +126,11 @@ class RedisExecutor {
     return res;
   }
   /**
-   * 
-   * @param {string} user 
-   * @param {string} name 
-   * @param {string} newpasswd 
-   * @returns 
+   *
+   * @param {string} user
+   * @param {string} name
+   * @param {string} newpasswd
+   * @returns
    */
   async passwd(user, name, newpasswd) {
     let redCon = this.getClient();
