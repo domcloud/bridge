@@ -35,10 +35,13 @@ class RedisExecutor {
       });
     });
   }
-  getClient() {
-    return createClient({
+  async getClient() {
+    const client = createClient({
       url: process.env.REDIS_URL,
     });
+    await client.connect();
+    await client.ping();
+    return client;
   }
   /**
    * @param {string} user
@@ -56,8 +59,7 @@ class RedisExecutor {
    * @param {string} name
    */
   async add(user, name) {
-    let redCon = this.getClient();
-    await redCon.ping();
+    let redCon = await this.getClient();
     const uid = await this.getUid(user);
     return await executeLock("redis", async () => {
       await spawnSudoUtil("REDIS_GET", []);
@@ -88,7 +90,8 @@ class RedisExecutor {
       await redCon.aclSetUser(name, aclSetUser(name, pass).split(" "));
       ShellString(lines.join("\n") + "\n").to(tmpFile);
       await spawnSudoUtil("REDIS_SET", []);
-      return "Done created account " + name + ", password is:\n" + pass;
+      await redCon.aclSave();
+      return "Done created account " + name + "with password:\n" + pass;
     });
   }
   /**
@@ -96,8 +99,7 @@ class RedisExecutor {
    * @param {string} name
    */
   async del(user, name) {
-    let redCon = this.getClient();
-    await redCon.ping();
+    let redCon = await this.getClient();
     const uid = await this.getUid(user);
     const res = await executeLock("redis", async () => {
       await spawnSudoUtil("REDIS_GET", []);
@@ -116,6 +118,7 @@ class RedisExecutor {
       await redCon.aclDelUser(name);
       ShellString(lines.join("\n") + "\n").to(tmpFile);
       await spawnSudoUtil("REDIS_SET", []);
+      await redCon.aclSave();
       return "Done delete account " + name;
     });
 
@@ -133,8 +136,7 @@ class RedisExecutor {
    * @returns
    */
   async passwd(user, name, newpasswd) {
-    let redCon = this.getClient();
-    await redCon.ping();
+    let redCon = await this.getClient();
     const uid = await this.getUid(user);
     return await executeLock("redis", async () => {
       await spawnSudoUtil("REDIS_GET", []);
@@ -149,7 +151,8 @@ class RedisExecutor {
       if (exists == -1) {
         throw new Error("Error: This user and key is not exists");
       }
-      await redCon.aclSetUser(name, [">" + newpasswd]);
+      await redCon.aclSetUser(name, ["nopass", ">" + newpasswd]);
+      await redCon.aclSave();
       return "Done set account password " + name;
     });
   }
