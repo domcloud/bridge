@@ -28,7 +28,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`[ ! -d $DNFDIR ] && { cp -r /var/cache/dnf $DNFDIR ; chmod -R 0700 $DNFDIR ; }`, false);
                 await sshExec(`mkdir -p ~/Downloads; pushd ~/Downloads`, false);
                 await sshExec(`dnf download ${value} --resolve -y`);
-                await sshExec(`rpm2cpio *.rpm | cpio -idmD ~`);
+                await sshExec(`ls *.rpm | xargs -n 1 -I {} sh -c 'rpm2cpio "{}" | cpio -idmD ~'`);
                 await sshExec(`popd`, false);
             }
             await sshExec(`. ~/.bashrc`, false)
