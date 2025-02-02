@@ -22,14 +22,13 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             await sshExec(`sed -i '\\|~/usr/lib64/|d' ~/.bashrc`, false);
             await sshExec(`pathman add ~/usr/bin`);
             await sshExec(`echo "export LD_LIBRARY_PATH=~/usr/lib64/:$LD_LIBRARY_PATH" >> ~/.bashrc`)
+            await sshExec(`DNFDIR="/var/tmp/dnf-$USER-dwnlddir"`, false);
+            await sshExec(`[ ! -d $DNFDIR ] && { cp -r /var/cache/dnf $DNFDIR ; chmod -R 0700 $DNFDIR ; }`, false);
             if (value != "") {
                 await writeLog("$> Installing packages via yum");
-                await sshExec(`DNFDIR="/var/tmp/dnf-$USER-dwnlddir"`, false);
-                await sshExec(`[ ! -d $DNFDIR ] && { cp -r /var/cache/dnf $DNFDIR ; chmod -R 0700 $DNFDIR ; }`, false);
-                await sshExec(`mkdir -p ~/Downloads; pushd ~/Downloads`, false);
-                await sshExec(`dnf download ${value} --resolve -y`);
-                await sshExec(`ls *.rpm | xargs -n 1 -I {} sh -c 'rpm2cpio "{}" | cpio -idmD ~'`);
-                await sshExec(`popd`, false);
+                await sshExec(`mkdir -p ~/Downloads`, false);
+                await sshExec(`dnf download ${value} --destdir ~/Downloads --resolve -y`);
+                await sshExec(`ls ~/Downloads/*.rpm | xargs -n 1 -I {} sh -c 'rpm2cpio "{}" | cpio -idmD ~'`);
             }
             await sshExec(`. ~/.bashrc`, false)
             break;
@@ -51,7 +50,6 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             }
             break;
         case 'python':
-            arg = value;
             if (value == 'off') {
                 await writeLog("$> Removing Python engine");
                 await sshExec("rm -rf ~/.pyenv");
@@ -61,11 +59,10 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await writeLog("$> Changing Python engine to " + parg.version);
                 await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash); source ~/.config/envman/PATH.env");
                 if (parg.binary) {
-                    await sshExec(`cd ~/tmp && mkdir -p ~/.pyenv/versions/${parg.version}`);
-                    await sshExec(`curl -sSLo python.tar.zst "${parg.binary}" && tar -axf python.tar.zst && rm $_`);
+                    await sshExec(`mkdir -p ~/.pyenv/versions/${parg.version}`);
+                    await sshExec(`curl -sSL "${parg.binary}" | tar -axf - -C ~/tmp`);
                     await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} || true ; rm -rf ~/tmp/python`);
                     await sshExec(`echo "export LD_LIBRARY_PATH=~/.pyenv/versions/${parg.version}:$LD_LIBRARY_PATH" >> ~/.bashrc`) // fix venv
-                    await sshExec("cd ~/public_html", false);
                 } else if (parg.version !== "system") {
                     await sshExec(`pyenv install ${parg.version} -s`);
                 }
@@ -169,7 +166,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://rvm.io/mpapis.asc | gpg --import -; curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -; }`);
                 await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://get.rvm.io | bash -s master; source ~/.rvm/scripts/rvm; rvm autolibs disable; }`);
                 if (rarg.binary) {
-                    await sshExec(`wget -O ~/tmp/ruby.tar.gz "${rarg.binary}" && tar -axf ~/tmp/ruby.tar.gz -C ~/.rvm/rubies && rm ~/tmp/ruby.tar.gz`);
+                    await sshExec(`curl -sSL "${rarg.binary}" | tar -axf - -C ~/.rvm/rubies`);
                     await sshExec("rvm alias create default " + rarg.version);
                 } else {
                     await sshExec(`rvm install ${getRubyVersion(value)} --no-docs`);
@@ -245,12 +242,10 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                     throw new Error(`No Java with version ${value} is available to install`);
                 }
                 await writeLog("$> Changing Java engine to " + jarg.version);
-                await sshExec(`JDKTMP=~/tmp/jdk.tar.gz; JDKDST=~/.local/java/jdk-${jarg.version}`);
-                await sshExec(`mkdir -p $JDKDST; rm -rf $JDKDST/*`, false);
-                await sshExec(`curl -sSLo $JDKTMP "${jarg.binary}"  && tar -axf $JDKTMP -C $JDKDST`);
-                await sshExec(`mv $JDKDST/*/* $JDKDST/ && rm $JDKTMP && find $JDKDST -type d -empty -delete`, false);
-                await sshExec(`ln -sfn $JDKDST ~/.local/java/jdk`);
-                await sshExec(`pathman add ~/.local/java/jdk/bin ; source ~/.config/envman/PATH.env`);
+                await sshExec(`JDK=~/.local/java/jdk-${jarg.version}; mkdir -p $JDK; rm -rf $JDK/*`);
+                await sshExec(`curl -sSL "${jarg.binary}" | tar -axf - -C $JDK`);
+                await sshExec(`mv $JDK/*/* $JDK/ && find $JDK -type d -empty -delete`, false);
+                await sshExec(`ln -sfn $JDK ~/.local/java/jdk; pathman add ~/.local/java/jdk/bin ; source ~/.config/envman/PATH.env`);
                 await sshExec("java -version");
             }
             break;
