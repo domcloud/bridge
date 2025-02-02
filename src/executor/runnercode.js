@@ -60,7 +60,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash); source ~/.config/envman/PATH.env");
                 if (parg.binary) {
                     await sshExec(`mkdir -p ~/.pyenv/versions/${parg.version}`);
-                    await sshExec(`curl -sSL "${parg.binary}" | tar -axf - -C ~/tmp`);
+                    await sshExec(`curl -sSL "${parg.binary}" | tar -zaxf - -C ~/tmp`);
                     await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} || true ; rm -rf ~/tmp/python`);
                     await sshExec(`echo "export LD_LIBRARY_PATH=~/.pyenv/versions/${parg.version}:$LD_LIBRARY_PATH" >> ~/.bashrc`) // fix venv
                 } else if (parg.version !== "system") {
@@ -166,7 +166,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://rvm.io/mpapis.asc | gpg --import -; curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -; }`);
                 await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://get.rvm.io | bash -s master; source ~/.rvm/scripts/rvm; rvm autolibs disable; }`);
                 if (rarg.binary) {
-                    await sshExec(`curl -sSL "${rarg.binary}" | tar -axf - -C ~/.rvm/rubies`);
+                    await sshExec(`curl -sSL "${rarg.binary}" | tar -zaxf - -C ~/.rvm/rubies`);
                     await sshExec("rvm alias create default " + rarg.version);
                 } else {
                     await sshExec(`rvm install ${getRubyVersion(value)} --no-docs`);
@@ -243,7 +243,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 }
                 await writeLog("$> Changing Java engine to " + jarg.version);
                 await sshExec(`JDK=~/.local/java/jdk-${jarg.version}; mkdir -p $JDK; rm -rf $JDK/*`);
-                await sshExec(`curl -sSL "${jarg.binary}" | tar -axf - -C $JDK`);
+                await sshExec(`curl -sSL "${jarg.binary}" | tar -zaxf - -C $JDK`);
                 await sshExec(`mv $JDK/*/* $JDK/ && find $JDK -type d -empty -delete`, false);
                 await sshExec(`ln -sfn $JDK ~/.local/java/jdk; pathman add ~/.local/java/jdk/bin ; source ~/.config/envman/PATH.env`);
                 await sshExec("java -version");
