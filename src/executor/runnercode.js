@@ -254,10 +254,10 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`JDKTMP=~/tmp/jdk.tar.gz; JDKDST=~/.local/java/jdk-${jarg.version}`);
                 await sshExec(`mkdir -p $JDKDST`, false);
                 await sshExec(`wget "${jarg.binary}" -O $JDKTMP && tar -axf $JDKTMP -C $JDKDST`);
-                await sshExec(`mv $JDKDST/*/* $JDKDST/ && rm $JDKTMP`, false);
+                await sshExec(`mv $JDKDST/*/* $JDKDST/ && rm $JDKTMP && find $JDKDST -type d -empty -delete`, false);
                 await sshExec(`ln -sfn $JDKDST ~/.local/java/jdk`);
                 await sshExec(`pathman add ~/.local/java/jdk/bin ; source ~/.config/envman/PATH.env`);
-                await sshExec("java --version");
+                await sshExec("java -version");
             }
             break;
         case 'neovim':
