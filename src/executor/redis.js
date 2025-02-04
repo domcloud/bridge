@@ -13,12 +13,25 @@ const aclSetUser = (user, pass) =>
   `+config|get +info +acl|whoami +acl|cat +acl|genpass`;
 
 const luaDelKeys = `
-      local keys = redis.call('KEYS', KEYS[1])
-      for _, key in ipairs(keys) do
-          redis.call('DEL', key)
-      end
-      return #keys
-    `;
+local cursor = 0
+local keys = {}
+
+repeat
+    local result = redis.call('SCAN', cursor, 'MATCH', KEYS[1])
+    cursor = tonumber(result[1])
+    local chunkKeys = result[2]
+
+    for _, key in ipairs(chunkKeys) do
+        table.insert(keys, key)
+    end
+until cursor == 0
+
+if #keys > 0 then
+    redis.call('UNLINK', unpack(keys))
+end
+
+return #keys
+`;
 
 class RedisExecutor {
   /**
@@ -132,12 +145,13 @@ class RedisExecutor {
       return "Done delete database " + name;
     });
 
-    await redCon.eval(luaDelKeys, {
+    let c = await redCon.eval(luaDelKeys, {
       keys: [`${user}:*`],
     });
 
-    return res;
+    return res + " with total keys " + c.toString();
   }
+
   /**
    *
    * @param {string} user
