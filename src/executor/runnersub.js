@@ -229,12 +229,13 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 break;
             case 'redis':
+                let instances = await redisExec.show(domaindata['Username']);
+                subenabled = instances.length > 0;
                 if (value === "off") {
                     await writeLog("$> Disabling Redis");
-                    let instances = await redisExec.show(domaindata['Username']);
-                    if (instances.length > 0) {
+                    if (subenabled) {
                         for (const db of instances) {
-                            await redisExec.del(domaindata['Username'], db)
+                            await redisExec.del(domaindata['Username'], db.split(":")[0])
                         }
                     } else {
                         await writeLog("Already disabled");
@@ -250,20 +251,38 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     dbname = getDbName(domaindata['Username'], domainprefix == "db" ? newdb : domainprefix + '_' + newdb);
                     dbneedcreate = true;
                 }
+                const passRef = { pass: undefined }
                 if (dbneedcreate) {
                     await writeLog(`$> Creating db instance ${dbname} on Redis`);
-                    await writeLog(await redisExec.add(domaindata['Username'], dbname));
+                    await writeLog(await redisExec.add(domaindata['Username'], dbname, passRef));
                 } else if (value.startsWith("drop ")) {
-                    let dropdb = value.substr("drop ".length).trim();
-                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? dropdb : domainprefix + '_' + dropdb);
+                    let arg = value.substr("drop ".length).trim();
+                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? arg : domainprefix + '_' + arg);
                     await writeLog(await redisExec.del(domaindata['Username'], dbname));
+                    break;
                 } else if (value.startsWith("modify-pass ")) {
-                    let pass = value.substr("modify-pass ".length).trim();
-                    if (pass) {
-                    await writeLog(await redisExec.passwd(domaindata['Username'], dbname, pass));
+                    let arg = value.substr("modify-pass ".length).trim();
+                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? arg : domainprefix + '_' + arg);
+                    await writeLog(await redisExec.passwd(domaindata['Username'], dbname, passRef));
+                } else if (value.startsWith("get ")) {
+                    let arg = value.substr("get ".length).trim();
+                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? arg : domainprefix + '_' + arg);
+                    let matchedDB = instances.find(x => x.startsWith(dbname + ":"))
+                    if (matchedDB) {
+                        passRef.pass = matchedDB.split(":")[1];
                     }
                 } else if (!value) {
-                    await writeLog(`$> Redis is already initialized. To create another database, use "redis create dbname"`);
+                    await writeLog(`$> Redis is already initialized`);
+                    let matchedDB = instances.find(x => x.startsWith(dbname + ":"))
+                    if (matchedDB) {
+                        passRef.pass = matchedDB.split(":")[1];
+                    }
+                }
+                if (passRef.pass) {
+                    await sshExec(` RDPASSWD='${passRef.pass}'`, false);
+                    await writeLog(`$> RDPASSWD for ${dbname} is loaded`);
+                } else {
+                    await writeLog(`$> Database ${dbname} is not found! To create it, use "redis create ${dbname}"`);
                 }
                 break;
             case 'dns':
@@ -466,7 +485,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             });
                             const nextDate = new Date();
                             nextDate.setMonth(nextDate.getMonth() + 3);
-                            subdomaindata['SSL cert expiry'] =  nextDate.toISOString();
+                            subdomaindata['SSL cert expiry'] = nextDate.toISOString();
                         }
                         // Regenerate self sign if
                         // 1. Explicit request || SSL off

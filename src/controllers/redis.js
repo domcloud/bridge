@@ -1,6 +1,5 @@
 import {
     checkGet,
-    checkPost,
 } from '../util.js';
 import express from 'express';
 import {
@@ -18,7 +17,8 @@ export default function () {
     });
     router.post('/add', checkGet(['user', 'name']), async function (req, res, next) {
         try {
-            const node = await executor.add(req.query.user + "", req.query.name + "");
+            const pass = { pass: undefined }
+            const node = await executor.add(req.query.user + "", req.query.name + "", pass);
             res.json(node);
         } catch (error) {
             next(error);

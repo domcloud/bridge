@@ -7,9 +7,10 @@ import { ShellString } from "shelljs";
 const tmpFile = path.join(process.cwd(), "/.tmp/redis-acl");
 
 const aclSetUser = (user, pass) =>
-  `>${pass} ~${user}:* &${user}: sanitize-payload ` +
+  `on >${pass} ~${user}:* &${user}: sanitize-payload ` +
   `-@all +@connection +@read +@write +@keyspace -KEYS ` +
-  `+@transaction +@geo +@hash +@set +@sortedset +@bitmap +@pubsub`;
+  `+@transaction +@geo +@hash +@set +@sortedset +@bitmap +@pubsub ` +
+  `+config|get +info +acl|whoami +acl|cat +acl|genpass`;
 
 const luaDelKeys = `
       local keys = redis.call('KEYS', KEYS[1])
@@ -35,6 +36,16 @@ class RedisExecutor {
       });
     });
   }
+  /**
+   * @param {string} name
+   */
+  checkNameValid(name) {
+    if (name.length > 256 || !/^[a-z][a-z0-9_]+$/.test(name)) {
+      throw new Error(
+        "Name only accept lowercase alphanumeric and underscore and less than 256 bytes long"
+      );
+    }
+  }
   async getClient() {
     const client = createClient({
       url: process.env.REDIS_URL,
@@ -57,41 +68,38 @@ class RedisExecutor {
   /**
    * @param {string} user
    * @param {string} name
+   * @param {{pass: string}} passRef
    */
-  async add(user, name) {
+  async add(user, name, passRef) {
+    this.checkNameValid(name);
     let redCon = await this.getClient();
     const uid = await this.getUid(user);
     return await executeLock("redis", async () => {
       await spawnSudoUtil("REDIS_GET", []);
       var lines = cat(tmpFile).trim().split("\n");
-      var existsUserSame = false;
-      var exists = lines.some((e) => {
+      var line = lines.find((e) => {
         const parts = e.split(":");
-        if (parts.length != 2) {
-          return;
-        }
-        if (parts[1] == name) {
-          existsUserSame = parts[0] == uid;
-          return true;
-        }
-        return false;
+        return parts.length >= 2 && parts[1] == name;
       });
-      if (exists) {
-        if (existsUserSame) {
-          return "This account is already exists on this domain";
+      if (line) {
+        let lineParts = line.split(":");
+        if (lineParts[0] === uid) {
+          passRef.pass = lineParts[2];
+          return `Database ${name} is already created`;
         } else {
           throw new Error(
-            "Error: This account is already exists and belongs to other domain"
+            "Error: This database is already exists and belongs to other domain"
           );
         }
       }
-      lines.push(uid + ":" + name);
       const pass = await redCon.aclGenPass();
+      lines.push([uid, name, pass].join(":"));
       await redCon.aclSetUser(name, aclSetUser(name, pass).split(" "));
       ShellString(lines.join("\n") + "\n").to(tmpFile);
       await spawnSudoUtil("REDIS_SET", []);
       await redCon.aclSave();
-      return "Done created account " + name + "with password:\n" + pass;
+      passRef.pass = pass;
+      return "Done database account for key " + name;
     });
   }
   /**
@@ -99,6 +107,7 @@ class RedisExecutor {
    * @param {string} name
    */
   async del(user, name) {
+    this.checkNameValid(name);
     let redCon = await this.getClient();
     const uid = await this.getUid(user);
     const res = await executeLock("redis", async () => {
@@ -106,20 +115,20 @@ class RedisExecutor {
       var lines = cat(tmpFile).trim().split("\n");
       var exists = lines.findIndex((e) => {
         const parts = e.split(":");
-        if (parts.length != 2) {
+        if (parts.length < 2) {
           return;
         }
         return parts[0] == uid && parts[1] == name;
       });
       if (exists == -1) {
-        throw new Error("Error: This user and key is not exists");
+        throw new Error("Error: Database is not exists");
       }
       lines.splice(exists, 1);
       await redCon.aclDelUser(name);
       ShellString(lines.join("\n") + "\n").to(tmpFile);
       await spawnSudoUtil("REDIS_SET", []);
       await redCon.aclSave();
-      return "Done delete account " + name;
+      return "Done delete database " + name;
     });
 
     await redCon.eval(luaDelKeys, {
@@ -132,10 +141,11 @@ class RedisExecutor {
    *
    * @param {string} user
    * @param {string} name
-   * @param {string} newpasswd
+   * @param {{pass: string}} passRef
    * @returns
    */
-  async passwd(user, name, newpasswd) {
+  async passwd(user, name, passRef) {
+    this.checkNameValid(name);
     let redCon = await this.getClient();
     const uid = await this.getUid(user);
     return await executeLock("redis", async () => {
@@ -149,11 +159,17 @@ class RedisExecutor {
         return parts[0] == uid && parts[1] == name;
       });
       if (exists == -1) {
-        throw new Error("Error: This user and key is not exists");
+        throw new Error("Error: This database is not exists");
       }
-      await redCon.aclSetUser(name, ["nopass", ">" + newpasswd]);
+      const lineSplit = lines[exists].split(":");
+      const pass = await redCon.aclGenPass();
+      lineSplit[2] = pass;
+      ShellString(lines.join("\n") + "\n").to(tmpFile);
+      await spawnSudoUtil("REDIS_SET", []);
+      await redCon.aclSetUser(name, ["nopass", ">" + pass]);
       await redCon.aclSave();
-      return "Done set account password " + name;
+      passRef.pass = pass;
+      return "Done set new database password for key " + name;
     });
   }
 }
