@@ -63,6 +63,7 @@ class RedisExecutor {
     return result.stdout
       .trim()
       .split("\n")
+      .filter(x => x)
       .map((x) => x.substring(uid.length + 1));
   }
   /**

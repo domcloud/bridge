@@ -189,7 +189,7 @@ switch (cli.args.shift()) {
         exit(0);
     case 'REDIS_GETUSER':
         arg = cli.args.shift();
-        cat(env.REDIS_ACLMAP).grep('', '^' + arg + ':').toString();
+        console.log(cat(env.REDIS_ACLMAP).grep('', '^' + arg + ':').toString());
         exit(0);
     case 'REDIS_GET':
         arg = cli.args.shift();
