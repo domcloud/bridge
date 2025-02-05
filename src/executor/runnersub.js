@@ -229,13 +229,24 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 break;
             case 'redis':
-                let instances = await redisExec.show(domaindata['Username']);
+                const dbuser = domaindata['Username'];
+                let instances = await redisExec.show(dbuser);
                 subenabled = instances.length > 0;
+                let matchedDB = "";
+                /**
+                 * @param {string} arg
+                 */
+                function matchDB(arg) {
+                    dbname = getDbName(dbuser, domainprefix == "db" ? arg : domainprefix + '_' + arg);
+                    return instances.find(x => x.startsWith(dbname + ":"))
+                }
                 if (value === "off") {
                     await writeLog("$> Disabling Redis");
                     if (subenabled) {
                         for (const db of instances) {
-                            await redisExec.del(domaindata['Username'], db.split(":")[0])
+                            dbname = db.split(":")[0];
+                            await writeLog(await redisExec.prune(dbname));
+                            await writeLog(await redisExec.del(dbuser, dbname));
                         }
                     } else {
                         await writeLog("Already disabled");
@@ -248,8 +259,10 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (value.startsWith("create ")) {
                     let newdb = value.substr("create ".length).trim();
-                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? newdb : domainprefix + '_' + newdb);
-                    dbneedcreate = true;
+                    matchedDB = matchDB(newdb)
+                    if (!matchedDB) {
+                        dbneedcreate = true;
+                    }
                 }
                 const passRef = { pass: undefined }
                 if (dbneedcreate) {
@@ -257,23 +270,32 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog(await redisExec.add(domaindata['Username'], dbname, passRef));
                 } else if (value.startsWith("drop ")) {
                     let arg = value.substr("drop ".length).trim();
-                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? arg : domainprefix + '_' + arg);
-                    await writeLog(await redisExec.del(domaindata['Username'], dbname));
+                    matchedDB = matchDB(arg);
+                    if (matchedDB) {
+                        await writeLog(`$> Pruning db instance ${dbname} on Redis`);
+                        await writeLog(await redisExec.prune(dbname));
+                        await writeLog(`$> Dropping db instance ${dbname} on Redis`);
+                        await writeLog(await redisExec.del(domaindata['Username'], dbname));
+                    } else {
+                        await writeLog(`$> DB instance ${dbname} is not found on Redis`);
+                    }
                     break;
                 } else if (value.startsWith("modify-pass ")) {
                     let arg = value.substr("modify-pass ".length).trim();
-                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? arg : domainprefix + '_' + arg);
-                    await writeLog(await redisExec.passwd(domaindata['Username'], dbname, passRef));
+                    matchedDB = matchDB(arg);
+                    if (matchedDB) {
+                        await writeLog(`$> Regenerating password for db instance ${dbname} on Redis`);
+                        await writeLog(await redisExec.passwd(domaindata['Username'], dbname, passRef));
+                    }
                 } else if (value.startsWith("get ")) {
                     let arg = value.substr("get ".length).trim();
-                    dbname = getDbName(domaindata['Username'], domainprefix == "db" ? arg : domainprefix + '_' + arg);
-                    let matchedDB = instances.find(x => x.startsWith(dbname + ":"))
+                    matchedDB = matchDB(arg);
                     if (matchedDB) {
                         passRef.pass = matchedDB.split(":")[1];
                     }
                 } else if (!value) {
                     await writeLog(`$> Redis is already initialized`);
-                    let matchedDB = instances.find(x => x.startsWith(dbname + ":"))
+                    matchedDB = matchDB(domainprefix)
                     if (matchedDB) {
                         passRef.pass = matchedDB.split(":")[1];
                     }

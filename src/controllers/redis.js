@@ -26,7 +26,8 @@ export default function () {
     });
     router.post('/del', checkGet(['user', 'name']), async function (req, res, next) {
         try {
-            const node = await executor.del(req.query.user + "", req.query.name + "");
+            let node = await executor.del(req.query.user + "", req.query.name + "");
+            node += "\n" + await executor.prune(req.query.name + "");
             res.json(node);
         } catch (error) {
             next(error);

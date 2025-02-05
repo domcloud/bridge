@@ -113,7 +113,7 @@ class RedisExecutor {
       await spawnSudoUtil("REDIS_SET", []);
       await redCon.aclSave();
       passRef.pass = pass;
-      return "Done database account for key " + name;
+      return "Database " + name + " created";
     });
   }
   /**
@@ -124,7 +124,7 @@ class RedisExecutor {
     this.checkNameValid(name);
     let redCon = await this.getClient();
     const uid = await this.getUid(user);
-    const res = await executeLock("redis", async () => {
+    return await executeLock("redis", async () => {
       await spawnSudoUtil("REDIS_GET", []);
       var lines = cat(tmpFile).trim().split("\n");
       var exists = lines.findIndex((e) => {
@@ -142,14 +142,20 @@ class RedisExecutor {
       ShellString(lines.join("\n") + "\n").to(tmpFile);
       await spawnSudoUtil("REDIS_SET", []);
       await redCon.aclSave();
-      return "Done delete database " + name;
+      return  "Database " + name + " dropped";
     });
+  }
 
-    let c = await redCon.eval(luaDelKeys, {
-      keys: [`${user}:*`],
+  /**
+   * @param {string} name
+   */
+  async prune(name) {
+    this.checkNameValid(name);
+    let redCon = await this.getClient();
+    let count = await redCon.eval(luaDelKeys, {
+      keys: [`${name}:*`],
     });
-
-    return res + " with total keys " + c.toString();
+    return `Database ${name} pruned with ${count} total keys`
   }
 
   /**
