@@ -8,6 +8,7 @@ import {
 } from '../util.js';
 import express from 'express';
 import path from 'path';
+import os from 'os';
 import { fixNGINX, fixPHP } from '../executor/pulse.js';
 
 const tmpCheck = path.join(process.cwd(), '/.tmp/check')
@@ -33,7 +34,10 @@ export default function () {
     });
     router.get('/ip', async function (req, res, next) {
         if (getAuth(req)) {
-            res.json({ ip: req.ip, granted: true })
+            const arch = os.machine();
+            const cpu = os.cpus().length;
+            const mem = os.totalmem() / 1024 / 1024 / 1024;
+            res.json({ ip: req.ip, arch, cpu, mem, granted: true })
         } else {
             res.json({ ip: req.ip })
         }
