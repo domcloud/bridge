@@ -20,7 +20,7 @@ class IptablesExecutor {
      */
     getByUser(parsed, userName, userID = "") {
         const setRules = genRules(userName, userID);
-        return parsed.filter.some((x) => setRules.includes(x));
+        return parsed.filter && parsed.filter.some((x) => setRules.includes(x));
     }
     async getParsed() {
         await executeLock('iptables', async () => {
