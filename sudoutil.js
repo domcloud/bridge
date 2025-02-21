@@ -34,6 +34,8 @@ const {
     ShellString,
 } = shelljs;
 
+const isDebian = existsSync('/etc/lsb-release');
+
 const env = Object.assign({}, {
     BASH_PATH: '/bin/bash',
     BASH_SU: 'su',
@@ -42,8 +44,8 @@ const env = Object.assign({}, {
     VIRTUAL_SERVER_PATH: '/etc/webmin/virtual-server/domains/$',
     VIRTUAL_SERVER_OUT: '/etc/webmin/virtual-server/domains/$',
     VIRTUAL_SERVER_TMP: path.join(__dirname, '.tmp/virtual-server'),
-    NGINX_PATH: '/etc/nginx/conf.d/$.conf',
-    NGINX_OUT: '/etc/nginx/conf.d/$.conf',
+    NGINX_PATH: isDebian ? '/etc/nginx/sites-available/$.conf' : '/etc/nginx/conf.d/$.conf',
+    NGINX_OUT: isDebian ? '/etc/nginx/sites-available/$.conf' : '/etc/nginx/conf.d/$.conf',
     NGINX_BIN: 'nginx',
     NGINX_START: 'systemctl start nginx',
     NGINX_TMP: path.join(__dirname, '.tmp/nginx'),
