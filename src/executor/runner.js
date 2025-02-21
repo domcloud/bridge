@@ -3,6 +3,7 @@ import {
     executeLock,
     getRevision,
     getVersion,
+    isDebian,
     spawnSudoUtil,
     spawnSudoUtilAsync,
     splitLimit
@@ -184,7 +185,7 @@ export default async function runConfig(payload) {
                         }
                     }
                     chunk = chunk.replace(/\0/g, '');
-                    let match = chunk.match(/\[.+?\@.+? .+?\]\$/);
+                    let match = chunk.match(isDebian() ? /[\w-]+?\@[\w-]+?:(\~|\/).*?\$/ : /\[.+?\@.+? .+?\]\$/);
                     if (match) {
                         cb = null;
                         if (write) {

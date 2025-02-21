@@ -1,7 +1,7 @@
 import path, { dirname } from 'path';
 import { spawn } from 'child_process';
 import lock from './helpers/lockfile.js';
-import fs from 'fs';
+import fs, { existsSync } from 'fs';
 import binaries from './binaries/metadata.cjs';
 import { virtualminExec } from './executor/virtualmin.js';
 const {
@@ -22,7 +22,12 @@ let phpVersionsList = [];
  */
 let sslWildcardsMap = {};
 
+let isThisDebian = false;
+
+export const isDebian = () => isThisDebian
+
 export const initUtils = () => {
+    isThisDebian = existsSync('/etc/lsb-release');
     tokenSecret = `Bearer ${process.env.SECRET}`;
     allowIps = process.env.ALLOW_IP ? process.env.ALLOW_IP.split(',').reduce((a, b) => {
         a[b] = true;
