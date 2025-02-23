@@ -345,8 +345,7 @@ switch (cli.args.shift()) {
             'crond',
             'mariadb',
             'postgresql',
-            'iptables',
-            'ip6tables',
+            'valkey',
             'fail2ban',
             'earlyoom',
         ]
