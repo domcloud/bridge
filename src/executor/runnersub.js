@@ -432,7 +432,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             case 'www':
                 var nginxNodes = await nginxExec.get(subdomain);
                 var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
-                value = parseInt(value);
                 if (!['off', 'on', 'enforce', 'always'].includes(value)) {
                     throw new Error(`www option invalid. specify "www on" or "www off" or "www always"`);
                 }
