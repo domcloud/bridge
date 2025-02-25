@@ -429,6 +429,21 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
                 }
                 break;
+            case 'www':
+                var nginxNodes = await nginxExec.get(subdomain);
+                var nginxInfos = nginxExec.extractInfo(nginxNodes, subdomain);
+                value = parseInt(value);
+                if (!['off', 'on', 'enforce', 'always'].includes(value)) {
+                    throw new Error(`www option invalid. specify "www on" or "www off" or "www always"`);
+                }
+                if (value === nginxInfos.www) {
+                    await writeLog("$> www version config is set unchanged");
+                } else {
+                    nginxInfos.config.www = value;
+                    await writeLog("$> Applying nginx www config on " + subdomain);
+                    await writeLog(await nginxExec.setDirect(subdomain, nginxInfos));
+                }
+                break;
             case 'ssl':
                 // ssl also fix any misconfigurations
                 var changed = false;
