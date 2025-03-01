@@ -4,7 +4,7 @@ import logman from './controllers/logman.js';
 import named from './controllers/named.js';
 import nginx from './controllers/nginx.js';
 import status from './controllers/status.js';
-import iptables from './controllers/iptables.js';
+import nftables from './controllers/nftables.js';
 import redis from './controllers/redis.js';
 import screend from './controllers/screend.js';
 import {
@@ -28,7 +28,8 @@ app.use(checkAuth);
 app.use('/logman', logman());
 app.use('/named', named());
 app.use('/nginx', nginx());
-app.use('/iptables', iptables());
+app.use('/iptables', nftables()); // legacy compat
+app.use('/nftables', nftables());
 app.use('/screend', screend());
 app.use('/redis', redis());
 app.use('/docker', docker());

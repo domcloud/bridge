@@ -1,7 +1,7 @@
 import express from 'express';
 import {
-    iptablesExec as executor
-} from '../executor/iptables.js';
+    nftablesExec as executor
+} from '../executor/nftables.js';
 import {
     checkPost
 } from '../util.js';
