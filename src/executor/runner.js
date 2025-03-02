@@ -9,8 +9,8 @@ import {
     splitLimit
 } from "../util.js";
 import {
-    iptablesExec
-} from "./iptables.js";
+    nftablesExec
+} from "./nftables.js";
 import {
     virtualminExec
 } from "./virtualmin.js";
@@ -234,7 +234,7 @@ export default async function runConfig(payload) {
         let firewallStatusCache = undefined;
         let firewallStatus = async () => {
             if (firewallStatusCache === undefined)
-                firewallStatusCache = !!iptablesExec.getByUser(await iptablesExec.getParsed(), domaindata['Username'], domaindata['User ID']);
+                firewallStatusCache = !!nftablesExec.getByUser(await nftablesExec.getParsed(), domaindata['Username'], domaindata['User ID']);
             return firewallStatusCache;
         };
         for (const feature of Array.isArray(config.features) && !config.subdomain ? config.features : []) {
@@ -275,7 +275,7 @@ export default async function runConfig(payload) {
                         break;
                     case 'rename':
                         if (value && value["new-user"] && await firewallStatus()) {
-                            await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
+                            await nftablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
                         }
                         await writeLog("$> virtualmin rename-domain");
                         await virtExec("rename-domain", value, {
@@ -286,7 +286,7 @@ export default async function runConfig(payload) {
                             domain = value["new-domain"];
                         await new Promise(r => setTimeout(r, 1000));
                         if (value && value["new-user"] && await firewallStatus()) {
-                            await iptablesExec.setAddUser(value["new-user"], domaindata['User ID']);
+                            await nftablesExec.setAddUser(value["new-user"], domaindata['User ID']);
                         }
                         // @ts-ignore
                         domaindata = await virtualminExec.getDomainInfo(domain);
@@ -348,7 +348,7 @@ export default async function runConfig(payload) {
                             domain,
                         });
                         if (await firewallStatus()) {
-                            await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
+                            await nftablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
                         }
                         await spawnSudoUtil('CLEAN_DOMAIN', ["rm", domaindata['ID'], domain]);
                         // no need to do other stuff
@@ -361,11 +361,11 @@ export default async function runConfig(payload) {
                 case 'firewall':
                     if (value === '' || value === 'on') {
                         await writeLog("$> Changing firewall protection to " + (value || 'on'));
-                        await writeLog(await iptablesExec.setAddUser(domaindata['Username'], domaindata['User ID']));
+                        await writeLog(await nftablesExec.setAddUser(domaindata['Username'], domaindata['User ID']));
                         firewallStatusCache = true;
                     } else if (value === 'off') {
                         await writeLog("$> Changing firewall protection to " + value);
-                        await writeLog(await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']));
+                        await writeLog(await nftablesExec.setDelUser(domaindata['Username'], domaindata['User ID']));
                         firewallStatusCache = false;
                     }
                     break;

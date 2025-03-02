@@ -52,32 +52,25 @@ const env = Object.assign({}, {
     UNIT_SOCKET: '/var/run/unit/control.sock',
     UNIT_TMP: path.join(__dirname, '.tmp/unit'),
     COMPOSE_TMP: path.join(__dirname, '.tmp/compose'),
-    IPTABLES_PATH: '/etc/sysconfig/iptables',
-    IPTABLES_OUT: '/etc/sysconfig/iptables',
-    IPTABLES_SAVE: 'iptables-save',
-    IPTABLES_LOAD: 'iptables-restore',
-    IP6TABLES_PATH: '/etc/sysconfig/ip6tables',
-    IP6TABLES_OUT: '/etc/sysconfig/ip6tables',
-    IP6TABLES_SAVE: 'ip6tables-save',
-    IP6TABLES_LOAD: 'ip6tables-restore',
-    IPTABLES_TMP: path.join(__dirname, '.tmp/iptables'),
-    IP6TABLES_TMP: path.join(__dirname, '.tmp/ip6tables'),
-    IPTABLES_WHITELIST_EXEC: 'sh ' + path.join(__dirname, 'src/whitelist/refresh.sh'),
+    NFTABLES_PATH: '/etc/nftables-whitelist.conf',
+    NFTABLES_OUT: '/etc/nftables-whitelist.conf',
+    NFTABLES_LOAD: 'nft',
+    NFTABLES_TMP: path.join(__dirname, '.tmp/nftables'),
     NAMED_PATHS: '/var/named/$.hosts',
     NAMED_OUT: '/var/named/$.hosts',
     NAMED_CHECK: 'named-checkzone',
     NAMED_RELOAD: 'rndc reload $',
     NAMED_RESYNC: 'rndc retransfer $',
     NAMED_TMP: path.join(__dirname, '.tmp/named'),
-    OPENSSL_PATH: '/etc/pki/tls/openssl.cnf',
-    OPENSSL_OUT: '/etc/pki/tls/openssl.cnf',
+    OPENSSL_PATH: isDebian ? '/usr/lib/ssl/openssl.cnf' : '/etc/pki/tls/openssl.cnf',
+    OPENSSL_OUT: isDebian ? '/usr/lib/ssl/openssl.cnf' : '/etc/pki/tls/openssl.cnf',
     VIRTUALMIN: 'virtualmin',
     LOGINLINGERDIR: '/var/lib/systemd/linger',
     REDIS_ACLMAP: '/etc/valkey/usermap.acl',
     REDIS_ACLTMP: path.join(__dirname, '.tmp/redis-acl'),
-    PHPFPM_REMILIST: '/etc/opt/remi/',
-    PHPFPM_REMICONF: '/etc/opt/remi/$/php-fpm.d',
-    PHPFPM_REMILOC: '/opt/remi/$/root/usr/sbin/php-fpm',
+    PHPFPM_REMILIST: isDebian ? '/etc/php/' : '/etc/opt/remi/',
+    PHPFPM_REMICONF: isDebian ? '/etc/php/$/fpm/pool.d' : '/etc/opt/remi/$/php-fpm.d',
+    PHPFPM_REMILOC: isDebian ? '/usr/sbin/php-fpm$' : '/opt/remi/$/root/usr/sbin/php-fpm',
     SHELLCHECK_TMP: path.join(__dirname, '.tmp/check'),
     SHELLTEST_TMP: path.join(__dirname, '.tmp/test'),
     SSL_WILDCARDS_TMP: path.join(__dirname, '.tmp/wildcardssl.json'),
@@ -94,6 +87,10 @@ function fixOwner(filePath) {
     } = statSync(path.join(__dirname, './sudoutil.js'));
     chownSync(filePath, uid, gid);
     chmodSync(filePath, 0o750);
+}
+
+function getFpmList() {
+    return ls(env.PHPFPM_REMILIST).filter((f) => f.match(isDebian ? /\d\.\d/ : /php\d\d/));
 }
 
 cd(__dirname); // making sure because we're in sudo
@@ -204,29 +201,15 @@ switch (cli.args.shift()) {
     case 'NGINX_START':
         exec(env.NGINX_START);
         exit(0);
-    case 'IPTABLES_GET':
-        cat(env.IPTABLES_PATH).to(env.IPTABLES_TMP);
-        fixOwner(env.IPTABLES_TMP);
+    case 'FIREWALL_GET':
+        cat(env.NFTABLES_PATH).to(env.NFTABLES_TMP);
+        fixOwner(env.NFTABLES_TMP);
         exit(0);
-    case 'IP6TABLES_GET':
-        cat(env.IP6TABLES_PATH).to(env.IP6TABLES_TMP);
-        fixOwner(env.IP6TABLES_TMP);
-        exit(0);
-    case 'IPTABLES_SET':
-        // making sure whitelist set is exist
-        // exec(env.IPTABLES_WHITELIST_EXEC);
-        if (cat(env.IPTABLES_TMP).exec(`${env.IPTABLES_LOAD} -t`).code !== 0)
+    case 'FIREWALL_SET':
+        if (exec(`${env.NFTABLES_LOAD} -f ${env.NFTABLES_TMP} --check`).code !== 0)
             exit(1);
-        cat(env.IPTABLES_TMP).to(env.IPTABLES_OUT);
-        cat(env.IPTABLES_OUT).exec(env.IPTABLES_LOAD);
-        exit(0);
-    case 'IP6TABLES_SET':
-        // making sure whitelist set is exist
-        // exec(env.IPTABLES_WHITELIST_EXEC);
-        if (cat(env.IP6TABLES_TMP).exec(`${env.IP6TABLES_LOAD} -t`).code !== 0)
-            exit(1);
-        cat(env.IP6TABLES_TMP).to(env.IP6TABLES_OUT);
-        cat(env.IP6TABLES_OUT).exec(env.IP6TABLES_LOAD);
+        cat(env.NFTABLES_TMP).to(env.NFTABLES_OUT);
+        exec(`${env.NFTABLES_LOAD} -f ${env.NFTABLES_OUT}`);
         exit(0);
     case 'NAMED_GET':
         arg = cli.args.shift();
@@ -258,7 +241,7 @@ switch (cli.args.shift()) {
         const mode = cli.args.shift();
         const id = cli.args.shift();
         const domain = cli.args.shift();
-        var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
+        var fpmlist = getFpmList();
         var fpmcleaned = '', nginxcleaned = '';
         /**
          * @param {string} p
@@ -288,7 +271,7 @@ switch (cli.args.shift()) {
             }
         }
         if (fpmcleaned) {
-            exec(`systemctl restart ${fpmcleaned}-php-fpm`)
+            exec(`systemctl restart ${isDebian ? `php${fpmcleaned}-fpm` : `${fpmcleaned}-php-fpm`}`)
         }
         if (nginxcleaned) {
             exec(`${env.NGINX_BIN} -s reload`);
@@ -335,10 +318,10 @@ switch (cli.args.shift()) {
         }, 1000 * 60 * 60).unref();
         break;
     case 'SHELL_CHECK':
-        var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
+        var fpmlist = getFpmList();
         var services = [
             'nginx',
-            ...fpmlist.map((f) => f + '-php-fpm'),
+            ...fpmlist.map((f) => isDebian ? `php${f}-fpm` : `${f}-php-fpm`),
             'named',
             'webmin',
             'sshd',
@@ -388,11 +371,9 @@ switch (cli.args.shift()) {
             return false;
         }
         var nginx = exec(`${env.NGINX_BIN} -t`, { silent: true });
-        var fpmlist = ls(env.PHPFPM_REMILIST).filter((f) => f.match(/php\d\d/));
+        var fpmlist = getFpmList();
         var fpmpaths = fpmlist.map((f) => env.PHPFPM_REMILOC.replace('$', f));
         var fpms = fpmpaths.map((f) => exec(`${f} -t`, { silent: true }));
-        var iptables = exec(`${env.IPTABLES_LOAD} -t ${env.IPTABLES_PATH}`, { silent: true });
-        var ip6tables = exec(`${env.IP6TABLES_LOAD} -t ${env.IP6TABLES_PATH}`, { silent: true });
         var storage = exec(`df -h | grep ^/dev`, { silent: true });
         var quota = exec(`findmnt -r | grep -P '(/ |/home )'`, { silent: true }).stdout.trim().split('\n');
         var storagefull = isDfFull(storage.stdout);
@@ -401,8 +382,7 @@ switch (cli.args.shift()) {
         var chkcpu = exec(`uptime`, { silent: true });
 
         var exitcode = 0;
-        if (nginx.code !== 0 || iptables.code !== 0 || ip6tables.code !== 0 ||
-            fpms.some((f) => f.code !== 0) || storagefull || !quotaOK)
+        if (nginx.code !== 0 || fpms.some((f) => f.code !== 0) || storagefull || !quotaOK)
             exitcode = 1;
         var sslcode = undefined, ssldata = undefined;
         if (existsSync(env.SSL_WILDCARDS_TMP) && (ssldata = JSON.parse(cat(env.SSL_WILDCARDS_TMP).toString()))) {
@@ -421,8 +401,6 @@ switch (cli.args.shift()) {
             codes: {
                 nginx: nginx.code,
                 fpms: fpms.map((f) => f.code),
-                iptables: iptables.code,
-                ip6tables: ip6tables.code,
                 storage: storagefull ? 1 : 0,
                 quota: quotaOK ? 0 : 1,
                 ssl: sslcode,
@@ -434,8 +412,6 @@ switch (cli.args.shift()) {
                 quota,
                 nginx: nginx.stderr.trimEnd().split('\n'),
                 fpms: Object.fromEntries(fpmlist.map((_, i) => [fpmlist[i], fpms[i].stderr.trimEnd().split('\n')])),
-                iptables: iptables.stderr.trimEnd().split('\n'),
-                ip6tables: ip6tables.stderr.trimEnd().split('\n'),
             },
             timestamp: Date.now(),
         })).to(env.SHELLTEST_TMP);

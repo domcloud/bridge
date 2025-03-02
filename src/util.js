@@ -39,7 +39,7 @@ export const initUtils = () => {
     revision = rev.indexOf(':') === -1 ? rev : cat('.git/' + rev.substring(5)).trim();
     revision = revision.substring(0, 7);
     try {
-        const phpPath = process.env.PHPFPM_REMILIST || '/etc/opt/remi/';
+        const phpPath = process.env.PHPFPM_REMILIST || (isThisDebian ? '/etc/php/' : '/etc/opt/remi/');
         const phpFiles = fs.readdirSync(phpPath, { withFileTypes: true });
         phpVersionsList = phpFiles
             .filter(dirent => dirent.isDirectory())

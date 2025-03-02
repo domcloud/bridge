@@ -3,7 +3,7 @@ import {
     detectCanShareSSL,
     escapeShell, getDbName, getLtsPhp, spawnSudoUtil, splitLimit
 } from "../util.js";
-import { iptablesExec } from "./iptables.js";
+import { nftablesExec } from "./nftables.js";
 import { namedExec } from "./named.js";
 import { nginxExec } from "./nginx.js";
 import { virtualminExec } from "./virtualmin.js";
@@ -730,7 +730,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             }
 
             if (firewallOn) {
-                await iptablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
+                await nftablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
             }
             await writeLog("$> " + executedCMDNote);
             for (const exec of executedCMD) {
@@ -771,7 +771,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         throw error;
     } finally {
         if (config.source && firewallOn) {
-            await iptablesExec.setAddUser(domaindata['Username'], domaindata['User ID']);
+            await nftablesExec.setAddUser(domaindata['Username'], domaindata['User ID']);
         }
 
         if (Array.isArray(config.features)) {

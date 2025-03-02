@@ -38,7 +38,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await writeLog(await dockerExec.enableDocker(domaindata['Username']));
                 await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`, false);
                 await sshExec(`echo "export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock" >>  ~/.bashrc;`);
-                await sshExec(`mkdir -p ~/.config/docker; echo '{"exec-opts": ["native.cgroupdriver=cgroupfs"]}' > ~/.config/docker/daemon.json`);
+                await sshExec(`mkdir -p ~/.config/docker; echo '{"exec-opts": ["native.cgroupdriver=cgroupfs"],"iptables":false}' > ~/.config/docker/daemon.json`);
                 await sshExec(`dockerd-rootless-setuptool.sh install --skip-iptables`);
                 await sshExec(`export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`, false);
             } else if (value === 'off') {
