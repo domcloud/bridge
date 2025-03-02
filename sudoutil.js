@@ -342,10 +342,11 @@ switch (cli.args.shift()) {
             'named',
             'webmin',
             'sshd',
-            'crond',
+            isDebian ? 'cron' : 'crond',
             'mariadb',
             'postgresql',
             'valkey',
+            'nftables',
             'fail2ban',
             'earlyoom',
         ]
