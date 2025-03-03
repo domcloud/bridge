@@ -10,7 +10,7 @@ if [ ! -f "$SCRIPT_DIR/nftables.txt" ]; then
 fi
 
 cat "$SCRIPT_DIR/nftables.txt" > /etc/nftables-whitelist.conf
-cat "$SCRIPT_DIR/nfip_addresses" >> /etc/nftables-whitelist.conf
+cat "$SCRIPT_DIR/nfip_addresses.txt" >> /etc/nftables-whitelist.conf
 nft -f "/etc/nftables-whitelist.conf"
 
 if [ ! -f "$SCRIPT_DIR/hosts.txt" ]; then
