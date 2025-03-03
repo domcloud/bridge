@@ -29,5 +29,6 @@ for RECORD_TYPE in A AAAA; do
   done <"$SCRIPT_DIR/sites.conf"
 done 
 
+echo ""
 echo -n "$NFIP_ADDRESSES" > "$SCRIPT_DIR/nfip_addresses.txt"
 echo -n "$HOST_ADDRESSES" > "$SCRIPT_DIR/host_addresses.txt"
