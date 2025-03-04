@@ -25,7 +25,7 @@ export const appendIfRecordNotExist = ( /** @type {string[]} */ arr, /** @type {
  * @returns {string[]}
  */
 export function parseIptablesDoc(doc = '') {
-    return doc.split('\n').filter(x => x.startsWith(`add rule`))
+    return doc.trim().split('\n')
 }
 /**
  * 
@@ -33,7 +33,7 @@ export function parseIptablesDoc(doc = '') {
  * @returns {string}
  */
 export function encodeIptablesDoc(doc) {
-    return '#!/usr/sbin/nft -f\n\n' + doc.join('\n') + '\n';
+    return doc.join('\n') + '\n';
 }
 
 export function genRules(userName = "", userID = "") {
