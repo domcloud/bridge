@@ -717,10 +717,19 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (url.pathname.endsWith('.tar.gz')) {
                     executedCMD.push(`wget -O _.tar.gz ` + escapeShell(url.toString()));
-                    executedCMD.push(`tar -xzf _.tar.gz ; rm _.tar.gz ; chmod -R 0750 *`);
+                    executedCMD.push(`tar -xzf _.tar.gz ; rm _.tar.gz`);
+                } else if (url.pathname.endsWith('.tar.xz')) {
+                    executedCMD.push(`wget -O _.tar.xz ` + escapeShell(url.toString()));
+                    executedCMD.push(`tar -xJf _.tar.xz ; rm _.tar.xz`);
+                } else if (url.pathname.endsWith('.tar.bz2')) {
+                    executedCMD.push(`wget -O _.tar.bz2 ` + escapeShell(url.toString()));
+                    executedCMD.push(`tar -xjf _.tar.bz2 ; rm _.tar.bz2`);
+                } else if (url.pathname.endsWith('.tar.gz')) {
+                    executedCMD.push(`wget -O _.tar.gz ` + escapeShell(url.toString()));
+                    executedCMD.push(`tar -xzf _.tar.gz ; rm _.tar.gz`);
                 } else {
                     executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
-                    executedCMD.push(`unzip -q -o _.zip ; rm _.zip ; chmod -R 0750 *`);
+                    executedCMD.push(`unzip -q -o _.zip ; rm _.zip`);
                 }
                 if (source.directory) {
                     executedCMD.push(`mv ${escapeShell(source.directory)}/* .`);
@@ -736,6 +745,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             for (const exec of executedCMD) {
                 await sshExec(exec);
             }
+            await sshExec(`chmod -R 0750 *`, false);
         }
 
         if (config.commands) {
