@@ -169,7 +169,8 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`command -v rvm &> /dev/null || { curl -sSL https://get.rvm.io | bash -s master; source ~/.rvm/scripts/rvm; rvm autolibs disable; }`);
                 if (rarg.binary) {
                     await sshExec(`curl -sSL "${rarg.binary}" | tar -zaxf - -C ~/.rvm/rubies`);
-                    await sshExec("rvm alias create default " + rarg.version);
+                    await sshExec("rvm alias create default " + rarg.version + ' --create');
+                    await sshExec("source /home/testwppp/.rvm/scripts/rvm");
                 } else {
                     await sshExec(`rvm install ${getRubyVersion(value)} --no-docs`);
                 }
