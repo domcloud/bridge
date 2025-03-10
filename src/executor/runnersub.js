@@ -735,6 +735,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     executedCMD.push(`mv ${escapeShell(source.directory)}/* .`);
                     executedCMD.push(`rm -rf ${escapeShell(source.directory)}`);
                 }
+                executedCMD.push('chmod -R 0750 *');
                 executedCMDNote = 'Downloading files';
             }
 
@@ -745,7 +746,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
             for (const exec of executedCMD) {
                 await sshExec(exec);
             }
-            await sshExec(`chmod -R 0750 *`, false);
         }
 
         if (config.commands) {
