@@ -27,7 +27,6 @@ const locationKeys = [
 ];
 const sslNames = ["", "off", "always", "on"];
 const wwwNames = ["", "off", "always", "on"];
-const unitProxy = "http://127.0.0.1:88"
 
 class NginxExecutor {
     /** @param {import('nginx-conf/dist/src/conf').NginxConfItem} node */
@@ -40,15 +39,16 @@ class NginxExecutor {
                 } else if (key === "root" || key == "alias") {
                     node._add(key, path.join(`/home/${info.user}`, config[key]));
                 } else if (key === "proxy_pass") {
-                    if (config[key] === "unit") {
-                        node._add(key, unitProxy);
-                    } else if (/^docker:(\d+)$/.test(config[key]) && info.docker_ip) {
+                    let added = false;
+                    if (/^docker:(\d+)$/.test(config[key]) && info.docker_ip) {
                         let port = parseInt(config[key].substring(7));
                         if (port > 0x400 && port < 0xFFFF) {
                             node._add(key, `http://${info.docker_ip}:${port}`);
+                            added = true;
                         }
-                    } else if (/^http:\/\/127\.\d+\.\d+\.\d+:\d+(\$.+|\/.+)?$/.test(config[key])) {
+                    } else if (/^http:\/\/127\.\d+\.\d+\.\d+:\d+(\$\w+|\/.*)?$/.test(config[key])) {
                         node._add(key, config[key]);
+                        added = true;
                     }
                 } else if (key == "limit_except") {
                     node._add(key, config[key], [{
@@ -295,9 +295,7 @@ class NginxExecutor {
                         r[k] = v.slice(info.home.length);
                     } else if (k === 'proxy_pass') {
                         const dockerProxy = 'http://' + info.docker_ip + ':';
-                        if (r[k] == unitProxy) {
-                            r[k] = "unit";
-                        } else if (v.startsWith(dockerProxy)) {
+                        if (v.startsWith(dockerProxy)) {
                             r[k] = "docker:" + v.slice(dockerProxy.length);
                         } else {
                             r[k] = v;
