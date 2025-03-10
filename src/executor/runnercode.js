@@ -45,9 +45,10 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`, false);
             } else if (value === 'off') {
                 await writeLog("$> Disabling docker features");
-                await sshExec(`dockerd-rootless-setuptool.sh uninstall`);
+                await sshExec(`dockerd-rootless-setuptool.sh uninstall --skip-iptables`);
                 await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`);
-                await sshExec(`rm -rf ~/.config/docker`);
+                await sshExec(`rm -rf ~/.config/docker`); 
+                await sshExec(`rootlesskit rm -rf ~/.local/share/docker`);
                 await writeLog(await dockerExec.disableDocker(domaindata['Username']));
             }
             break;
