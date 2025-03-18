@@ -71,6 +71,7 @@ const env = Object.assign({}, {
     PHPFPM_REMILIST: isDebian ? '/etc/php/' : '/etc/opt/remi/',
     PHPFPM_REMICONF: isDebian ? '/etc/php/$/fpm/pool.d' : '/etc/opt/remi/$/php-fpm.d',
     PHPFPM_REMILOC: isDebian ? '/usr/sbin/php-fpm$' : '/opt/remi/$/root/usr/sbin/php-fpm',
+    OPCACHE_TMP: path.join(__dirname, '.tmp/opcache'),
     SHELLCHECK_TMP: path.join(__dirname, '.tmp/check'),
     SHELLTEST_TMP: path.join(__dirname, '.tmp/test'),
     SSL_WILDCARDS_TMP: path.join(__dirname, '.tmp/wildcardssl.json'),
@@ -232,6 +233,16 @@ switch (cli.args.shift()) {
         var cnf = cat(env.OPENSSL_PATH).toString();
         cnf = cnf.replace(/^subjectAltName=DNS.+\n/gm, '');
         ShellString(cnf).to(env.OPENSSL_OUT);
+        exit(0);
+    case 'OPCACHE_STATUS_HTML':
+        arg = cli.args.shift();
+        if (!/^(php\d\d|\d\.\d)$/.test(arg)) {
+            exit(1);
+        }
+        const thefile =  path.join(__dirname, 'test/opcache_status.php');
+        const thesock = isDebian ? `/run/php/php${arg}-fpm.sock` : `/var/opt/remi/${arg}/run/php-fpm/www.sock`;
+        const theout = exec(`SCRIPT_FILENAME=${thefile} REQUEST_METHOD=GET cgi-fcgi -bind -connect ${thesock} | tail -n +4`);
+        ShellString(theout.stdout).to(env.OPCACHE_TMP);
         exit(0);
     case 'CLEAN_DOMAIN':
         if (cli.args.length < 3) {

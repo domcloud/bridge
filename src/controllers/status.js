@@ -1,5 +1,6 @@
 import {
     cat,
+    checkGet,
     getAuth,
     getRevision,
     getSupportVersions,
@@ -91,6 +92,15 @@ export default function () {
                 await fixPHP(lastTestResult);
             }
             res.status(lastTestOK ? 200 : 500).json(lastTestResult);
+        } catch (error) {
+            next(error);
+        }
+    });
+    router.get('/opcache', checkGet(['version']), async function (req, res, next) {
+        try {
+            await spawnSudoUtil("OPCACHE_STATUS_HTML", [req.query.version.toString()])
+            const text = cat(path.join(process.cwd(), '/.tmp/opcache'));
+            return res.setHeader('content-type', ' text/html').send(text);
         } catch (error) {
             next(error);
         }
