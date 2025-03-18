@@ -239,7 +239,7 @@ switch (cli.args.shift()) {
         if (!/^(php\d\d|\d\.\d)$/.test(arg)) {
             exit(1);
         }
-        const thefile =  path.join(__dirname, 'test/opcache_status.php');
+        const thefile = '/usr/local/share/www/opcache.php';
         const thesock = isDebian ? `/run/php/php${arg}-fpm.sock` : `/var/opt/remi/${arg}/run/php-fpm/www.sock`;
         const theout = exec(`SCRIPT_FILENAME=${thefile} REQUEST_METHOD=GET cgi-fcgi -bind -connect ${thesock} | tail -n +4`);
         ShellString(theout.stdout).to(env.OPCACHE_TMP);
