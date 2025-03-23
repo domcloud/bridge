@@ -172,7 +172,7 @@ export default async function runConfig(payload) {
             }
         });
         const debug = !!config.debug;
-        /** @type {string|undefined} */ 
+        /** @type {string|undefined} */
         let sshPs1Header = undefined;
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise(function (resolve, reject) {
@@ -200,13 +200,14 @@ export default async function runConfig(payload) {
                         for (let i = 0; i < splits.length; i++) {
                             const el = splits[i] + (i == splits.length - 1 ? "" : "\n");
                             if (el) {
-                                await writer("$< " + JSON.stringify(el) + "\n");
+                                await writer("$< " + JSON.stringify(el) +
+                                    +(i < splits.length - 1 ? " +\n" : "\n"));
                             }
                         }
                     })()
                     if (match) {
                         cb = null;
-                        if (sshPs1Header !== chunk) {
+                        if (!sshPs1Header || !chunk.endsWith(sshPs1Header)) {
                             // first or cd dir
                             sshPs1Header = chunk;
                         } else if (write && chunk.length > sshPs1Header.length) {
@@ -230,7 +231,7 @@ export default async function runConfig(payload) {
                             } else {
                                 writer(chunk);
                             }
-                            lastChunkIncomplete = !chunk.endsWith('\n'); 
+                            lastChunkIncomplete = !chunk.endsWith('\n');
                         }
                         first = false;
                         return false;
