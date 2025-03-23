@@ -211,6 +211,12 @@ export default async function runConfig(payload) {
                             // first or cd dir
                             sshPs1Header = chunk;
                         } else if (write && chunk.length > sshPs1Header.length) {
+                            if (first) {
+                                let pos = chunk.indexOf('\n');
+                                if (pos >= 0 && pos < chunk.length - sshPs1Header.length) {
+                                    chunk = chunk.substring(pos + 1);
+                                }
+                            }
                             const leftChunk = chunk.substring(0, chunk.length - sshPs1Header.length)
                             writer(leftChunk);
                             lastChunkIncomplete = !leftChunk.endsWith('\n');
@@ -226,11 +232,10 @@ export default async function runConfig(payload) {
                             if (first) {
                                 let pos = chunk.indexOf('\n');
                                 if (pos >= 0) {
-                                    writer(chunk.substring(pos + 1));
+                                    chunk = chunk.substring(pos + 1);
                                 }
-                            } else {
-                                writer(chunk);
                             }
+                            writer(chunk);
                             lastChunkIncomplete = !chunk.endsWith('\n');
                         }
                         first = false;
