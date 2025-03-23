@@ -171,11 +171,12 @@ export default async function runConfig(payload) {
                 cb('', code);
             }
         });
+        const debug = !!config.debug;
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise(function (resolve, reject) {
                 if (!ssh) return reject("shell has terminated already");
                 let first = true;
-                cb = (/** @type {string} */ chunk, code) => {
+                cb = (/** @type {string} */ chunk, /** @type {number} */ code) => {
                     if (!ssh) {
                         if (code) {
                             return writeLog("Exit status: " + (code) + "\n")
@@ -186,6 +187,15 @@ export default async function runConfig(payload) {
                     }
                     chunk = chunk.replace(/\0/g, '');
                     let match = chunk.match(/\[.+?\@.+? .+?\]\$ /);
+                    debug && (async function () {
+                        const splits = chunk.split('\n');
+                        for (let i = 0; i < splits.length; i++) {
+                            const el = splits[i] + (i == splits.length - 1 ? "" : "\n");
+                            if (el) {
+                                await writer("$< " + JSON.stringify(el) + "\n");
+                            }
+                        }
+                    })()
                     if (match) {
                         cb = null;
                         if (write) {
@@ -209,7 +219,7 @@ export default async function runConfig(payload) {
                     }
                 };
                 if (cmd) {
-                    if (write) {
+                    if (write || debug) {
                         writer('$> ' + cmd + "\n");
                     }
                     ssh.stdin.write(cmd + "\n");
