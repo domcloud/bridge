@@ -218,8 +218,18 @@ export default async function runConfig(payload) {
                 }
             })
         }
-        await sshExec(`PS1='[\\u@\\h \\W]\\$ '`, false); // enforce header
-        await sshExec('set -e', false); // early exit on error
+        await new Promise(function (resolve, reject) {
+            // enforce ps1 header
+            // unset history file
+            // early exit on error
+            ssh.stdin.write([
+                " PS1='[\\u@\\h \\W]\\$ '",
+                " unset HISTFILE TERM",
+                " set -e",
+                ""
+            ].join('\n'), (e) => e ? reject(e) : resolve());
+        });
+        await sshExec(``, false); // drop initial packet
         payload.sender = async (s) => {
             if (!ssh) return;
             if (s == "!ABORT!") {
@@ -401,7 +411,6 @@ export default async function runConfig(payload) {
             if (cb) cb('', 124);
         }, maxExecutionTime).unref();
 
-        await sshExec('unset HISTFILE TERM', false); // https://stackoverflow.com/a/9039154/3908409
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 `, false);
         await sshExec(`export PIP_PROGRESS_BAR=off BUILDKIT_PROGRESS=plain`, false);
         await sshExec(` USERNAME='${domaindata['Username']}' PASSWORD='${domaindata['Password']}'`, false);
