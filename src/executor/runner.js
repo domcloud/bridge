@@ -179,19 +179,16 @@ export default async function runConfig(payload) {
                 if (!ssh) return reject("shell has terminated already");
                 let first = true;
                 let lastChunkIncomplete = false;
-                cb = (/** @type {string} */ chunk, /** @type {number} */ code) => {
+                cb = async (/** @type {string} */ chunk, /** @type {number} */ code) => {
                     if (!ssh) {
                         if (code) {
-                            return writeLog("Exit status: " + (code) + "\n")
-                                .then(() => reject(`shell has terminated.`));
+                            await writeLog("Exit status: " + (code) + "\n")
+                            return reject(`shell has terminated.`);
                         } else {
                             return resolve();
                         }
                     }
-                    chunk = chunk.replace(/\0/g, '');
-                    // TODO: Can't use sshPs1Header since cd dir can change it?
-                    let match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
-                    debug && (async function () {
+                    debug && await (async function () {
                         const splits = chunk.split('\n');
                         if (lastChunkIncomplete) {
                             await writer("\n");
@@ -205,6 +202,9 @@ export default async function runConfig(payload) {
                             }
                         }
                     })()
+                    chunk = chunk.replace(/\0/g, '');
+                    // TODO: Can't use sshPs1Header since cd dir can change it?
+                    const match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
                     if (match) {
                         cb = null;
                         if (!sshPs1Header || !chunk.endsWith(sshPs1Header)) {
@@ -218,11 +218,11 @@ export default async function runConfig(payload) {
                                 }
                             }
                             const leftChunk = chunk.substring(0, chunk.length - sshPs1Header.length)
-                            writer(leftChunk);
+                            await writer(leftChunk);
                             lastChunkIncomplete = !leftChunk.endsWith('\n');
                         }
                         if (write && lastChunkIncomplete) {
-                            writer("\n");
+                            await writer("\n");
                             lastChunkIncomplete = false;
                         }
                         resolve();
@@ -235,7 +235,7 @@ export default async function runConfig(payload) {
                                     chunk = chunk.substring(pos + 1);
                                 }
                             }
-                            writer(chunk);
+                            await writer(chunk);
                             lastChunkIncomplete = !chunk.endsWith('\n');
                         }
                         first = false;
