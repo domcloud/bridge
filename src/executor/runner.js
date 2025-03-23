@@ -172,6 +172,8 @@ export default async function runConfig(payload) {
             }
         });
         const debug = !!config.debug;
+        /** @type {string|undefined} */ 
+        let sshPs1Header = undefined;
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise(function (resolve, reject) {
                 if (!ssh) return reject("shell has terminated already");
@@ -187,6 +189,7 @@ export default async function runConfig(payload) {
                         }
                     }
                     chunk = chunk.replace(/\0/g, '');
+                    // TODO: Detect with sshPs1Header instead
                     let match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
                     debug && (async function () {
                         const splits = chunk.split('\n');
@@ -203,6 +206,13 @@ export default async function runConfig(payload) {
                     })()
                     if (match) {
                         cb = null;
+                        if (!sshPs1Header) {
+                            sshPs1Header = chunk;
+                        } else if (write && chunk.length > sshPs1Header.length) {
+                            const leftChunk = chunk.substring(0, chunk.length - sshPs1Header.length)
+                            writer(leftChunk);
+                            lastChunkIncomplete = !leftChunk.endsWith('\n');
+                        }
                         if (write && lastChunkIncomplete) {
                             writer("\n");
                             lastChunkIncomplete = false;
