@@ -1,7 +1,8 @@
 import path from "path";
 import {
     detectCanShareSSL,
-    escapeShell, getDbName, getLtsPhp, spawnSudoUtil, splitLimit
+    escapeShell, getDbName, getLtsPhp,
+    isDebian, spawnSudoUtil, splitLimit
 } from "../util.js";
 import { nftablesExec } from "./nftables.js";
 import { namedExec } from "./named.js";
@@ -304,7 +305,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await sshExec(` RDPASSWD='${passRef.pass}'`, false);
                     await writeLog(`$> RDPASSWD for ${dbname} is loaded`);
                 } else {
-                    await writeLog(`$> Database ${dbname} is not found! To create it, use "redis create ${dbname}"`);
+                    await writeLog(`$> Database ${dbname} is not found! To create it, use "redis create dbname"`);
                 }
                 break;
             case 'dns':
@@ -411,7 +412,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     'php-version': value,
                 });
 
-                var phpVer = value.replace('.', '');
+                var phpVer = isDebian() ? value : value.replace('.', '');
+                // TODO: This is already done by virtualmin in ~/bin?
                 await sshExec(`mkdir -p ~/.local/bin; echo -e "\\u23\\u21/bin/bash\\n$(which php${phpVer}) \\u22\\u24\\u40\\u22" > ~/.local/bin/php; chmod +x ~/.local/bin/php`, false);
                 break;
             case 'http':
