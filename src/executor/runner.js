@@ -232,10 +232,11 @@ export default async function runConfig(payload) {
                             if (first) {
                                 let pos = chunk.indexOf('\n');
                                 if (pos >= 0) {
-                                    chunk = chunk.substring(pos + 1);
+                                    await writer(chunk.substring(pos + 1));
                                 }
+                            } else {
+                                await writer(chunk);
                             }
-                            await writer(chunk);
                             lastChunkIncomplete = !chunk.endsWith('\n');
                         }
                         first = false;
