@@ -442,7 +442,9 @@ export const normalizeShellOutput = function ( /** @type {string[]} */ output) {
     text = text2;
     text = text.replace(/\x1b\[A.+?\x1b\[Ke/g, '\n');
     text = text.replace(/^\$> (.+)/gm, '\u001b[37m$$> $1\u001b[0m');
-    text = text.replace(/^(Exit status: .+)/gim, "\u001b[36m$1\u001b[0m");
+    text = text.replace(/^\$< "(.+)"/gm, '\u001b[37m$$> "\u001b[36m$1\u001b[37m"\u001b[0m');
+    text = text.replace(/^(Exit status: .+)/gm, "\u001b[36m$1\u001b[0m");
+    text = text.replace(/^(\$> Error occured.*)/gm, "\u001b[91m$1\u001b[0m");
     return text;
 }
 
