@@ -201,7 +201,7 @@ export default async function runConfig(payload) {
                             const el = splits[i] + (i == splits.length - 1 ? "" : "\n");
                             if (el) {
                                 await writer("$< " + JSON.stringify(el) +
-                                    +(i < splits.length - 1 ? " +\n" : "\n"));
+                                    (i < splits.length - 1 ? " +\n" : "\n"));
                             }
                         }
                     })()
