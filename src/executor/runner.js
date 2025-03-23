@@ -176,6 +176,7 @@ export default async function runConfig(payload) {
             return new Promise(function (resolve, reject) {
                 if (!ssh) return reject("shell has terminated already");
                 let first = true;
+                let lastChunkIncomplete = false;
                 cb = (/** @type {string} */ chunk, /** @type {number} */ code) => {
                     if (!ssh) {
                         if (code) {
@@ -189,6 +190,10 @@ export default async function runConfig(payload) {
                     let match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
                     debug && (async function () {
                         const splits = chunk.split('\n');
+                        if (lastChunkIncomplete) {
+                            await writer("\n");
+                            lastChunkIncomplete = false;
+                        }
                         for (let i = 0; i < splits.length; i++) {
                             const el = splits[i] + (i == splits.length - 1 ? "" : "\n");
                             if (el) {
@@ -198,8 +203,9 @@ export default async function runConfig(payload) {
                     })()
                     if (match) {
                         cb = null;
-                        if (write) {
+                        if (write && lastChunkIncomplete) {
                             writer("\n");
+                            lastChunkIncomplete = false;
                         }
                         resolve();
                         return true;
@@ -213,6 +219,7 @@ export default async function runConfig(payload) {
                             } else {
                                 writer(chunk);
                             }
+                            lastChunkIncomplete = !chunk.endsWith('\n'); 
                         }
                         first = false;
                         return false;
