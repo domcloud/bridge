@@ -189,7 +189,7 @@ export default async function runConfig(payload) {
                         }
                     }
                     chunk = chunk.replace(/\0/g, '');
-                    // TODO: Detect with sshPs1Header instead
+                    // TODO: Can't use sshPs1Header since cd dir can change it?
                     let match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
                     debug && (async function () {
                         const splits = chunk.split('\n');
@@ -206,7 +206,8 @@ export default async function runConfig(payload) {
                     })()
                     if (match) {
                         cb = null;
-                        if (!sshPs1Header) {
+                        if (sshPs1Header !== chunk) {
+                            // first or cd dir
                             sshPs1Header = chunk;
                         } else if (write && chunk.length > sshPs1Header.length) {
                             const leftChunk = chunk.substring(0, chunk.length - sshPs1Header.length)
