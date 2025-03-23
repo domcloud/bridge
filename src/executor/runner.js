@@ -185,7 +185,7 @@ export default async function runConfig(payload) {
                         }
                     }
                     chunk = chunk.replace(/\0/g, '');
-                    let match = chunk.match(/\[.+?\@.+? .+?\]\$/);
+                    let match = chunk.match(/\[.+?\@.+? .+?\]\$ /);
                     if (match) {
                         cb = null;
                         if (write) {
@@ -218,7 +218,7 @@ export default async function runConfig(payload) {
                 }
             })
         }
-        await sshExec(`PS1='[\\u@\\h \\W]\\$'`, false); // enforce header
+        await sshExec(`PS1='[\\u@\\h \\W]\\$ '`, false); // enforce header
         await sshExec('set -e', false); // early exit on error
         payload.sender = async (s) => {
             if (!ssh) return;
