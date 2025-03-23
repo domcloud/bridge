@@ -186,7 +186,7 @@ export default async function runConfig(payload) {
                         }
                     }
                     chunk = chunk.replace(/\0/g, '');
-                    let match = chunk.match(/\[.+?\@.+? .+?\]\$ /);
+                    let match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
                     debug && (async function () {
                         const splits = chunk.split('\n');
                         for (let i = 0; i < splits.length; i++) {
@@ -233,7 +233,7 @@ export default async function runConfig(payload) {
             // unset history file
             // early exit on error
             ssh.stdin.write([
-                " PS1='[\\u@\\h \\W]\\$ '",
+                isDebian() ? " PS1='\\u@\\h:\\W\\$ '" : " PS1='[\\u@\\h \\W]\\$ '",
                 " unset HISTFILE TERM",
                 " set -e",
                 ""
