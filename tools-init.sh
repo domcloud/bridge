@@ -38,6 +38,7 @@ if [ ! -d "./phprdadmin" ]; then
     composer install -o
     cp includes/config.sample.inc.php includes/config.inc.php
     sed -i "s/'cookie_auth' => false/'cookie_auth' => true/g" includes/config.inc.php
+    sed -i "s/6379/6479/g" includes/config.inc.php
     cd ..
 else
     cd ./phprdadmin

@@ -7,8 +7,8 @@ import { ShellString } from "shelljs";
 const tmpFile = path.join(process.cwd(), "/.tmp/redis-acl");
 
 const aclSetUser = (user, pass) =>
-  `on >${pass} ~${user}:* &${user}: sanitize-payload ` +
-  `-@all +@connection +@read +@write +@keyspace -KEYS ` +
+  `on >${pass} ~${user}:* &${user}:* sanitize-payload ` +
+  `-@all +@connection +@read +@write +@scripting +@keyspace -KEYS ` +
   `+@transaction +@geo +@hash +@set +@sortedset +@bitmap +@pubsub ` +
   `+config|get +info +acl|whoami +acl|cat +acl|genpass`;
 
