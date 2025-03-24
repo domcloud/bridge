@@ -606,7 +606,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         await writeLog("$> Removing docker compose services if exists");
         await sshExec(`docker compose ${addFlags} --progress quiet down --remove-orphans || true`);
         await writeLog("$> Configuring NGINX forwarding for docker");
-        let d = await dockerExec.executeServices(services, htmlDir, subdomain, writeLog);
+        let d = await dockerExec.executeServices(services, htmlDir, subdomain, domaindata['Username'], writeLog);
         await writeLog("$> Writing docker compose services");
         await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
         await writeLog("$> Applying compose services");

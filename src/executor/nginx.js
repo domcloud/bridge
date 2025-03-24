@@ -40,13 +40,7 @@ class NginxExecutor {
                     node._add(key, path.join(`/home/${info.user}`, config[key]));
                 } else if (key === "proxy_pass") {
                     let added = false;
-                    if (/^docker:(\d+)$/.test(config[key]) && info.docker_ip) {
-                        let port = parseInt(config[key].substring(7));
-                        if (port > 0x400 && port < 0xFFFF) {
-                            node._add(key, `http://${info.docker_ip}:${port}`);
-                            added = true;
-                        }
-                    } else if (/^http:\/\/127\.\d+\.\d+\.\d+:\d+(\$\w+|\/.*)?$/.test(config[key])) {
+                    if (/^http:\/\/127\.\d+\.\d+\.\d+:\d+(\$\w+|\/.*)?$/.test(config[key])) {
                         node._add(key, config[key]);
                         added = true;
                     }
@@ -293,13 +287,8 @@ class NginxExecutor {
                     const v = node[k][0]._value;
                     if (k === "root" || k === "alias") {
                         r[k] = v.slice(info.home.length);
-                    } else if (k === 'proxy_pass') {
-                        const dockerProxy = 'http://' + info.docker_ip + ':';
-                        if (v.startsWith(dockerProxy)) {
-                            r[k] = "docker:" + v.slice(dockerProxy.length);
-                        } else {
-                            r[k] = v;
-                        }
+                    } else if (k === 'proxy_pass') {                        
+                        r[k] = v;
                     } else if (k == "rewrite") {
                         if (r["rewrite"]) {
                             r["rewrite_list"] = [r["rewrite"], v]
@@ -329,21 +318,6 @@ class NginxExecutor {
             }
             return null;
         }
-        const findDockerIp = (l) => {
-            if (l.proxy_pass && l.proxy_pass[0]) {
-                if (/^http:\/\/127\.[12]\d\d\.\d+\.\d+:\d+$/.test(l.proxy_pass[0]._value)) {
-                    return new URL(l.proxy_pass[0]._value).hostname;
-                }
-            }
-            if (l.location) {
-                for (const ll of l.location) {
-                    var r = findDockerIp(ll);
-                    if (r)
-                        return r;
-                }
-            }
-            return null;
-        }
         const data = {
             ssl: 0, // binary of 1 = HTTP, 2 = HTTPS
             www: 1, // binary of 1 = apex, 2 = www
@@ -355,7 +329,6 @@ class NginxExecutor {
             user: null,
             home: null,
             fcgi: null,
-            docker_ip: null,
             free: false,
             access_log: null,
             error_log: null,
@@ -392,7 +365,6 @@ class NginxExecutor {
         data.ssl_certificate_key = node.ssl_certificate_key[0]?._value;
 
         data.fcgi = findFastCgi(node);
-        data.docker_ip = findDockerIp(node);
         data.config = extractLocations(node, data);
         delete data.config.match;
         delete data.config.alias;

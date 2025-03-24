@@ -64,6 +64,9 @@ const env = Object.assign({}, {
     NAMED_TMP: path.join(__dirname, '.tmp/named'),
     OPENSSL_PATH: isDebian ? '/usr/lib/ssl/openssl.cnf' : '/etc/pki/tls/openssl.cnf',
     OPENSSL_OUT: isDebian ? '/usr/lib/ssl/openssl.cnf' : '/etc/pki/tls/openssl.cnf',
+    PORTS_PATH: '/etc/ports',
+    PORTS_OUT: '/etc/ports',
+    PORTS_TMP: path.join(__dirname, '.tmp/ports'),
     VIRTUALMIN: 'virtualmin',
     LOGINLINGERDIR: '/var/lib/systemd/linger',
     REDIS_ACLMAP: '/etc/valkey/usermap.acl',
@@ -198,6 +201,18 @@ switch (cli.args.shift()) {
         exit(0);
     case 'REDIS_SET':
         cat(env.REDIS_ACLTMP).to(env.REDIS_ACLMAP);
+        exit(0);
+    case 'PORTS_LIST':
+        arg = cli.args.shift();
+        console.log(cat(env.PORTS_PATH).toString());
+        exit(0);
+    case 'PORTS_GET':
+        arg = cli.args.shift();
+        cat(env.PORTS_PATH).to(env.PORTS_TMP);
+        fixOwner(env.PORTS_TMP);
+        exit(0);
+    case 'PORTS_SET':
+        cat(env.PORTS_TMP).to(env.PORTS_OUT);
         exit(0);
     case 'NGINX_START':
         exec(env.NGINX_START);
