@@ -520,6 +520,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                                 domain: subdomain,
                                 'renew': 2,
                                 'web': true,
+                                'validate-first': true,
                             });
                             const nextDate = new Date();
                             nextDate.setMonth(nextDate.getMonth() + 3);
