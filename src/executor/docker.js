@@ -184,7 +184,7 @@ class DockerExecutor {
           }
           exposedPorts.push(parseInt(conf.published));
         }
-        service.ports[i] = conf;
+        service.ports[i] = `${conf.published}:${conf.target}/tcp`;
       }
     }
     // make sure to handle .well-known
