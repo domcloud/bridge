@@ -39,10 +39,8 @@ class NginxExecutor {
                 } else if (key === "root" || key == "alias") {
                     node._add(key, path.join(`/home/${info.user}`, config[key]));
                 } else if (key === "proxy_pass") {
-                    let added = false;
                     if (/^http:\/\/127\.\d+\.\d+\.\d+:\d+(\$\w+|\/.*)?$/.test(config[key])) {
                         node._add(key, config[key]);
-                        added = true;
                     }
                 } else if (key == "limit_except") {
                     node._add(key, config[key], [{
@@ -287,8 +285,6 @@ class NginxExecutor {
                     const v = node[k][0]._value;
                     if (k === "root" || k === "alias") {
                         r[k] = v.slice(info.home.length);
-                    } else if (k === 'proxy_pass') {                        
-                        r[k] = v;
                     } else if (k == "rewrite") {
                         if (r["rewrite"]) {
                             r["rewrite_list"] = [r["rewrite"], v]

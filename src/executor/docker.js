@@ -209,17 +209,18 @@ class DockerExecutor {
       nginxChanged = true;
     }
     let proxyPass = matchedConf.proxy_pass + "";
-    let proxyPassMatched = proxyPass.startsWith('127.0.0.1:') && exposedPorts.includes(parseInt(proxyPass.replace(/^127.0.0.1:/, '')));
+    const proxyPrefix = 'http://127.0.0.1:';
+    let proxyPassMatched = proxyPass.startsWith(proxyPrefix) && exposedPorts.includes(parseInt(proxyPass.replace(proxyPrefix, '')));
     var matchingProxy = proxyPass;
     if (hint) {
-      matchingProxy = "127.0.0.1:" + hint;
+      matchingProxy = proxyPrefix + hint;
     } else if (proxyPassMatched) {
       matchingProxy = proxyPass;
     } else {
       if (exposedPorts.length == 0) {
         throw new Error("There are no exposed ports can be detected! Please tell use the port like `service: docker-compose.yml#8000`");
       }
-      matchingProxy = "127.0.0.1:" + exposedPorts[0];
+      matchingProxy = proxyPrefix + exposedPorts[0];
     }
     if (matchingProxy != proxyPass) {
       matchedConf.proxy_pass = matchingProxy;
@@ -274,6 +275,9 @@ class DockerExecutor {
     [composeObject.services, nginxStatus] = await this.rewriteServices(composeObject.services, domain, username, hint);
     if (logWriter) {
       await logWriter(nginxStatus)
+    }
+    if (composeObject.version) {
+      delete composeObject.version;
     }
     let composeFile = yaml.stringify(composeObject);
     await executeLock('compose', () => {
