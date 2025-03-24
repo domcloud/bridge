@@ -64,7 +64,7 @@ class DockerExecutor {
       }
       if (changed) {
         ShellString(lines.join("\n") + "\n").to(portsTmpFile);
-        await spawnSudoUtil("PORTS_SET", []);  
+        await spawnSudoUtil("PORTS_SET", []);
         return "Ports allocation added";
       } else {
         return "Ports allocation unchanged";
@@ -175,7 +175,7 @@ class DockerExecutor {
             throw new Error('Docker ports allocation has been exhausted, please contact server maintainer');
           } else {
             let candidate = parseInt(conf.published);
-            while (isNaN(candidate) || candidate <= 10000 || candidate >= 30000 || ports.findIndex(x => x[1] == candidate + "") != -1) {
+            while (isNaN(candidate) || candidate <= 10000 || candidate >= 65535 || ports.findIndex(x => x[1] == candidate + "") != -1) {
               candidate = Math.trunc(Math.random() * 20000) + 10000
             }
             conf.published = candidate + "";
@@ -212,7 +212,7 @@ class DockerExecutor {
     const proxyPrefix = 'http://127.0.0.1:';
     let proxyPassMatched = proxyPass.startsWith(proxyPrefix) && exposedPorts.includes(parseInt(proxyPass.replace(proxyPrefix, '')));
     var matchingProxy = proxyPass;
-    if (hint) {
+    if (hint && exposedPorts.includes(hint)) {
       matchingProxy = proxyPrefix + hint;
     } else if (proxyPassMatched) {
       matchingProxy = proxyPass;
@@ -233,7 +233,7 @@ class DockerExecutor {
       nginxStatus = "Done unchanged";
     }
     if (portsChanged) {
-      await this.writePorts(uid, exposedPorts);
+      await this.writePorts(uid, exposedPorts.filter(x => x < 30000));
     }
     return [services, nginxStatus];
   }
