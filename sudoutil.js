@@ -214,6 +214,10 @@ switch (cli.args.shift()) {
     case 'PORTS_SET':
         cat(env.PORTS_TMP).to(env.PORTS_OUT);
         exit(0);
+    case 'PORTS_PRUNE':
+        arg = cli.args.shift();
+        cat(env.PORTS_PATH).grep('-v', '^' + arg + ':').to(env.PORTS_OUT);
+        exit(0);
     case 'NGINX_START':
         exec(env.NGINX_START);
         exit(0);
