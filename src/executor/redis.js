@@ -10,7 +10,7 @@ const aclSetUser = (user, pass) =>
   `on >${pass} ~${user}:* &${user}:* sanitize-payload ` +
   `-@all +@connection +@read +@write +@scripting +@keyspace -KEYS ` +
   `+@transaction +@geo +@hash +@set +@sortedset +@bitmap +@pubsub ` +
-  `+config|get +info +acl|whoami +acl|cat +acl|genpass`;
+  `+config|get +info +time +acl|whoami +acl|cat +acl|genpass`;
 
 const luaDelKeys = `
 local cursor = 0
