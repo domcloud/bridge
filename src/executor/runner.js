@@ -224,9 +224,16 @@ export default async function runConfig(payload) {
                         resolve();
                         return true;
                     } else {
-                        if (write && chunk && chunk !== '\n') {
-                            await writer(chunk);
-                            lastChunkIncomplete = !chunk.endsWith('\n');
+                        if (write && chunk) {
+                            if (chunk === '\n') {
+                                if (lastChunkIncomplete) {
+                                    await writer("\n");
+                                    lastChunkIncomplete = false;
+                                }
+                            } else {
+                                await writer(chunk);
+                                lastChunkIncomplete = !chunk.endsWith('\n');
+                            }
                         }
                         return false;
                     }
