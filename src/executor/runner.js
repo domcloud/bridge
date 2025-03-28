@@ -203,8 +203,9 @@ export default async function runConfig(payload) {
                     })()
                     // TODO: Can't use sshPs1Header since cd dir can change it?
                     const match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
-                    // do not write carriage return or null character
-                    chunk = chunk.replace(/[\r\0].*$/gm, '');
+                    // discard write carriage return or null character
+                    // "\r +\r" is a yarn specific pattern so discard it beforehand
+                    chunk = chunk.replace(/\r[ \r]+\r/g, '').replace(/[\r\0].*(\n|$)/g, '');
                     if (match) {
                         cb = null;
                         if (!sshPs1Header || !chunk.endsWith(sshPs1Header)) {
