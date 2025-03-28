@@ -256,6 +256,8 @@ export default async function runConfig(payload) {
             " unset HISTFILE TERM",
             // early exit on error
             " set -e",
+            // when do *, also match .*
+            " shopt -s dotglob",
         ].join(';'), false); // drop initial packet
         payload.sender = async (s) => {
             if (!ssh) return;
@@ -269,9 +271,18 @@ export default async function runConfig(payload) {
     }
     try {
         let firewallStatusCache = undefined;
+        /**
+         * 
+         * @returns {Promise<boolean>}
+         */
         let firewallStatus = async () => {
-            if (firewallStatusCache === undefined)
-                firewallStatusCache = !!nftablesExec.getByUser(await nftablesExec.getParsed(), domaindata['Username'], domaindata['User ID']);
+            if (firewallStatusCache === undefined) {
+                try {
+                    firewallStatusCache = !!nftablesExec.getByUser(await nftablesExec.getParsed(), domaindata['Username'], domaindata['User ID']);
+                } catch (error) {
+                    firewallStatusCache = false;
+                }
+            }
             return firewallStatusCache;
         };
         for (const feature of Array.isArray(config.features) && !config.subdomain ? config.features : []) {
@@ -451,15 +462,17 @@ export default async function runConfig(payload) {
         if (domaindata['Password or postgres']) {
             passwds.push(` PGPASSWD='${domaindata['Password for postgres']}'`);
         }
+        const stillroot = !config.subdomain;
+        const domainname = stillroot ? domain : [config.subdomain, domain].join('.');
+        passwds.push(` DOMAIN='${domainname}'`);
         await sshExec(` ` + passwds.join('; '), false);
-        const firewallOn = await firewallStatus();
-        if (config.subdomain) {
-            await runConfigSubdomain(config, domaindata, [config.subdomain, domain].join('.'), sshExec, writeLog, virtExec, firewallOn);
-        } else {
-            await runConfigSubdomain(config, domaindata, domain, sshExec, writeLog, virtExec, firewallOn, true);
-            for (const sub of Array.isArray(config.subdomains) ? config.subdomains : []) {
+        await runConfigSubdomain(config, domaindata, domainname, sshExec, writeLog, virtExec, firewallStatus, stillroot);
+        if (stillroot && Array.isArray(config.subdomains)) {
+            for (const sub of config.subdomains) {
+                const subdomain = [sub.subdomain, domain].join('.');
+                await sshExec(` DOMAIN='${subdomain}'`, false);
                 if (sub.subdomain) {
-                    await runConfigSubdomain(sub, domaindata, [sub.subdomain, domain].join('.'), sshExec, writeLog, virtExec, firewallOn);
+                    await runConfigSubdomain(sub, domaindata, subdomain, sshExec, writeLog, virtExec, firewallStatus);
                 } else {
                     await writeLog(`\nERROR: subdomains require subdomain on each item.`);
                 }

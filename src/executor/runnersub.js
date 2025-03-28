@@ -19,11 +19,11 @@ import { redisExec } from "./redis.js";
  * @param {{(cmd: string, write?: boolean): Promise<any>}} sshExec
  * @param {{(s: string): Promise<void>}} writeLog
  * @param {{ (program: any, ...opts: any[]): Promise<any> }} virtExec
- * @param {boolean} firewallOn
+ * @param {() => Promise<boolean>} firewallStatus
  * @param {boolean} stillroot
  */
 
-export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallOn, stillroot = false) {
+export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallStatus, stillroot = false) {
     var subdomaindata;
 
     if (stillroot) {
@@ -587,8 +587,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
     };
 
+    const htmlDir = subdomaindata['Home directory'] + '/public_html';
+
     async function serviceRunner(/** @type {object|string} */ services) {
-        const htmlDir = subdomaindata['Home directory'] + '/public_html';
         const addFlags = typeof services == 'string' ? `-f ${(
             services.match(/^[^#]+/)[0]
         )}` : '';
@@ -615,9 +616,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     }
 
     if (config.source || config.commands || config.services) {
-        await sshExec(`shopt -s dotglob`, false);
-        await sshExec(`export DOMAIN='${subdomain}'`, false);
-        await sshExec(`mkdir -p '${subdomaindata['Home directory']}/public_html' && cd "$_"`);
+        await sshExec(`mkdir -p '${htmlDir}' && cd "$_"`);
     }
 
     if (config.nginx && config.nginx.root) {
@@ -727,9 +726,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 } else if (url.pathname.endsWith('.tar.bz2')) {
                     executedCMD.push(`wget -O _.tar.bz2 ` + escapeShell(url.toString()));
                     executedCMD.push(`tar -xjf _.tar.bz2 ; rm _.tar.bz2`);
-                } else if (url.pathname.endsWith('.tar.gz')) {
-                    executedCMD.push(`wget -O _.tar.gz ` + escapeShell(url.toString()));
-                    executedCMD.push(`tar -xzf _.tar.gz ; rm _.tar.gz`);
                 } else {
                     executedCMD.push(`wget -O _.zip ` + escapeShell(url.toString()));
                     executedCMD.push(`unzip -q -o _.zip ; rm _.zip`);
@@ -742,7 +738,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 executedCMDNote = 'Downloading files';
             }
 
-            if (firewallOn) {
+            if (await firewallStatus()) {
                 await nftablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
             }
             await writeLog("$> " + executedCMDNote);
@@ -752,7 +748,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
 
         if (config.commands) {
-            await sshExec(`export DATABASE='${dbname}'`, false);
+            await sshExec(`DATABASE='${dbname}'`, false);
             if (config.envs) {
                 let entries = Object.entries(config.envs);
                 if (entries.length > 0)
@@ -783,7 +779,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     } catch (error) {
         throw error;
     } finally {
-        if (config.source && firewallOn) {
+        if (config.source && await firewallStatus()) {
             await nftablesExec.setAddUser(domaindata['Username'], domaindata['User ID']);
         }
 
