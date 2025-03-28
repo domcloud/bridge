@@ -211,7 +211,7 @@ export default async function runConfig(payload) {
                     // "\r +\r" is a yarn specific pattern so discard it beforehand
                     chunk = chunk.replace(/\r[ \r]+\r/g, '').replace(/[\r\0].*$/gm, '');
                     if (skipLineLen > 0) {
-                        const chunkLineLen = countOf(cmd, "\n");
+                        const chunkLineLen = countOf(chunk, "\n");
                         if (chunkLineLen >= skipLineLen) {
                             const trimTo = nthIndexOf(chunk, "\n", chunkLineLen - skipLineLen + 1)
                             chunk = chunk.substring(trimTo + 1);
