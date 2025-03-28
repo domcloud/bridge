@@ -502,16 +502,20 @@ export function splitLimit(/** @type {string} */ input,/** @type {string|RegExp}
 }
 
 /**
- * @param {string} str
- * @param {string} pat
- * @param {number} nth occurence (start from 1)
+ * @param {string} str - The string to search in
+ * @param {string} pat - The pattern to search for
+ * @param {number} nth - The occurrence number (starting from 1)
+ * @returns {number} - The index of the nth occurrence, or -1 if not found
  */
-export function nthIndexOf(str, pat, nth){
-    var L= str.length, i= -1;
-    while(nth-- && i++<L){
-        i= str.indexOf(pat, i);
-        if (i < 0) break;
+export function nthIndexOf(str, pat, nth) {
+    if (nth < 1) return -1; // nth occurrence must start from 1
+    let i = -1;
+  
+    while (nth-- > 0) {
+        i = str.indexOf(pat, i + 1); // Move to the next occurrence
+        if (i === -1) return -1; // Stop if not found
     }
+  
     return i;
 }
 
@@ -519,13 +523,17 @@ export function nthIndexOf(str, pat, nth){
  * @param {string} str
  * @param {string} pat
  */
-export function countOf(str, pat){
-    var L= str.length, i= -1, nth = -1;
-    while(nth++ && i++<L){
-        i= str.indexOf(pat, i);
-        if (i < 0) break;
+export function countOf(str, pat) {
+    if (!pat) return 0; // Avoid infinite loops on empty pattern
+    let count = 0;
+    let pos = 0;
+  
+    while ((pos = str.indexOf(pat, pos)) !== -1) {
+        count++;
+        pos += pat.length; // Move past the found occurrence
     }
-    return nth;
+  
+    return count;
 }
 // https://stackoverflow.com/a/40201629/3908409
 /**
