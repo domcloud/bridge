@@ -110,7 +110,7 @@ export default async function runConfig(payload) {
                     unix: !config.features[0].create.parent,
                 });
         }
-        // sometimes we need to wait for the domain to be created
+        // we need to wait for disks and caches to get flushed
         await writeLog("$> virtualmin list-domains");
         await new Promise(r => setTimeout(r, 1000));
         await new Promise((resolve, reject) => {
@@ -129,7 +129,9 @@ export default async function runConfig(payload) {
             }
             check();
         });
-        // FOR SOME REASON IN MY SERVER, NGINX SUDDENLY STOPPED WORKING
+        // in old configuration, virtualmin uses "systemctl restart nginx" every reload, 
+        // which refuse to start if config got bad. just that case we need start nginx again
+        // since in theory they should revert it already. (maybe this is no longer necessary)
         console.log('start emerg nginx ', await spawnSudoUtil('NGINX_START'));
     }
     /**
@@ -202,7 +204,7 @@ export default async function runConfig(payload) {
                     // TODO: Can't use sshPs1Header since cd dir can change it?
                     const match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
                     // do not write carriage return or null character
-                    chunk = chunk.replace(/[\r\0].*?(\n|$)/g, '$1');
+                    chunk = chunk.replace(/[\r\0].*$/gm, '');
                     if (match) {
                         cb = null;
                         if (!sshPs1Header || !chunk.endsWith(sshPs1Header)) {
