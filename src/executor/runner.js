@@ -264,6 +264,7 @@ export default async function runConfig(payload) {
             if (s == "!ABORT!") {
                 await writeLog(`\n$> Execution aborted by user, exiting SSH session gracefully.`);
                 await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
+                ssh = null;
             } else {
                 ssh.stdin.write(s);
             }
@@ -478,6 +479,7 @@ export default async function runConfig(payload) {
                 }
             }
         }
+        if (!ssh) throw "shell has terminated already";
     } catch (err) {
         throw err;
     } finally {
