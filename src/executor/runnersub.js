@@ -748,12 +748,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
 
         if (config.commands) {
-            await sshExec(`DATABASE='${dbname}'`, false);
-            if (config.envs) {
-                let entries = Object.entries(config.envs);
-                if (entries.length > 0)
-                    await sshExec("export " + entries.map(([k, v]) => `${k}='${v}'`).join(' '), false);
-            }
+            let entries = Object.entries(config.envs || {});
+            entries.push(['DATABASE', dbname]);
+            await sshExec(' ' + entries.map(([k, v]) => `${k}='${v}'`).join(' '), false);
             for (const cmd of config.commands) {
                 if (typeof cmd === 'string') {
                     await sshExec(cmd);
