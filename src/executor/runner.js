@@ -205,7 +205,7 @@ export default async function runConfig(payload) {
                     const match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
                     // discard write carriage return or null character
                     // "\r +\r" is a yarn specific pattern so discard it beforehand
-                    chunk = chunk.replace(/\r[ \r]+\r/g, '').replace(/[\r\0].*(\n|$)/g, '');
+                    chunk = chunk.replace(/\r[ \r]+\r/g, '').replace(/[\r\0].*$/gm, '');
                     if (match) {
                         cb = null;
                         if (!sshPs1Header || !chunk.endsWith(sshPs1Header)) {
@@ -224,7 +224,7 @@ export default async function runConfig(payload) {
                         resolve();
                         return true;
                     } else {
-                        if (write && chunk) {
+                        if (write && chunk && chunk !== '\n') {
                             await writer(chunk);
                             lastChunkIncomplete = !chunk.endsWith('\n');
                         }
