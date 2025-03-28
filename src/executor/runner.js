@@ -1,9 +1,11 @@
 import {
+    countOf,
     detectCanShareSSL,
     executeLock,
     getRevision,
     getVersion,
     isDebian,
+    nthIndexOf,
     spawnSudoUtil,
     spawnSudoUtilAsync,
     splitLimit
@@ -179,7 +181,9 @@ export default async function runConfig(payload) {
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise(function (resolve, reject) {
                 if (!ssh) return reject("shell has terminated already");
+                cmd = cmd.trimEnd() + "\n";
                 let lastChunkIncomplete = false;
+                let skipLineLen = countOf(cmd, "\n");
                 cb = async (/** @type {string} */ chunk, /** @type {number} */ code) => {
                     if (!ssh) {
                         if (code) {
@@ -206,6 +210,17 @@ export default async function runConfig(payload) {
                     // discard write carriage return or null character
                     // "\r +\r" is a yarn specific pattern so discard it beforehand
                     chunk = chunk.replace(/\r[ \r]+\r/g, '').replace(/[\r\0].*$/gm, '');
+                    if (skipLineLen > 0) {
+                        const chunkLineLen = countOf(cmd, "\n");
+                        if (chunkLineLen >= skipLineLen) {
+                            const trimTo = nthIndexOf(chunk, "\n", chunkLineLen - skipLineLen + 1)
+                            chunk = chunk.substring(0, trimTo);
+                            skipLineLen = 0;
+                        } else {
+                            chunk = '';
+                            skipLineLen -= chunkLineLen;
+                        }
+                    }
                     if (match) {
                         cb = null;
                         if (!sshPs1Header || !chunk.endsWith(sshPs1Header)) {
@@ -240,9 +255,9 @@ export default async function runConfig(payload) {
                 };
                 if (cmd) {
                     if (write || debug) {
-                        writer('$> ' + cmd + "\n");
+                        writer('$> ' + cmd.trimEnd().replace(/\n/g, '\n$> '));
                     }
-                    ssh.stdin.write(cmd + "\n");
+                    ssh.stdin.write(cmd);
                 } else if (write) {
                     resolve(); // nothing to do
                 }

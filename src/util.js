@@ -501,6 +501,32 @@ export function splitLimit(/** @type {string} */ input,/** @type {string|RegExp}
     return output;
 }
 
+/**
+ * @param {string} str
+ * @param {string} pat
+ * @param {number} nth occurence (start from 1)
+ */
+export function nthIndexOf(str, pat, nth){
+    var L= str.length, i= -1;
+    while(nth-- && i++<L){
+        i= str.indexOf(pat, i);
+        if (i < 0) break;
+    }
+    return i;
+}
+
+/**
+ * @param {string} str
+ * @param {string} pat
+ */
+export function countOf(str, pat){
+    var L= str.length, i= -1, nth = -1;
+    while(nth++ && i++<L){
+        i= str.indexOf(pat, i);
+        if (i < 0) break;
+    }
+    return nth;
+}
 // https://stackoverflow.com/a/40201629/3908409
 /**
  * @param {string[]} arr
