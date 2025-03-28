@@ -193,18 +193,7 @@ export default async function runConfig(payload) {
                             return resolve();
                         }
                     }
-                    debug && await (async function () {
-                        const splits = chunk.split('\n');
-                        if (lastChunkIncomplete) {
-                            await writer("\n");
-                            lastChunkIncomplete = false;
-                        }
-                        for (let i = 0; i < splits.length; i++) {
-                            const el = splits[i] + (i == splits.length - 1 ? "" : "\n");
-                            el && await writer("$< " + JSON.stringify(el) +
-                                (i < splits.length - 1 ? " +\n" : "\n"));
-                        }
-                    })()
+                    const chunkForDebug = chunk
                     // TODO: Can't use sshPs1Header since cd dir can change it?
                     const match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
                     // discard write carriage return or null character
@@ -221,6 +210,18 @@ export default async function runConfig(payload) {
                             skipLineLen -= chunkLineLen;
                         }
                     }
+                    debug && await (async function () {
+                        const splits = chunkForDebug.split('\n');
+                        if (lastChunkIncomplete) {
+                            await writer("\n");
+                            lastChunkIncomplete = false;
+                        }
+                        for (let i = 0; i < splits.length; i++) {
+                            const el = splits[i] + (i == splits.length - 1 ? "" : "\n");
+                            el && await writer("$< " + JSON.stringify(el) +
+                                (i < splits.length - 1 ? " +\n" : "\n"));
+                        }
+                    })()
                     if (match) {
                         cb = null;
                         if (!sshPs1Header || !chunk.endsWith(sshPs1Header)) {
