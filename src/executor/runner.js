@@ -214,7 +214,7 @@ export default async function runConfig(payload) {
                         const chunkLineLen = countOf(cmd, "\n");
                         if (chunkLineLen >= skipLineLen) {
                             const trimTo = nthIndexOf(chunk, "\n", chunkLineLen - skipLineLen + 1)
-                            chunk = chunk.substring(0, trimTo);
+                            chunk = chunk.substring(trimTo + 1);
                             skipLineLen = 0;
                         } else {
                             chunk = '';
@@ -255,7 +255,7 @@ export default async function runConfig(payload) {
                 };
                 if (cmd) {
                     if (write || debug) {
-                        writer('$> ' + cmd.trimEnd().replace(/\n/g, '\n$> '));
+                        writer('$> ' + cmd.trimEnd().replace(/\n/g, '\n$> ') + '\n');
                     }
                     ssh.stdin.write(cmd);
                 } else if (write) {
