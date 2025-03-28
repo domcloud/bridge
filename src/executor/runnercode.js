@@ -1,4 +1,4 @@
-import { getJavaVersion, getPythonVersion, getRubyVersion } from "../util.js";
+import { countOf, getJavaVersion, getPythonVersion, getRubyVersion, isDebian, nthIndexOf } from "../util.js";
 import { dockerExec } from "./docker.js";
 import { logmanExec } from "./logman.js";
 
@@ -47,7 +47,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await writeLog("$> Disabling docker features");
                 await sshExec(`dockerd-rootless-setuptool.sh uninstall --skip-iptables`);
                 await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`);
-                await sshExec(`rm -rf ~/.config/docker`); 
+                await sshExec(`rm -rf ~/.config/docker`);
                 await sshExec(`rootlesskit rm -rf ~/.local/share/docker`);
                 await writeLog(await dockerExec.disableDocker(domaindata['Username']));
             }
@@ -267,4 +267,74 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             break;
     }
     return arg;
+}
+
+
+/**
+ * @param {string} chunk
+ * @param {{ skipLineLen: number; 
+ *   lastChunkIncomplete: boolean; 
+ *   sshPs1Header: string; write: boolean; 
+ *   writer: (s: string) => Promise<void>; 
+ *   debug: boolean; }} ctx
+ */
+export async function handleSshOutput(chunk, ctx) {
+    const originalChunk = chunk;
+    const { write, writer, debug } = ctx;
+    // TODO: Can't use sshPs1Header since cd dir can change it?
+    const match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
+    // discard write carriage return or null character
+    // "\r +\r" is a yarn specific pattern so discard it beforehand
+    chunk = chunk.replace(/\r[ \r]+\r/g, '').replace(/[\r\0].*$/gm, '');
+    if (ctx.skipLineLen > 0) {
+        const chunkLineLen = countOf(chunk, "\n");
+        if (chunkLineLen >= ctx.skipLineLen) {
+            const trimTo = nthIndexOf(chunk, "\n", ctx.skipLineLen);
+            chunk = chunk.substring(trimTo + 1);
+            ctx.skipLineLen = 0;
+        } else {
+            chunk = '';
+            ctx.skipLineLen -= chunkLineLen;
+        }
+    }
+    debug && await (async function () {
+        const splits = originalChunk.split('\n');
+        if (ctx.lastChunkIncomplete) {
+            await writer("\n");
+            ctx.lastChunkIncomplete = false;
+        }
+        for (let i = 0; i < splits.length; i++) {
+            const el = splits[i] + (i == splits.length - 1 ? "" : "\n");
+            el && await writer("$< " + JSON.stringify(el) +
+                (i < splits.length - 1 ? " +\n" : "\n"));
+        }
+    })();
+    if (match) {
+        if (!ctx.sshPs1Header || !chunk.endsWith(ctx.sshPs1Header)) {
+            // first or cd dir
+            ctx.sshPs1Header = chunk;
+        } else if (write && chunk.length > ctx.sshPs1Header.length) {
+            chunk = chunk.substring(0, chunk.length - ctx.sshPs1Header.length);
+            await writer(chunk);
+            ctx.lastChunkIncomplete = !chunk.endsWith('\n');
+        }
+        if (write && ctx.lastChunkIncomplete) {
+            // the last program doesn't write "\n", we add it for readability
+            await writer("\n");
+            ctx.lastChunkIncomplete = false;
+        }
+    } else {
+        if (write && chunk) {
+            if (chunk === '\n') {
+                if (ctx.lastChunkIncomplete) {
+                    await writer("\n");
+                    ctx.lastChunkIncomplete = false;
+                }
+            } else {
+                await writer(chunk);
+                ctx.lastChunkIncomplete = !chunk.endsWith('\n');
+            }
+        }
+    }
+    return match;
 }

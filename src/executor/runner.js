@@ -5,7 +5,6 @@ import {
     getRevision,
     getVersion,
     isDebian,
-    nthIndexOf,
     spawnSudoUtil,
     spawnSudoUtilAsync,
     splitLimit
@@ -16,7 +15,7 @@ import {
 import {
     virtualminExec
 } from "./virtualmin.js";
-import { runConfigCodeFeatures } from "./runnercode.js";
+import { handleSshOutput, runConfigCodeFeatures } from "./runnercode.js";
 import { runConfigSubdomain } from "./runnersub.js";
 import path from "path";
 
@@ -182,8 +181,14 @@ export default async function runConfig(payload) {
             return new Promise(function (resolve, reject) {
                 if (!ssh) return reject("shell has terminated already");
                 cmd = cmd.trimEnd() + "\n";
-                let lastChunkIncomplete = false;
-                let skipLineLen = countOf(cmd, "\n");
+                const context = {
+                    lastChunkIncomplete: false,
+                    skipLineLen: countOf(cmd, "\n"),
+                    sshPs1Header,
+                    writer,
+                    debug,
+                    write,
+                };
                 cb = async (/** @type {string} */ chunk, /** @type {number} */ code) => {
                     if (!ssh) {
                         if (code) {
@@ -193,75 +198,18 @@ export default async function runConfig(payload) {
                             return resolve();
                         }
                     }
-                    const chunkForDebug = chunk
-                    // TODO: Can't use sshPs1Header since cd dir can change it?
-                    const match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
-                    // discard write carriage return or null character
-                    // "\r +\r" is a yarn specific pattern so discard it beforehand
-                    chunk = chunk.replace(/\r[ \r]+\r/g, '').replace(/[\r\0].*$/gm, '');
-                    if (skipLineLen > 0) {
-                        const chunkLineLen = countOf(chunk, "\n");
-                        if (chunkLineLen >= skipLineLen) {
-                            const trimTo = nthIndexOf(chunk, "\n", skipLineLen)
-                            chunk = chunk.substring(trimTo + 1);
-                            skipLineLen = 0;
-                        } else {
-                            chunk = '';
-                            skipLineLen -= chunkLineLen;
-                        }
-                    }
-                    debug && await (async function () {
-                        const splits = chunkForDebug.split('\n');
-                        if (lastChunkIncomplete) {
-                            await writer("\n");
-                            lastChunkIncomplete = false;
-                        }
-                        for (let i = 0; i < splits.length; i++) {
-                            const el = splits[i] + (i == splits.length - 1 ? "" : "\n");
-                            el && await writer("$< " + JSON.stringify(el) +
-                                (i < splits.length - 1 ? " +\n" : "\n"));
-                        }
-                    })()
+                    let match = await handleSshOutput(chunk, context);
                     if (match) {
+                        sshPs1Header = context.sshPs1Header;
                         cb = null;
-                        if (!sshPs1Header || !chunk.endsWith(sshPs1Header)) {
-                            // first or cd dir
-                            sshPs1Header = chunk;
-                        } else if (write && chunk.length > sshPs1Header.length) {
-                            const leftChunk = chunk.substring(0, chunk.length - sshPs1Header.length)
-                            await writer(leftChunk);
-                            lastChunkIncomplete = !leftChunk.endsWith('\n');
-                        }
-                        if (write && lastChunkIncomplete) {
-                            // the last program doesn't write "\n", we add it for readability
-                            await writer("\n");
-                            lastChunkIncomplete = false;
-                        }
                         resolve();
-                        return true;
-                    } else {
-                        if (write && chunk) {
-                            if (chunk === '\n') {
-                                if (lastChunkIncomplete) {
-                                    await writer("\n");
-                                    lastChunkIncomplete = false;
-                                }
-                            } else {
-                                await writer(chunk);
-                                lastChunkIncomplete = !chunk.endsWith('\n');
-                            }
-                        }
-                        return false;
                     }
+                    return match;
                 };
-                if (cmd) {
-                    if (write || debug) {
-                        writer('$> ' + cmd.trimEnd().replace(/\n/g, '\n$> ') + '\n');
-                    }
-                    ssh.stdin.write(cmd);
-                } else if (write) {
-                    resolve(); // nothing to do
+                if (write || debug) {
+                    writer('$> ' + cmd.trimEnd().replace(/\n/g, '\n$> ') + '\n');
                 }
+                ssh.stdin.write(cmd);
             })
         }
         await sshExec(``, false); // drop initial packet
