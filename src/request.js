@@ -8,10 +8,10 @@ import https from "node:https";
 /**
  * @template T
  * @param {string | URL} url
- * @param {import('https').RequestOptions & {data?: string}} [options]
+ * @param {import('https').RequestOptions & {data?: string, followRedirects?: boolean}} [options]
  * @return {Promise<Response<T>>}
  */
-const request = (url, { data = '', ...options } = {}) => {
+const request = (url, { data = '', followRedirects = false, ...options } = {}) => {
     return new Promise((resolve, reject) => {
         try {
             url = new URL(url);
@@ -42,7 +42,13 @@ const request = (url, { data = '', ...options } = {}) => {
                     if (timeoutHandler) {
                         clearTimeout(timeoutHandler);
                     }
-                    resolve({ data, headers, statusCode: statusCode || 0 });
+                    if (statusCode >= 300 && statusCode < 400 && followRedirects) {
+                        request(headers['location'], {
+                            data, followRedirects, ...options,
+                        }).then(resolve).catch(reject)
+                    } else {
+                        resolve({ data, headers, statusCode: statusCode || 0 });
+                    }
                 })
                 .once('error', reject);
         })

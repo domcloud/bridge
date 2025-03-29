@@ -27,16 +27,18 @@ const pythonConstants = {
   },
 };
 
-const rubyBuilderUrl = {
-  x64: 'https://ruby-builder-amd64.domcloud.dev',
-  arm64: 'https://ruby-builder-arm64.domcloud.dev',
-}
-
+const rubyBuilderFindTag = 'https://github.com/domcloud/ruby-builder/releases/latest';
+const rubyBuilderDownload = 'https://github.com/domcloud/ruby-builder/releases/download/';
 const adoptiumList = 'https://api.adoptium.net/v3/info/available_releases';
 
 const archLinux = {
   x64: "x64",
   arm64: "aarch64",
+};
+
+const archModern = {
+  x64: "amd64",
+  arm64: "arm64",
 };
 
 export const initUtils = async () => {
@@ -46,8 +48,12 @@ export const initUtils = async () => {
 
   const adoptiumListData = await request(adoptiumList);
 
+  const rubyVersionTag = (await request(rubyBuilderFindTag)).headers['location'].match(/(v\d\.\d+)$/)[1];
+
   for (const arch of ["x64", "arm64"]) {
-    const rubyBuilderData = await request(rubyBuilderUrl[arch] + '/metadata.json');
+    const rubyBuilderDataRocky = JSON.parse((await request(rubyBuilderDownload + rubyVersionTag + `/rocky-${archModern[arch]}-metadata.json`, {
+      followRedirects: true,
+    })).data);
 
     // https://packagist.org/php-statistics
     let rubyVersionsList = [];
@@ -67,9 +73,9 @@ export const initUtils = async () => {
     let rubyVersionsMap = {};
     {
       // @ts-ignore
-      rubyVersionsList = rubyBuilderData.data.versions;
+      rubyVersionsList = rubyBuilderDataRocky.versions;
       for (const v of rubyVersionsList) {
-        rubyVersionsMap[v] = rubyBuilderUrl[arch] + "/" + v + ".tar.gz";
+        rubyVersionsMap[v] = rubyBuilderDownload + rubyVersionTag + "/" + rubyBuilderDataRocky.prefix + '-' + v + ".tar.gz";
       }
       rubyVersionsList = sortSemver(rubyVersionsList).reverse();
     }
