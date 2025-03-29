@@ -29,10 +29,10 @@ export const isDebian = () => isThisDebian
 export const initUtils = () => {
     isThisDebian = existsSync('/etc/lsb-release');
     tokenSecret = `Bearer ${process.env.SECRET}`;
-    allowIps = process.env.ALLOW_IP ? process.env.ALLOW_IP.split(',').reduce((a, b) => {
+    allowIps = process.env.ALLOW_IP?.split(',').reduce((a, b) => {
         a[b] = true;
         return a;
-    }, {}) : null
+    }, {}) || null
     sudoutil = path.join(process.cwd(), '/sudoutil.js');
     version = JSON.parse(cat('package.json')).version;
     const rev = cat('.git/HEAD').trim();
