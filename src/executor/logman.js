@@ -80,13 +80,15 @@ class LogmanExecutor {
     }
     /**
      * @param {string} user
+     * @param {string} name
      */
-    async getPassengerPids(user) {
+    async getPassengerPids(user, name = null) {
         let peo;
         try {
             const pe = process.env.NODE_ENV === 'development' ?
                 { stdout: await readFile('./test/passenger-status', { encoding: 'utf-8' }) } :
-                await spawnSudoUtil("SHELL_SUDO", [user,
+                await spawnSudoUtil("SHELL_SUDO", name ? [user,
+                    "passenger-status", name, "--show=xml"]: [user,
                     "passenger-status", "--show=xml"]);
             peo = pe.stdout.trim();
         } catch (error) {
@@ -98,6 +100,19 @@ class LogmanExecutor {
                 stdout: '',
             }
         }
+        if (peo.startsWith('It appears that multiple Phusion Passenger(R) instances are running') && !name) {
+            var pids = peo.match(/^\w{8}\b/g)
+            var objs = {};
+            for (const p of pids) {
+                Object.assign(objs, (await this.getPassengerPids(user, p)).stdout);
+            }
+            return {
+                code: 0,
+                stderr: '',
+                stdout: objs
+            }
+
+        }
         const parser = new XMLParser();
         let peom = parser.parse(peo);
         let peoma = peom?.info?.supergroups?.supergroup;
@@ -105,7 +120,7 @@ class LogmanExecutor {
             return {
                 code: 255,
                 stderr: 'incomplete response from passenger-status',
-                stdout: ''
+                stdout: {}
             }
         }
         let peomaa = Array.isArray(peoma) ? peoma : [peoma];
@@ -114,7 +129,7 @@ class LogmanExecutor {
             return {
                 code: 255,
                 stderr: 'No processes reported from passenger-status is running',
-                stdout: ''
+                stdout: {}
             }
         }
         let procs = peomaps.reduce((a, b) => {
