@@ -424,7 +424,7 @@ export default async function runConfig(payload) {
         if (domaindata['Password for mysql']) {
             passwds.push(` MYPASSWD='${domaindata['Password for mysql']}'`);
         }
-        if (domaindata['Password or postgres']) {
+        if (domaindata['Password for postgres']) {
             passwds.push(` PGPASSWD='${domaindata['Password for postgres']}'`);
         }
         const stillroot = !config.subdomain;
