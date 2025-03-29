@@ -135,10 +135,16 @@ export const getPythonVersion = (/** @type {string} */ status) => {
 }
 
 export const getRubyVersion = (/** @type {string} */ status) => {
-    const expand = (/** @type {string} */ version) => ({
-        version,
-        binary: rubyVersionsMap[version] || null,
-    })
+    const expand = (/** @type {string} */ version) => {
+        let binary = rubyVersionsMap[version] || null;
+        if (binary && isDebian()) {
+            binary = binary.replace(/rocky/g, 'ubuntu');
+        }
+        return {
+            version,
+            binary,
+        };
+    }
     var stable = rubyVersionsList.filter(x => x.startsWith('ruby-'))[0];
     if (!status) {
         return expand(stable);
@@ -510,12 +516,12 @@ export function splitLimit(/** @type {string} */ input,/** @type {string|RegExp}
 export function nthIndexOf(str, pat, nth) {
     if (nth < 1) return -1; // nth occurrence must start from 1
     let i = -1;
-  
+
     while (nth-- > 0) {
         i = str.indexOf(pat, i + 1); // Move to the next occurrence
         if (i === -1) return -1; // Stop if not found
     }
-  
+
     return i;
 }
 
@@ -527,12 +533,12 @@ export function countOf(str, pat) {
     if (!pat) return 0; // Avoid infinite loops on empty pattern
     let count = 0;
     let pos = 0;
-  
+
     while ((pos = str.indexOf(pat, pos)) !== -1) {
         count++;
         pos += pat.length; // Move past the found occurrence
     }
-  
+
     return count;
 }
 // https://stackoverflow.com/a/40201629/3908409
