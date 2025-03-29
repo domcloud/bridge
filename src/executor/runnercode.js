@@ -171,10 +171,10 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 if (rarg.binary) {
                     await sshExec(`curl -sSL "${rarg.binary}" | tar -zaxf - -C ~/.rvm/rubies`);
                     await sshExec("rvm alias create default " + rarg.version + ' --create');
-                    await sshExec("source ~/.rvm/scripts/rvm");
                 } else {
-                    await sshExec(`rvm install ${getRubyVersion(value)} --no-docs`);
+                    await sshExec(`rvm install ${rarg.version} --no-docs`);
                 }
+                await sshExec(`rvm use ${rarg.version} --default`);
                 await sshExec("ruby --version");
             }
             break;
