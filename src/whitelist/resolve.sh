@@ -3,7 +3,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 NFIP_ADDRESSES=""
 HOST_ADDRESSES=""
-DNS_SERVERS=("127.0.0.1" "1.1.1.1" "8.8.8.8")
+DNS_SERVERS=("127.0.0.1" "1.1.1.1")
 
 for RECORD_TYPE in A AAAA; do
   while read -r p; do
