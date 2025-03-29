@@ -101,7 +101,7 @@ class LogmanExecutor {
             }
         }
         if (peo.startsWith('It appears that multiple Phusion Passenger(R) instances are running') && !name) {
-            var pids = peo.match(/^\w{8}\b/g)
+            var pids = peo.match(/^\w{8}\b/gm)
             var objs = {};
             for (const p of pids) {
                 Object.assign(objs, (await this.getPassengerPids(user, p)).stdout);
