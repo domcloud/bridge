@@ -170,6 +170,12 @@ export const getRubyVersion = (/** @type {string} */ status) => {
         case 'latest':
         case 'stable':
         default:
+            var m = rubyVersionsList.find(x => {
+                return x.startsWith(status);
+            });
+            if (m) {
+                return expand(m);
+            }
             return expand(stable);
     }
 }
