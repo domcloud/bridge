@@ -46,7 +46,7 @@ if (opts.test) {
 }
 
 // process and filter output
-const splitTest = /^([\w.-]+\+?) +(\d+) +(\d+) (.+)$/;
+const splitTest = /^([\w.-]+\+?) +(\d+) +(\d+) +(\d+) (.+)$/;
 const lists = psOutput
     .map(x => splitTest.exec(x))
     .filter(x => x !== null && !ignoreUsers[x[1]]).map(match => ({
