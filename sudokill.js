@@ -23,7 +23,7 @@ const psOutput = exec('ps -eo user:70,pid,uid,etimes,command --forest --no-heade
 const whoOutput = exec('who', {
     silent: true,
     fatal: true,
-}).stdout.trim().split('\n');
+}).stdout.trim().split('\n').filter(x => x);
 
 const ignoreUsers = opts.ignore ? opts.ignore.split(',')
     .reduce((acc, cur) => {
