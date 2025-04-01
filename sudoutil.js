@@ -406,13 +406,14 @@ switch (cli.args.shift()) {
         var fpms = fpmpaths.map((f) => exec(`${f} -t`, { silent: true }));
         var storage = exec(`df -h | grep ^/dev`, { silent: true });
         var quota = exec(`findmnt -r | grep -P '(/ |/home )'`, { silent: true }).stdout.trim().split('\n');
+        var named = exec(`named-checkconf -z /etc/named.conf`, { silent: true });
         var storagefull = isDfFull(storage.stdout);
         var quotaOK = quota.every(x => x.includes('usrquota') && x.includes('grpquota'));
         var chkmem = exec(`free -h`, { silent: true });
         var chkcpu = exec(`uptime`, { silent: true });
 
         var exitcode = 0;
-        if (nginx.code !== 0 || fpms.some((f) => f.code !== 0) || storagefull || !quotaOK)
+        if (nginx.code !== 0 || fpms.some((f) => f.code !== 0) || storagefull || !quotaOK || named.code !== 0)
             exitcode = 1;
         var sslcode = undefined, ssldata = undefined;
         if (existsSync(env.SSL_WILDCARDS_TMP) && (ssldata = JSON.parse(cat(env.SSL_WILDCARDS_TMP).toString()))) {
@@ -432,6 +433,7 @@ switch (cli.args.shift()) {
                 nginx: nginx.code,
                 fpms: fpms.map((f) => f.code),
                 storage: storagefull ? 1 : 0,
+                named: named.code,
                 quota: quotaOK ? 0 : 1,
                 ssl: sslcode,
             },
@@ -441,7 +443,8 @@ switch (cli.args.shift()) {
                 storage: storage.stdout.trimEnd().split('\n'),
                 quota,
                 nginx: nginx.stderr.trimEnd().split('\n'),
-                fpms: Object.fromEntries(fpmlist.map((_, i) => [fpmlist[i], fpms[i].stderr.trimEnd().split('\n')])),
+                named: named.grep('bad zone').trimEnd().split('\n'),
+                fpms: Object.fromEntries(fpmlist.map((_, i) => [fpmlist[i], fpms[i].stderr.trimEnd().split('\n').filter(x => !x.includes('test is successful'))])),
             },
             timestamp: Date.now(),
         })).to(env.SHELLTEST_TMP);
