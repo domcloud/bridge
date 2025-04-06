@@ -383,21 +383,28 @@ export default async function runConfig(payload) {
                     }
                     break;
                 case 'sshpass':
-                    if (value === '' || value === 'on') {
-                        await writeLog("$> Changing ssh password login to " + (value || 'on'));
+                    if (value === '' || value === 'on' || value == 'allow') {
+                        await writeLog("$> Changing ssh password login policy to allow");
                         await virtExec("modify-users", {
                             domain,
                             'all-users': true,
                             'enable': true,
                         });
-                    } else if (value === 'off') {
-                        await writeLog("$> Changing ssh password login to " + value);
+                    } else if (value === 'off' || value == 'disallow') {
+                        await writeLog("$> Changing ssh password login policy to disallow");
                         await virtExec("modify-users", {
                             domain,
                             'all-users': true,
                             'disable': true,
                         });
                     }
+                    break;
+                case 'fix-domain-permissions':
+                    await writeLog("$> Fixing domain permissions");
+                    await virtExec("fix-domain-permissions", {
+                        domain,
+                        'subservers': true,
+                    });
                     break;
                 default:
                     await runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec);
