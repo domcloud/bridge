@@ -464,6 +464,7 @@ export const normalizeShellOutput = function ( /** @type {string[]} */ output) {
     text = text.replace(/^\$< "(.+)"( \+)?/gm, '\u001b[37m$$< "\u001b[36m$1\u001b[37m"$2\u001b[0m');
     text = text.replace(/^(Exit status: .+)/gm, "\u001b[36m$1\u001b[0m");
     text = text.replace(/^(\$> Error occured.*)/gm, "\u001b[91m$1\u001b[0m");
+    text.endsWith('\r') && (text += "\n");
     return text;
 }
 

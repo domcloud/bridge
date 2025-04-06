@@ -104,15 +104,23 @@ export async function runConfigInBackground(payload) {
         chunk = chunk.toString();
         chunkedLogData.push(chunk);
         if (chunk.endsWith('\r')) {
-            // chunked streams will see this as "\r\n" since
-            // there's no way to clear existing stream.
-            chunkedLogData.push("\n");
-            // for full log data, only keep the last part.
-            let lastLog = fullLogData.pop();
-            if (lastLog) {
-                let nIndex = lastLog.lastIndexOf('\n');
-                if (nIndex > 0) {
-                    fullLogData.push(lastLog.substring(0, nIndex));
+            // only keep the last part.
+            if (chunkedLogData.length > 1) {
+                let lastLog = chunkedLogData.pop();
+                if (lastLog) {
+                    let nIndex = lastLog.lastIndexOf('\n');
+                    if (nIndex > 0) {
+                        chunkedLogData.push(lastLog.substring(0, nIndex));
+                    }
+                }
+            }
+            if (fullLogData.length > 1) {
+                let lastLog = fullLogData.pop();
+                if (lastLog) {
+                    let nIndex = lastLog.lastIndexOf('\n');
+                    if (nIndex > 0) {
+                        fullLogData.push(lastLog.substring(0, nIndex));
+                    }
                 }
             }
         }
