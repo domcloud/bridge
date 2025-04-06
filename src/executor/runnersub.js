@@ -681,7 +681,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     }
                 }
             }
-            let executedCMD = [config['rootlesskit'] ? `rootlesskit rm -rf *` : `rm -rf *`];
+            let executedCMD = [source['rootlesskit'] ? `rootlesskit rm -rf *` : `rm -rf *`];
             let executedCMDNote = '';
             if (source.url === 'clear') {
                 // we just delete them all
