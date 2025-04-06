@@ -99,12 +99,13 @@ export async function runConfigInBackground(payload) {
     if (callback) {
         periodicSender();
     }
+    let lastWrite = Date.now();
     write.on('data', (chunk) => {
         if (!callback) return;
         chunk = chunk.toString();
         if (chunk.endsWith('\r')) {
             // only keep the last part.
-            if (chunkedLogData.length > 1) {
+            if (chunkedLogData.length > 1 && lastWrite < 1000) {
                 let lastLog = chunkedLogData.pop();
                 if (lastLog) {
                     let nIndex = lastLog.lastIndexOf('\n');
@@ -122,6 +123,8 @@ export async function runConfigInBackground(payload) {
                     }
                 }
             }
+        } else {
+            lastWrite = Date.now();
         }
         chunkedLogData.push(chunk);
         fullLogData.push(chunk);
