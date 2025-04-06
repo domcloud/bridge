@@ -57,9 +57,13 @@ function trimPayload(payload) {
  */
 export async function runConfigInBackground(payload) {
     const callback = payload.callback;
-    let fullLogData = [],
-        chunkedLogData = ['Running deployment script... Please wait...\n'],
-        startTime = Date.now();
+
+    /**
+     * @type {string[]}
+     */
+    const fullLogData = [];
+    let chunkedLogData = ['Running deployment script... Please wait...\n'];
+    const startTime = Date.now();
     const write = new PassThrough();
     const delay = 5000;
     const headers = {
@@ -96,8 +100,21 @@ export async function runConfigInBackground(payload) {
         periodicSender();
     }
     write.on('data', (chunk) => {
-        if (!callback) return;
+        if (!callback || typeof chunk !== 'string') return;
         chunkedLogData.push(chunk);
+        if (chunk.endsWith('\r')) {
+            // chunked streams will see this as "\r\n" since
+            // there's no way to clear existing stream.
+            chunkedLogData.push("\n");
+            // for full log data, only keep the last part.
+            let lastLog = fullLogData.pop();
+            if (lastLog) {
+                let nIndex = lastLog.lastIndexOf('\n');
+                if (nIndex > 0) {
+                    fullLogData.push(lastLog.substring(0, nIndex));
+                }
+            }
+        }
         fullLogData.push(chunk);
     });
     write.on('end', () => {

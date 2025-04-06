@@ -283,9 +283,9 @@ export async function handleSshOutput(chunk, ctx) {
     const { write, writer, debug } = ctx;
     // TODO: Can't use sshPs1Header since cd dir can change it?
     const match = chunk.match(isDebian() ? /.+?\@.+?:.+?\$ $/ : /\[.+?\@.+? .+?\]\$ $/);
-    // discard write carriage return or null character
-    // "\r +\r" is a yarn specific pattern so discard it beforehand
-    chunk = chunk.replace(/\r[ \r]+\r/g, '').replace(/[\r\0].*$/gm, '');
+    // discard write CR or NUL char. CRLF still emits as CRLF.
+    // "\r +\r" is a yarn specific pattern, discard it.
+    chunk = chunk.replace(/\r[ \r]+\r/g, '').replace(/[\r\0].+$/gm, '');
     if (ctx.skipLineLen > 0) {
         const chunkLineLen = countOf(chunk, "\n");
         if (chunkLineLen >= ctx.skipLineLen) {
@@ -325,7 +325,7 @@ export async function handleSshOutput(chunk, ctx) {
         }
     } else {
         if (write && chunk) {
-            if (chunk === '\n') {
+            if (chunk === '\r\n' || chunk == '\n') {
                 if (ctx.lastChunkIncomplete) {
                     await writer("\n");
                     ctx.lastChunkIncomplete = false;
