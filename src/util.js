@@ -251,7 +251,8 @@ export const getSupportVersions = () => {
 
 
 /**
- * @param {array} args
+ * @param {string[]} args
+ * @return {import('express').RequestHandler}
  */
 export function checkGet(args) {
     return function (
@@ -259,11 +260,12 @@ export function checkGet(args) {
         req,
         /** @type {import('express').Response} */
         res,
-        /** @type {any} */
+        /** @type {import('express').NextFunction} */
         next) {
         for (const arg of args) {
             if (!req.query[arg]) {
-                return res.status(400).send(arg + ' is required');
+                res.status(400).send(arg + ' is required');
+                return;
             }
         }
         next();
@@ -272,7 +274,8 @@ export function checkGet(args) {
 
 
 /**
- * @param {array} args
+ * @param {string[]} args
+ * @return {import('express').RequestHandler}
  */
 export function checkPost(args) {
     return function ( /** @type {import('express').Request} */
@@ -281,10 +284,14 @@ export function checkPost(args) {
         res,
         /** @type {any} */
         next) {
-        if (!req.body) return res.status(400).send('missing post data');
+        if (!req.body) {
+            res.status(400).send('missing post data');
+            return;
+        }
         for (const arg of args) {
             if (!req.body[arg]) {
-                return res.status(400).send(arg + ' is required');
+                res.status(400).send(arg + ' is required');
+                return;
             }
         }
         next();
