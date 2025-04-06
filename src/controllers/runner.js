@@ -100,7 +100,8 @@ export async function runConfigInBackground(payload) {
         periodicSender();
     }
     write.on('data', (chunk) => {
-        if (!callback || typeof chunk !== 'string') return;
+        if (!callback) return;
+        chunk = chunk.toString();
         chunkedLogData.push(chunk);
         if (chunk.endsWith('\r')) {
             // chunked streams will see this as "\r\n" since
