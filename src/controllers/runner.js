@@ -103,9 +103,9 @@ export async function runConfigInBackground(payload) {
     write.on('data', (chunk) => {
         if (!callback) return;
         chunk = chunk.toString();
-        if (chunk.endsWith('\r')) {
+        if (chunk.endsWith('\r') && Date.now() - lastWrite < 1000) {
             // only keep the last part.
-            if (chunkedLogData.length > 1 && Date.now() - lastWrite < 1000) {
+            if (chunkedLogData.length > 1) {
                 let lastLog = chunkedLogData.pop();
                 if (lastLog) {
                     let nIndex = lastLog.lastIndexOf('\n');
