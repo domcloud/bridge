@@ -421,7 +421,7 @@ export default async function runConfig(payload) {
             if (cb) cb('', 124);
         }, maxExecutionTime).unref();
 
-        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PIP_PROGRESS_BAR=off BUILDKIT_PROGRESS=plain`, false);
+        await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PIP_PROGRESS_BAR=off`, false);
         const passwds = [
             ` USERNAME='${domaindata['Username']}'`,
         ];

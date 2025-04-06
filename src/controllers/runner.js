@@ -102,7 +102,6 @@ export async function runConfigInBackground(payload) {
     write.on('data', (chunk) => {
         if (!callback) return;
         chunk = chunk.toString();
-        chunkedLogData.push(chunk);
         if (chunk.endsWith('\r')) {
             // only keep the last part.
             if (chunkedLogData.length > 1) {
@@ -124,6 +123,7 @@ export async function runConfigInBackground(payload) {
                 }
             }
         }
+        chunkedLogData.push(chunk);
         fullLogData.push(chunk);
     });
     write.on('end', () => {

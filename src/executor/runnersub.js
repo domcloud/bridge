@@ -611,7 +611,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         await writeLog("$> Writing docker compose services");
         await writeLog(d.split('\n').map(x => `  ${x}`).join('\n'));
         await writeLog("$> Applying compose services");
-        await sshExec(`docker compose ${addFlags} --progress plain up --build --detach`);
+        await sshExec(`docker compose ${addFlags} up --build --detach`);
         await sshExec(`docker ps`);
     }
 
