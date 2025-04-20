@@ -56,6 +56,7 @@ const env = Object.assign({}, {
     NFTABLES_OUT: '/etc/nftables-firewall.conf',
     NFTABLES_LOAD: 'nft',
     NFTABLES_TMP: path.join(__dirname, '.tmp/nftables'),
+    PASSENGERLOG_PATH: '/var/log/nginx/passenger.log',
     NAMED_PATHS: '/var/named/$.hosts',
     NAMED_OUT: '/var/named/$.hosts',
     NAMED_CHECK: 'named-checkzone',
@@ -126,6 +127,11 @@ switch (cli.args.shift()) {
         }
         rm(DEST + '.bak');
         exec(`${env.NGINX_BIN} -s reload`);
+        exit(0);
+    case 'PASSENGERLOG_GET':
+        arg = cli.args.shift();
+        var n = parseInt(cli.args.shift());
+        console.log(exec(`grep -w "\\(^App\\|process\\) \\(${arg}\\)" "${env.PASSENGERLOG_PATH}"`).tail({'-n': n}).stdout);
         exit(0);
     case 'COMPOSE_GET':
         arg = cli.args.shift();

@@ -10,10 +10,10 @@ export default function () {
         try {
             let type = req.query.type.toString()
             let user = req.query.user.toString()
-            let sub = req.query.sub.toString()
+            let sub = req.query.sub?.toString() || '';
             let n = parseInt((req.query.n  || 100).toString()) || 100;
             let output = await logmanExec.getLog(user, type, sub, n);
-            return res.json(output);
+            res.json(output);
         } catch (err) {
             next(err);
         }

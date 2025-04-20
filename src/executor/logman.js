@@ -8,11 +8,7 @@ import { XMLParser } from "fast-xml-parser";
 import { readFile } from "fs/promises";
 
 class LogmanExecutor {
-    PASSENGERLOG = '/var/log/nginx/passenger.log';
     constructor() {
-        if (process.env.PASSENGERLOG) {
-            this.PASSENGERLOG = process.env.PASSENGERLOG;
-        }
     }
     /**
      * @param {string} user
@@ -44,9 +40,7 @@ class LogmanExecutor {
                     return procs;
                 }
                 let pids = Object.values(procs.stdout).flatMap(x => x).join('\\|');
-                let pes = await spawnSudoUtil("SHELL_SUDO", ["root",
-                    "bash", "-c", `grep -w "\\(^App\\|process\\) \\(${pids}\\)" "${this.PASSENGERLOG}" | tail -n ${n}`
-                ]);
+                let pes = await spawnSudoUtil("PASSENGERLOG_GET", [pids, n + '']);
                 if (pes.code == 0) {
                     // @ts-ignore
                     pes.processes = procs;
@@ -86,7 +80,7 @@ class LogmanExecutor {
         let peo;
         try {
             const pe = process.env.NODE_ENV === 'development' ?
-                { stdout: await readFile('./test/passenger-status', { encoding: 'utf-8' }) } :
+                { stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }) } :
                 await spawnSudoUtil("SHELL_SUDO", name ? [user,
                     "passenger-status", name, "--show=xml"]: [user,
                     "passenger-status", "--show=xml"]);
@@ -96,8 +90,8 @@ class LogmanExecutor {
         if (!peo) {
             return {
                 code: 255,
-                stderr: 'No passenger app is found or it\'s not initialized yet',
-                stdout: '',
+                stderr: 'No passenger app is found or it\'s not initialized yet ' + (name || ''),
+                stdout: {},
             }
         }
         if (peo.startsWith('It appears that multiple Phusion Passenger(R) instances are running') && !name) {
