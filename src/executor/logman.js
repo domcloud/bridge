@@ -77,9 +77,9 @@ class LogmanExecutor {
      * @param {string} name
      */
     async getPassengerPids(user, name = null) {
-        let peo;
+        let peo, pe;
         try {
-            const pe = process.env.NODE_ENV === 'development' ?
+            pe = process.env.NODE_ENV === 'development' ?
                 { stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }), stderr: '' } :
                 await spawnSudoUtil("SHELL_SUDO", name ? [user,
                     "passenger-status", name, "--show=xml"]: [user,
@@ -92,6 +92,7 @@ class LogmanExecutor {
                 code: 255,
                 stderr: 'No passenger app is found or it\'s not initialized yet ' + (name || ''),
                 stdout: {},
+                raw: pe,
             }
         }
         if (peo.startsWith('It appears that multiple Phusion Passenger(R) instances are running') && !name) {
