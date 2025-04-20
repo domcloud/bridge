@@ -57,14 +57,23 @@ export default async function runConfig(payload) {
     const writeLog = async ( /** @type {string} */ s) => {
         await writer(s + "\n");
     }
+    const debug = !!config.debug;
     const virtExec = (program, ...opts) => {
         const corePromise = () => new Promise((resolve, reject) => {
-            var virt = virtualminExec.execFormattedAsync(program, ...opts);
+            var args = virtualminExec.formatExec(program, ...opts);
+            if (debug) {
+                writeLog('$> virtualmin ' + args.join(' ') + '\n');
+            }
+            var virt = virtualminExec.execAsync(...args);
             virt.stdout.on('data', function (chunk) {
                 writeLog((chunk + '').split('\n').filter(x => x).join('\n').toString());
             });
             virt.stderr.on('data', function (chunk) {
                 writeLog((chunk + '').toString().split('\n').filter(x => x).map(x => '! ' + x).join('\n'));
+            })
+            virt.on('error', async function (err) {
+                await writeLog("Exit status: " + (err) + "\n");
+                reject(1);
             })
             virt.on('close', async function (code) {
                 await writeLog("Exit status: " + (code) + "\n");
@@ -174,7 +183,6 @@ export default async function runConfig(payload) {
                 cb('', code);
             }
         });
-        const debug = !!config.debug;
         /** @type {string|undefined} */
         let sshPs1Header = undefined;
         sshExec = ( /** @type {string} */ cmd, write = true) => {

@@ -158,7 +158,7 @@ class VirtualminExecutor {
      * @param {string} program
      * @param {object[]} opts
      */
-    execFormattedAsync(program, ...opts) {
+    formatExec(program, ...opts) {
         let p = [program];
         Object.entries(Object.assign({}, ...(opts.filter(x => x && typeof x === 'object'))))
             .forEach(([k, v]) => {
@@ -178,7 +178,7 @@ class VirtualminExecutor {
                         p.push(escapeShell(k), escapeShell(v));
                 }
             });
-        return this.execAsync(...p);
+        return p;
     }
     /**
      * @param {string[]} command
