@@ -80,11 +80,11 @@ class LogmanExecutor {
         let peo;
         try {
             const pe = process.env.NODE_ENV === 'development' ?
-                { stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }) } :
+                { stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }), stderr: '' } :
                 await spawnSudoUtil("SHELL_SUDO", name ? [user,
                     "passenger-status", name, "--show=xml"]: [user,
                     "passenger-status", "--show=xml"]);
-            peo = pe.stdout.trim();
+            peo = (pe.stdout + pe.stderr).trim();
         } catch (error) {
         }
         if (!peo) {
