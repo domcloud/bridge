@@ -86,10 +86,15 @@ class LogmanExecutor {
                     "passenger-status", "--show=xml"]);
             peo = (pe.stdout + pe.stderr).trim();
         } catch (error) {
+            return {
+                code: 254,
+                stderr: error,
+                stdout: {},
+            }
         }
         if (!peo) {
             return {
-                code: 255,
+                code: 253,
                 stderr: 'No passenger app is found or it\'s not initialized yet ' + (name || ''),
                 stdout: {},
                 raw: pe,
