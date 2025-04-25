@@ -100,7 +100,7 @@ export default function () {
     router.get('/opcache', checkGet(['version']), async function (req, res, next) {
         try {
             if (req.query.scripts.toString()) {
-                req.headers.authorization = req.query.auth.toString();
+                req.headers.authorization = 'Bearer ' + (req.query.auth || '').toString();
                 let next = false;
                 checkAuth(req, res, () => next = true);
                 if (!next) {
