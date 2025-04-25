@@ -237,7 +237,7 @@ export const checkAuth = function (
     if (process.env.NODE_ENV === 'development') {
         return next();
     }
-    res.sendStatus(403);
+    res.status(403).contentType('application/json').send('"Forbidden"');
 }
 
 export const getSupportVersions = () => {
