@@ -261,12 +261,13 @@ switch (cli.args.shift()) {
         exit(0);
     case 'OPCACHE_STATUS_HTML':
         arg = cli.args.shift();
+        var query = cli.args.shift();
         if (!/^(php\d\d|\d\.\d)$/.test(arg)) {
             exit(1);
         }
         const thefile = '/usr/local/share/www/opcache.php';
         const thesock = isDebian ? `/run/php/php${arg}-fpm.sock` : `/var/opt/remi/${arg}/run/php-fpm/www.sock`;
-        const theout = exec(`SCRIPT_FILENAME=${thefile} REQUEST_METHOD=GET cgi-fcgi -bind -connect ${thesock} | tail -n +4`);
+        const theout = exec(`QUERY_STRING="${query}" SCRIPT_FILENAME=${thefile} REQUEST_METHOD=GET cgi-fcgi -bind -connect ${thesock} | tail -n +4`);
         ShellString(theout.stdout).to(env.OPCACHE_TMP);
         exit(0);
     case 'CLEAN_DOMAIN':
