@@ -1,5 +1,6 @@
 import {
     cat,
+    checkAuth,
     checkGet,
     getAuth,
     getRevision,
@@ -98,6 +99,14 @@ export default function () {
     });
     router.get('/opcache', checkGet(['version']), async function (req, res, next) {
         try {
+            if (req.query.scripts.toString()) {
+                req.headers.authorization = req.query.auth.toString();
+                let next = false;
+                checkAuth(req, res, () => next = true);
+                if (!next) {
+                    return;
+                }
+            }
             await spawnSudoUtil("OPCACHE_STATUS_HTML", [req.query.version.toString(), new URL(req.url, `http://${req.headers.host}`).search.substring(1)])
             const text = cat(path.join(process.cwd(), '/.tmp/opcache'));
             res.setHeader('content-type', ' text/html').send(text);
