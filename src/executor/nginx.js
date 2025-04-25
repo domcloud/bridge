@@ -499,7 +499,7 @@ class NginxExecutor {
                         info.config.ssl = ssl;
                     }
                     if (http) {
-                        if (!["1", "2"].includes(http)) {
+                        if (!["1", "3"].includes(http)) {
                             return reject(new Error(`Invalid http value ${http}`));
                         }
                         info.config.http = http;
