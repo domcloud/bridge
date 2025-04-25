@@ -1,0 +1,921 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "DOM Cloud",
+    "version": "1.0.0",
+    "description": "DOM Cloud Bridge API documentation"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": ""
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/logman/get": {
+      "get": {
+        "summary": "Get logs for a specific user and log type",
+        "tags": [
+          "Logman"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "access",
+                "error",
+                "php",
+                "proxfix",
+                "passenger"
+              ]
+            }
+          },
+          {
+            "name": "sub",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional subdomain to extract log from"
+          },
+          {
+            "name": "n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1
+            },
+            "description": "Number of log lines to fetch"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON output of log content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Log lines or parsed structure depending on implementation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/named/resync": {
+      "post": {
+        "summary": "Resync the specified zone",
+        "tags": [
+          "Named"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The zone to resync"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns 'OK' when the zone is resynced successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "example": "OK"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/named/show": {
+      "get": {
+        "summary": "Show the specified zone",
+        "tags": [
+          "Named"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The zone to show"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the details of the zone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "zone": {
+                      "type": "string"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "action": {
+                            "type": "string"
+                          },
+                          "domain": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/named/modify": {
+      "post": {
+        "summary": "Modify the specified zone",
+        "tags": [
+          "Named"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "description": "List of modifications to be made to the zone",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "enum": [
+                        "add",
+                        "del"
+                      ],
+                      "description": "Action to perform on the record"
+                    },
+                    "domain": {
+                      "type": "string",
+                      "description": "Domain of the record"
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "Type of the record (e.g., A, MX)"
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "Value of the record"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The zone to edit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the result of the modification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "modifiedZone": {
+                      "type": "string",
+                      "example": "example.com"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nftables/show": {
+      "get": {
+        "summary": "Show nftables rules",
+        "tags": [
+          "Nftables"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w.-]+$"
+            },
+            "description": "Filter rules by username. Must be alphanumeric with dots or dashes."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns full or user-specific nftables rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nftables/add": {
+      "post": {
+        "summary": "Add user to nftables rule",
+        "tags": [
+          "Nftables"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "user"
+                ],
+                "properties": {
+                  "user": {
+                    "type": "string",
+                    "pattern": "^[\\w.-]+$",
+                    "description": "Username to allow (alphanumeric, dot, dash only)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result of adding user to nftables",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nftables/del": {
+      "post": {
+        "summary": "Remove user from nftables rule",
+        "tags": [
+          "Nftables"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "user"
+                ],
+                "properties": {
+                  "user": {
+                    "type": "string",
+                    "pattern": "^[\\w.-]+$",
+                    "description": "Username to remove (alphanumeric, dot, dash only)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result of removing user from nftables",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runner": {
+      "post": {
+        "summary": "Run a configuration (foreground or background)",
+        "tags": [
+          "Runner"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sandbox",
+            "in": "query",
+            "required": false,
+            "description": "If set to 1, prevents dangerous operation",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ],
+              "default": 0
+            }
+          },
+          {
+            "name": "x-callback",
+            "in": "header",
+            "description": "Callback URL for async background execution",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK or result output",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runner/cmd": {
+      "post": {
+        "summary": "Run a shell command as a specific user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Runner"
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cmd",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Command output",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/about": {
+      "get": {
+        "summary": "Get software version and supported software list",
+        "tags": [
+          "Status"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with version info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string",
+                      "example": "1.4.2"
+                    },
+                    "revision": {
+                      "type": "string",
+                      "example": "a1b2c3d4"
+                    },
+                    "supportVersions": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "revision",
+                    "supportVersions"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/ip": {
+      "get": {
+        "summary": "Get requester's IP and system info",
+        "tags": [
+          "Status"
+        ],
+        "description": "Returns the requester's IP. If authorized, also returns system architecture, CPU count, memory, and access status.",
+        "responses": {
+          "200": {
+            "description": "Success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ip": {
+                          "type": "string",
+                          "format": "ipv4"
+                        }
+                      },
+                      "required": [
+                        "ip"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ip": {
+                          "type": "string",
+                          "format": "ipv4"
+                        },
+                        "arch": {
+                          "type": "string"
+                        },
+                        "cpu": {
+                          "type": "integer"
+                        },
+                        "mem": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Memory in GB"
+                        },
+                        "granted": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "ip",
+                        "arch",
+                        "cpu",
+                        "mem",
+                        "granted"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/check": {
+      "get": {
+        "summary": "Check daemon statuses",
+        "tags": [
+          "Status"
+        ],
+        "responses": {
+          "200": {
+            "description": "Normal daemon status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Abnormal daemon status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/test": {
+      "get": {
+        "summary": "Test server config for any wrong config",
+        "tags": [
+          "Status"
+        ],
+        "responses": {
+          "200": {
+            "description": "Normal server config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Abnormal server config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/virtualmin/create-link": {
+      "get": {
+        "summary": "Create Virtualmin login link",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Virtualmin"
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login link string",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/virtualmin/list-domains": {
+      "get": {
+        "summary": "Get info of specific domain(s)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Virtualmin"
+        ],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated list of domains"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/virtualmin/list-subdomains": {
+      "get": {
+        "summary": "Get parent info for subdomain",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Virtualmin"
+        ],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subdomain parent info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/virtualmin/list-all-domains": {
+      "get": {
+        "summary": "List all top-level domains",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Virtualmin"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of domain names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/virtualmin/list-bandwidth": {
+      "get": {
+        "summary": "Get bandwidth info for domain(s)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Virtualmin"
+        ],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated domain names"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bandwidth usage data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/virtualmin/list-databases": {
+      "get": {
+        "summary": "List databases for a domain",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Virtualmin"
+        ],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Database info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/virtualmin/list-users": {
+      "get": {
+        "summary": "List users for a domain",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Virtualmin"
+        ],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": []
+}

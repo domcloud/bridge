@@ -16,15 +16,27 @@
             justify-content: center;
             align-items: center;
         }
+
         #stat {
             text-decoration: none;
+        }
+
+        #swagger {
+            position: absolute;
+            font-size: 0.8rem;
+            left: 2em;
+            bottom: 2em;
+        }
+
+        #swagger a {
+            color: grey;
         }
     </style>
 </head>
 
 <body>
     <p id="stat">Checking this server's health....</p>
-
+    <p id="swagger"><a href="/swagger/">Open Swagger</a></p>
     <script>
         var statTxt = document.getElementById('stat');
         fetch('/status/check')
@@ -39,7 +51,7 @@
                     statTxt.style.color = 'green';
                 }
             })
-            .catch(err => { 
+            .catch(err => {
                 console.error(err);
                 statTxt.innerHTML = '<a href="/status/check">Unable to get server status.</a>';
             });

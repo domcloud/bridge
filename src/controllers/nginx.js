@@ -23,7 +23,7 @@ export default function () {
     router.post('/', checkGet(['domain']), async function (req, res, next) {
         try {
             res.contentType('text/plain');
-            return res.send(await executor.set("" + req.query.domain, req.body || {}));
+            res.send(await executor.set("" + req.query.domain, req.body || {}));
         } catch (error) {
             next(error);
         }
@@ -31,7 +31,7 @@ export default function () {
     router.post('/ssl', checkGet(['domain']), checkPost(['ssl']), async function (req, res, next) {
         try {
             res.contentType('text/plain');
-            return res.send(await executor.setSsl("" + req.query.domain, req.body.ssl, req.body.http + ""));
+            res.send(await executor.setSsl("" + req.query.domain, req.body.ssl, req.body.http + ""));
         } catch (error) {
             next(error);
         }

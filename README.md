@@ -29,3 +29,10 @@ SSL_WILDCARDS=yoursite.com
 NGINX_FREE_DOMAIN=
 ALLOW_IP=159.89.198.103,2400:6180:0:d0::e08:a001
 ```
+
+## Changelog
+
+- 1.4: Add swagger
+- 1.3: Add ports allocator for handling docker ports
+- 1.2: Upgrade implementation to nftables
+- 1.1: Add valkey implementation

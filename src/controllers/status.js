@@ -100,7 +100,8 @@ export default function () {
         try {
             await spawnSudoUtil("OPCACHE_STATUS_HTML", [req.query.version.toString()])
             const text = cat(path.join(process.cwd(), '/.tmp/opcache'));
-            return res.setHeader('content-type', ' text/html').send(text);
+            res.setHeader('content-type', ' text/html').send(text);
+            return;
         } catch (error) {
             next(error);
         }

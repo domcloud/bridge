@@ -18,7 +18,8 @@ export default function () {
                     throw new Error("invalid username");
                 }
                 const id = shelljs.exec("id -u " + user).stdout.trim();
-                return res.json(executor.getByUser(p, user, id));
+                res.json(executor.getByUser(p, user, id));
+                return;
             }
             res.json(p);
         } catch (error) {
