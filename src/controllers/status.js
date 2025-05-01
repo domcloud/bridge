@@ -97,6 +97,10 @@ export default function () {
             next(error);
         }
     });
+    router.get('/repquota', async function (req, res, next) {
+        let spawn = await spawnSudoUtil('SHELL_SUDO', ["root", "repquota", "-a"]);
+        res.setHeader('content-type', ' text/plain').send(spawn.stdout);
+    });
     router.get('/opcache', checkGet(['version']), async function (req, res, next) {
         try {
             await spawnSudoUtil("OPCACHE_STATUS_HTML", [req.query.version.toString(), new URL(req.url, `http://${req.headers.host}`).search.substring(1)])

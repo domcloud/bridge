@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>repquota -a Parser with Vue</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      text-align: right;
+    }
+    th:first-child, td:first-child {
+      text-align: left;
+    }
+    th {
+      cursor: pointer;
+      background-color: #f2f2f2;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: block;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 600px;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      margin-top: 10px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <button @click="showModal = true">Paste repquota -a Output</button>
+
+    <!-- Modal -->
+    <div class="modal" v-if="showModal">
+      <div class="modal-content">
+        <span class="close" @click="showModal = false">&times;</span>
+        <h2>Paste Output</h2>
+        <button @click="getQuota">Get From /status/repquota</button>
+        <textarea v-model="rawInput" placeholder="Paste repquota -a output here..."></textarea>
+
+        <button @click="parseQuota">Parse</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <table v-if="quotaData.length">
+      <thead>
+        <tr>
+          <th v-for="(h, index) in headers" :key="index" @click="sortBy(index)">
+            {{ h }}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(row, rowIndex) in quotaData" :key="rowIndex">
+          <td>{{ row.user }}</td>
+          <td>{{ row.flags }}</td>
+          <td>{{ row.blockUsed }}</td>
+          <td>{{ row.blockSoft }}</td>
+          <td>{{ row.blockHard }}</td>
+          <td>{{ row.blockGrace }}</td>
+          <td>{{ row.inodeUsed }}</td>
+          <td>{{ row.inodeSoft }}</td>
+          <td>{{ row.inodeHard }}</td>
+          <td>{{ row.inodeGrace }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          showModal: false,
+          rawInput: '',
+          quotaData: [],
+          headers: [
+            'User', 'Flags', 'Block Used', 'Block Soft', 'Block Hard', 'Block Grace',
+            'Inode Used', 'Inode Soft', 'Inode Hard', 'Inode Grace'
+          ],
+          currentSortIndex: null,
+          sortAsc: true
+        };
+      },
+      methods: {
+        async getQuota() {
+          this.rawInput = await (await fetch('/status/repquota')).text();
+        },
+        parseQuota() {
+          this.quotaData = [];
+          const lines = this.rawInput.split('\n').filter(line =>
+            /^[a-zA-Z0-9]/.test(line.trim())
+          );
+
+          this.quotaData = lines.map(line => {
+            const parts = line.trim().split(/\s+/);
+            const [user, flags, ...rest] = parts;
+            return {
+              user,
+              flags,
+              blockUsed: +rest[0],
+              blockSoft: +rest[1],
+              blockHard: +rest[2],
+              blockGrace: rest[3] || '',
+              inodeUsed: +rest[4],
+              inodeSoft: +rest[5],
+              inodeHard: +rest[6],
+              inodeGrace: rest[7] || ''
+            };
+          });
+
+          this.showModal = false;
+        },
+        sortBy(index) {
+          const keyMap = [
+            'user', 'flags', 'blockUsed', 'blockSoft', 'blockHard', 'blockGrace',
+            'inodeUsed', 'inodeSoft', 'inodeHard', 'inodeGrace'
+          ];
+          const key = keyMap[index];
+
+          if (this.currentSortIndex === index) {
+            this.sortAsc = !this.sortAsc;
+          } else {
+            this.currentSortIndex = index;
+            this.sortAsc = true;
+          }
+
+          const isNumeric = typeof this.quotaData[0][key] === 'number';
+
+          this.quotaData.sort((a, b) => {
+            const valA = a[key];
+            const valB = b[key];
+            if (isNumeric) {
+              return this.sortAsc ? valA - valB : valB - valA;
+            } else {
+              return this.sortAsc
+                ? String(valA).localeCompare(valB)
+                : String(valB).localeCompare(valA);
+            }
+          });
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
