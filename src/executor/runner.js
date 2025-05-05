@@ -33,8 +33,8 @@ export class RunnerPayload {
      */
     constructor({ body, domain, sandbox, callback }) {
         this.body = body || {};
-        this.domain = domain + "";
-        this.sandbox = !!sandbox;
+        this.domain = domain;
+        this.sandbox = sandbox;
         /** @type {string | undefined} */
         this.callback = callback;
         this.maxExecutionTime = 900000 // harcoded for now

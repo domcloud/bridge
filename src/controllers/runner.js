@@ -177,7 +177,12 @@ fs.mkdirSync(path.join(__dirname, '../../logs'), { recursive: true });
 const getLoggerPath = () => path.join(__dirname, `../../logs/${new Date().toISOString().substring(0, 10)}.log`);
 let loggerPath = getLoggerPath();
 let childLogger = fs.openSync(loggerPath, 'a');
-export async function runConfigInBackgroundSingleton(payload) {
+/**
+ * 
+ * @param {any} payload 
+ * @returns 
+ */
+async function runConfigInBackgroundSingleton(payload) {
     const curLoggerPath = getLoggerPath();
     if (curLoggerPath != loggerPath) {
         loggerPath = curLoggerPath;
@@ -193,7 +198,13 @@ export async function runConfigInBackgroundSingleton(payload) {
     }).unref();
 }
 
-export async function runConfigInForeground(payload) {
+/**
+ * 
+ * @param {any} payload 
+ * @param {import('express').Response<any, Record<string, any>, number>} res 
+ * @returns 
+ */
+async function runConfigInForeground(payload, res) {
     return new Promise((resolve, reject) => {
         let child = spawn('node', [path.join(process.cwd(), '/runner.js')], {
             stdio: 'pipe',
@@ -202,24 +213,25 @@ export async function runConfigInForeground(payload) {
             }
         })
 
-        let stdoutData = '';
 
         // Collect stdout data
         child.stdout.on('data', (data) => {
-            stdoutData += data.toString();
+            res.write(data.toString());
         });
 
         // Collect stderr data
         child.stderr.on('data', (data) => {
-            stdoutData += data.toString();
+            res.write(data.toString());
         });
 
         // Handle process exit
         child.on('exit', (exitCode) => {
+            res.write(`Process exited with code ${exitCode}\n`);
+            res.end();
             if (exitCode !== 0) {
-                reject(new Error(`Process exited with code ${exitCode}\n${stdoutData}`));
+                reject();
             } else {
-                resolve(stdoutData.trim()); // Resolve with collected stdout
+                resolve();
             }
         });
 
@@ -232,25 +244,31 @@ export async function runConfigInForeground(payload) {
 
 export default function () {
     var router = express.Router();
-    router.post('/cmd', checkGet(['user', 'cmd']), async function (req, res, next) {
-        res.send(await spawnSudoUtil('SHELL_SUDO', [req.query.user.toString(), "bash", "-c", req.query.cmd.toString()]));
+    router.post('/cmd', checkGet(['user', 'cmd']), function (req, res, next) {
+        const user = req.query.user.toString()
+        const cmd = req.query.cmd.toString()
+        const exc = spawnSudoUtil('SHELL_SUDO', [user, "bash", "-c", cmd]);
+        exc.then((x) => res.send(x)).catch((err) => next(err))
     });
-    router.post('/', checkGet(['domain']), async function (req, res, next) {
+    router.post('/', checkGet(['domain']), function (req, res, next) {
         const callback = req.header('x-callback');
-        if (callback) {
+        const sandbox = !!parseInt(req.query.sandbox?.toString() || '0');
+        const domain = req.query.domain + "";
+        const body = req.body;
+        if (/^https?:\/\/.+$/.test(callback)) {
             runConfigInBackgroundSingleton({
-                body: req.body,
-                domain: req.query.domain + "",
-                sandbox: !!parseInt(req.query.sandbox + '' || '0'),
-                callback: req.header('x-callback'),
+                body,
+                domain,
+                sandbox,
+                callback,
             });
             res.send('OK');
         } else {
-            res.send(await runConfigInForeground({
-                body: req.body,
-                domain: req.query.domain + "",
-                sandbox: !!parseInt(req.query.sandbox + '' || '0'),
-            }));
+            runConfigInForeground({
+                body,
+                domain,
+                sandbox,
+            }, res);
         }
     });
     return router;
