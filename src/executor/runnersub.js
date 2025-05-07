@@ -21,9 +21,10 @@ import { redisExec } from "./redis.js";
  * @param {{ (program: any, ...opts: any[]): Promise<any> }} virtExec
  * @param {() => Promise<boolean>} firewallStatus
  * @param {boolean} stillroot
+ * @param {boolean} sandbox
  */
 
-export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallStatus, stillroot = false) {
+export async function runConfigSubdomain(config, domaindata, subdomain, sshExec, writeLog, virtExec, firewallStatus, stillroot = false, sandbox = false) {
     var subdomaindata;
 
     if (stillroot) {
@@ -43,20 +44,11 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     async function featureRunner(/** @type {object|string} */ feature) {
         let key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
         let value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
-        if (key == 'mariadb') {
-            key = 'mysql';
-        }
-        if (key == 'postgresql') {
-            key = 'postgres';
-        }
-        if (key == 'valkey') {
-            key = 'redis';
-        }
         let enabled = domaindata['Features'].includes(key);
         let subenabled = subdomaindata['Features'].includes(key);
         let dbneedcreate = false;
 
-        if (!stillroot) {
+        if (!stillroot && !sandbox) {
             switch (key) {
                 case 'modify':
                     await writeLog("$> virtualmin modify-domain");
@@ -91,13 +83,11 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     });
                     // no need to do other stuff
                     return;
-                default:
-                    break;
-
             }
         }
 
         switch (key) {
+            case 'mariadb':
             case 'mysql':
                 if (!stillroot && !enabled) {
                     await writeLog("Problem: Can't manage MySQL while it is disabled in parent domain");
@@ -105,7 +95,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (value === "off") {
                     await writeLog("$> Disabling MySQL");
-                    if (subenabled) {
+                    if (sandbox) {
+                        await writeLog("$> turning off MySQL is denied");
+                    } else if (subenabled) {
                         await virtExec("disable-feature", value, {
                             domain: subdomain,
                             mysql: true,
@@ -140,6 +132,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         name: dbname,
                         type: 'mysql',
                     });
+                } else if (sandbox && value) {
+                    await writeLog("$> managing MySQL database is denied");
                 } else if (value.startsWith("drop ")) {
                     let dropdb = value.substr("drop ".length).trim();
                     dbname = getDbName(domaindata['Username'], domainprefix == "db" ? dropdb : domainprefix + '_' + dropdb);
@@ -163,6 +157,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog(`$> MySQL is already initialized. To create another database, use "mysql create dbname"`);
                 }
                 break;
+            case 'postgresql':
             case 'postgres':
                 if (!stillroot && !enabled) {
                     await writeLog("Problem: Can't manage PostgreSQL while it is disabled in parent domain");
@@ -170,7 +165,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (value === "off") {
                     await writeLog("$> Disabling PostgreSQL");
-                    if (subenabled) {
+                    if (sandbox) {
+                        await writeLog("$> turning off PostgreSQL is denied");
+                    } else if (subenabled) {
                         await virtExec("disable-feature", value, {
                             domain: subdomain,
                             postgres: true,
@@ -206,6 +203,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         type: 'postgres',
                     }
                     );
+                } else if (sandbox && value) {
+                    await writeLog("$> managing PostgreSQL database is denied");
                 } else if (value.startsWith("drop ")) {
                     let dropdb = value.substr("drop ".length).trim();
                     dbname = getDbName(domaindata['Username'], domainprefix == "db" ? dropdb : domainprefix + '_' + dropdb);
@@ -229,6 +228,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog(`$> PostgreSQL is already initialized. To create another database, use "postgresql create dbname"`);
                 }
                 break;
+            case 'valkey':
             case 'redis':
                 const dbuser = domaindata['Username'];
                 let instances = await redisExec.show(dbuser);
@@ -243,7 +243,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (value === "off") {
                     await writeLog("$> Disabling Redis");
-                    if (subenabled) {
+                    if (sandbox) {
+                        await writeLog("$> turning off Redis is denied");
+                    } else if (subenabled) {
                         for (const db of instances) {
                             dbname = db.split(":")[0];
                             await writeLog(await redisExec.prune(dbname));
@@ -269,6 +271,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 if (dbneedcreate) {
                     await writeLog(`$> Creating db instance ${dbname} on Redis`);
                     await writeLog(await redisExec.add(domaindata['Username'], dbname, passRef));
+                } else if (sandbox && value) {
+                    await writeLog("$> managing Redis database is denied");
                 } else if (value.startsWith("drop ")) {
                     let arg = value.substr("drop ".length).trim();
                     matchedDB = matchDB(arg);
@@ -315,7 +319,9 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (value === "off") {
                     await writeLog("$> Disabling DNS feature");
-                    if (subenabled) {
+                    if (sandbox) {
+                        await writeLog("$> turning off DNS feature is denied");
+                    } if (subenabled) {
                         await virtExec("disable-feature", value, {
                             domain: subdomain,
                             dns: true,

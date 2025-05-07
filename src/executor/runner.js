@@ -18,6 +18,7 @@ import {
 import { handleSshOutput, runConfigCodeFeatures } from "./runnercode.js";
 import { runConfigSubdomain } from "./runnersub.js";
 import path from "path";
+import { dockerExec } from "./docker.js";
 
 /**
  * Represents a payload object with body, domain, sandbox, and callback properties.
@@ -262,124 +263,150 @@ export default async function runConfig(payload) {
             const key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
             const value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
             const user = domaindata['Username'];
-            if (!sandbox) {
-                switch (key) {
-                    case 'modify':
-                        await writeLog("$> virtualmin modify-domain");
-                        await virtExec("modify-domain", value, {
-                            domain,
-                        });
-                        if (value.pass) {
-                            if (domaindata['Password for mysql'] == domaindata['Password']) {
-                                if (domaindata['Features']?.includes('mysql')) {
-                                    await writeLog("$> virtualmin modify-database-pass mysql");
-                                    await virtExec("modify-database-pass", {
-                                        domain,
-                                        pass: value.pass,
-                                        type: 'mysql',
-                                    });
-                                    domaindata['Password for mysql'] = value.pass;
-                                }
-                            }
-                            if (domaindata['Password for postgres'] == domaindata['Password']) {
-                                if (domaindata['Features']?.includes('postgres')) {
-                                    await writeLog("$> virtualmin modify-database-pass postgres");
-                                    await virtExec("modify-database-pass", {
-                                        domain,
-                                        pass: value.pass,
-                                        type: 'postgres',
-                                    });
-                                    domaindata['Password for postgres'] = value.pass;
-                                }
-                            }
-                        }
-                        break;
-                    case 'rename':
-                        if (value && value["new-user"] && await firewallStatus()) {
-                            await nftablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
-                        }
-                        await writeLog("$> virtualmin rename-domain");
-                        await virtExec("rename-domain", value, {
-                            domain,
-                        });
-                        // in case if we change domain name
-                        if (value && value["new-domain"])
-                            domain = value["new-domain"];
-                        await new Promise(r => setTimeout(r, 1000));
-                        if (value && value["new-user"] && await firewallStatus()) {
-                            await nftablesExec.setAddUser(value["new-user"], domaindata['User ID']);
-                        }
-                        // @ts-ignore
-                        domaindata = await virtualminExec.getDomainInfo(domain);
-                        break;
-                    case 'disable':
-                        await sshExec(`mkdir -p '${domaindata['Home directory']}'`);
-                        await writeLog("$> virtualmin disable-domain");
-                        await virtExec("disable-domain", value, {
-                            domain,
-                        });
-                        break;
-                    case 'enable':
-                        await writeLog("$> virtualmin enable-domain");
-                        await virtExec("enable-domain", value, {
-                            domain,
-                        });
-                        await spawnSudoUtil("SHELL_SUDO", ["root",
-                            "rm", "-f", path.join(domaindata['Home directory'], `disabled_by_virtualmin.html`)
-                        ]);
-                        break;
-                    case 'backup':
-                        await writeLog("$> virtualmin backup-domain");
-                        await virtExec("backup-domain", value, {
-                            user,
-                            'all-features': true,
-                            'ignore-errors': true,
-                        });
-                        break;
-                    case 'restore':
-                        await writeLog("$> virtualmin restore-domain");
-                        if (!value.feature) {
-                            value.feature = ['dir', 'dns', 'mysql', 'virtualmin-nginx'];
-                        }
-                        await virtExec("restore-domain", value, {
-                            option: [['dir', 'delete', '1']],
-                            'all-domains': true,
-                            'only-existing': true,
-                            'reuid': true,
-                            'skip-warnings': true,
-                        });
-                        break;
-                    case 'delete':
-                        await writeLog("$> virtualmin delete-domain");
-                        const sharedSSL = detectCanShareSSL(domain);
-                        if (sharedSSL && !domaindata['SSL shared with']) {
-                            // OMG!
-                            await writeLog("$> Applying SSL links with global domain before deleting");
-                            await writeLog(await virtualminExec.pushVirtualServerConfig(domaindata['ID'], {
-                                'ssl_same': sharedSSL.id,
-                                'ssl_key': path.join(sharedSSL.path, 'ssl.key'),
-                                'ssl_cert': path.join(sharedSSL.path, 'ssl.cert'),
-                                'ssl_chain': path.join(sharedSSL.path, 'ssl.ca'),
-                                'ssl_combined': path.join(sharedSSL.path, 'ssl.combined'),
-                                'ssl_everything': path.join(sharedSSL.path, 'ssl.everything'),
-                            }));
-                        }
-                        await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u', user]);
-                        await virtExec("delete-domain", value, {
-                            domain,
-                        });
-                        if (await firewallStatus()) {
-                            await nftablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
-                        }
-                        await spawnSudoUtil('CLEAN_DOMAIN', ["rm", domaindata['ID'], domain]);
-                        // no need to do other stuff
-                        return;
-                    default:
-                        break;
-                }
-            }
             switch (key) {
+                case 'modify':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    await writeLog("$> virtualmin modify-domain");
+                    await virtExec("modify-domain", value, {
+                        domain,
+                    });
+                    if (value.pass) {
+                        if (domaindata['Password for mysql'] == domaindata['Password']) {
+                            if (domaindata['Features']?.includes('mysql')) {
+                                await writeLog("$> virtualmin modify-database-pass mysql");
+                                await virtExec("modify-database-pass", {
+                                    domain,
+                                    pass: value.pass,
+                                    type: 'mysql',
+                                });
+                                domaindata['Password for mysql'] = value.pass;
+                            }
+                        }
+                        if (domaindata['Password for postgres'] == domaindata['Password']) {
+                            if (domaindata['Features']?.includes('postgres')) {
+                                await writeLog("$> virtualmin modify-database-pass postgres");
+                                await virtExec("modify-database-pass", {
+                                    domain,
+                                    pass: value.pass,
+                                    type: 'postgres',
+                                });
+                                domaindata['Password for postgres'] = value.pass;
+                            }
+                        }
+                    }
+                    break;
+                case 'rename':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    if (value && value["new-user"] && await firewallStatus()) {
+                        await nftablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
+                    }
+                    await writeLog("$> virtualmin rename-domain");
+                    await virtExec("rename-domain", value, {
+                        domain,
+                    });
+                    // in case if we change domain name
+                    if (value && value["new-domain"])
+                        domain = value["new-domain"];
+                    await new Promise(r => setTimeout(r, 1000));
+                    if (value && value["new-user"] && await firewallStatus()) {
+                        await nftablesExec.setAddUser(value["new-user"], domaindata['User ID']);
+                    }
+                    // @ts-ignore
+                    domaindata = await virtualminExec.getDomainInfo(domain);
+                    break;
+                case 'disable':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    await sshExec(`mkdir -p '${domaindata['Home directory']}'`);
+                    await writeLog("$> virtualmin disable-domain");
+                    await virtExec("disable-domain", value, {
+                        domain,
+                    });
+                    break;
+                case 'enable':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    await writeLog("$> virtualmin enable-domain");
+                    await virtExec("enable-domain", value, {
+                        domain,
+                    });
+                    await spawnSudoUtil("SHELL_SUDO", ["root",
+                        "rm", "-f", path.join(domaindata['Home directory'], `disabled_by_virtualmin.html`)
+                    ]);
+                    break;
+                case 'backup':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    await writeLog("$> virtualmin backup-domain");
+                    await virtExec("backup-domain", value, {
+                        user,
+                        'all-features': true,
+                        'ignore-errors': true,
+                    });
+                    break;
+                case 'restore':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    await writeLog("$> virtualmin restore-domain");
+                    if (!value.feature) {
+                        value.feature = ['dir', 'dns', 'mysql', 'virtualmin-nginx'];
+                    }
+                    await virtExec("restore-domain", value, {
+                        option: [['dir', 'delete', '1']],
+                        'all-domains': true,
+                        'only-existing': true,
+                        'reuid': true,
+                        'skip-warnings': true,
+                    });
+                    break;
+                case 'delete':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    await writeLog("$> virtualmin delete-domain");
+                    const sharedSSL = detectCanShareSSL(domain);
+                    if (sharedSSL && !domaindata['SSL shared with']) {
+                        // OMG!
+                        await writeLog("$> Applying SSL links with global domain before deleting");
+                        await writeLog(await virtualminExec.pushVirtualServerConfig(domaindata['ID'], {
+                            'ssl_same': sharedSSL.id,
+                            'ssl_key': path.join(sharedSSL.path, 'ssl.key'),
+                            'ssl_cert': path.join(sharedSSL.path, 'ssl.cert'),
+                            'ssl_chain': path.join(sharedSSL.path, 'ssl.ca'),
+                            'ssl_combined': path.join(sharedSSL.path, 'ssl.combined'),
+                            'ssl_everything': path.join(sharedSSL.path, 'ssl.everything'),
+                        }));
+                    }
+                    await spawnSudoUtil('SHELL_SUDO', [user, 'killall', '-u', user]);
+                    await virtExec("delete-domain", value, {
+                        domain,
+                    });
+                    if (await firewallStatus()) {
+                        await nftablesExec.setDelUser(domaindata['Username'], domaindata['User ID']);
+                    }
+                    await spawnSudoUtil('CLEAN_DOMAIN', ["rm", domaindata['ID'], domain]);
+                    // no need to do other stuff
+                    return;
                 case 'firewall':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
                     if (value === '' || value === 'on') {
                         await writeLog("$> Changing firewall protection to " + (value || 'on'));
                         await writeLog(await nftablesExec.setAddUser(domaindata['Username'], domaindata['User ID']));
@@ -391,6 +418,10 @@ export default async function runConfig(payload) {
                     }
                     break;
                 case 'sshpass':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
                     if (value === '' || value === 'on' || value == 'allow') {
                         await writeLog("$> Changing ssh password login policy to allow");
                         await virtExec("modify-users", {
@@ -407,16 +438,38 @@ export default async function runConfig(payload) {
                         });
                     }
                     break;
-                case 'fix-domain-permissions':
+                case 'fixperm':
                     await writeLog("$> Fixing domain permissions");
                     await virtExec("fix-domain-permissions", {
                         domain,
                         'subservers': true,
                     });
                     break;
-                default:
-                    await runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec);
+                case 'docker':
+                    if (value === '' || value === 'on') {
+                        await writeLog("$> Enabling docker features");
+                        await writeLog(await dockerExec.enableDocker(domaindata['Username']));
+                        await sshExec(`mkdir -p ~/.config/docker  ~/.config/systemd/user/docker.service.d`, false);
+                        await sshExec(`[[ -z $DOCKER_HOST ]] && echo "export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock" >>  ~/.bashrc`);
+                        await sshExec(`printf '{\\n\\t"exec-opts": ["native.cgroupdriver=cgroupfs"],\\n\\t"host-gateway-ip": "10.0.2.2"\\n}\\n' > ~/.config/docker/daemon.json`);
+                        await sshExec(`printf '[Service]\\nEnvironment="DOCKERD_ROOTLESS_ROOTLESSKIT_NET=pasta"\\nEnvironment="DOCKERD_ROOTLESS_ROOTLESSKIT_PORT_DRIVER=implicit"\\nEnvironment="DOCKERD_ROOTLESS_ROOTLESSKIT_DISABLE_HOST_LOOPBACK=false"\\n' > ~/.config/systemd/user/docker.service.d/override.conf`);
+                        await sshExec(`dockerd-rootless-setuptool.sh install --skip-iptables`);
+                        await sshExec(`[[ -z $DOCKER_HOST ]] || (systemctl daemon-reload --user; systemctl restart docker --user)`);
+                        await sshExec(`export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`, false);
+                    } else if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    } else if (value === 'off') {
+                        await writeLog("$> Disabling docker features");
+                        await sshExec(`dockerd-rootless-setuptool.sh uninstall --skip-iptables`);
+                        await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`);
+                        await sshExec(`rm -rf ~/.config/docker`);
+                        await sshExec(`rootlesskit rm -rf ~/.local/share/docker`);
+                        await writeLog(await dockerExec.disableDocker(domaindata['Username']));
+                    }
                     break;
+                default:
+                    await runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec)
             }
         }
 
@@ -446,13 +499,13 @@ export default async function runConfig(payload) {
         const domainname = stillroot ? domain : [config.subdomain, domain].join('.');
         passwds.push(` DOMAIN='${domainname}'`);
         await sshExec(` ` + passwds.join('; '), false);
-        await runConfigSubdomain(config, domaindata, domainname, sshExec, writeLog, virtExec, firewallStatus, stillroot);
+        await runConfigSubdomain(config, domaindata, domainname, sshExec, writeLog, virtExec, firewallStatus, stillroot, sandbox);
         if (stillroot && Array.isArray(config.subdomains)) {
             for (const sub of config.subdomains) {
                 const subdomain = [sub.subdomain, domain].join('.');
                 await sshExec(` DOMAIN='${subdomain}'`, false);
                 if (sub.subdomain) {
-                    await runConfigSubdomain(sub, domaindata, subdomain, sshExec, writeLog, virtExec, firewallStatus);
+                    await runConfigSubdomain(sub, domaindata, subdomain, sshExec, writeLog, virtExec, firewallStatus, false, sandbox);
                 } else {
                     await writeLog(`\nERROR: subdomains require subdomain on each item.`);
                 }

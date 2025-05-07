@@ -1,6 +1,4 @@
 import { countOf, getJavaVersion, getPythonVersion, getRubyVersion, isDebian, nthIndexOf } from "../util.js";
-import { dockerExec } from "./docker.js";
-import { logmanExec } from "./logman.js";
 
 /**
  * @param {string} key
@@ -13,8 +11,8 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
     let arg;
     switch (key) {
         case 'restart':
-            await writeLog("$> Restarting passenger processes");
-            await writeLog(await logmanExec.restartPassenger(domaindata));
+            await writeLog("$> Restarting processes");
+            await sshExec(`restart`);
             break;
         case 'yum':
         case 'dnf':
@@ -31,26 +29,6 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await sshExec(`ls ~/Downloads/*.rpm | xargs -n 1 -I {} sh -c 'rpm2cpio "{}" | cpio -idmD ~'`);
             }
             await sshExec(`. ~/.bashrc`, false)
-            break;
-        case 'docker':
-            if (value === '' || value === 'on') {
-                await writeLog("$> Enabling docker features");
-                await writeLog(await dockerExec.enableDocker(domaindata['Username']));
-                await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`, false);
-                await sshExec(`echo "export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock" >>  ~/.bashrc;`);
-                await sshExec(`mkdir -p ~/.config/docker  ~/.config/systemd/user/docker.service.d`, false);
-                await sshExec(`printf '{\\n\\t"exec-opts": ["native.cgroupdriver=cgroupfs"],\\n\\t"host-gateway-ip": "10.0.2.2"\\n}\\n' > ~/.config/docker/daemon.json`);
-                await sshExec(`printf '[Service]\\nEnvironment="DOCKERD_ROOTLESS_ROOTLESSKIT_NET=pasta"\\nEnvironment="DOCKERD_ROOTLESS_ROOTLESSKIT_PORT_DRIVER=implicit"\\nEnvironment="DOCKERD_ROOTLESS_ROOTLESSKIT_DISABLE_HOST_LOOPBACK=false"\\n' > ~/.config/systemd/user/docker.service.d/override.conf`);
-                await sshExec(`dockerd-rootless-setuptool.sh install --skip-iptables`);
-                await sshExec(`export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`, false);
-            } else if (value === 'off') {
-                await writeLog("$> Disabling docker features");
-                await sshExec(`dockerd-rootless-setuptool.sh uninstall --skip-iptables`);
-                await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`);
-                await sshExec(`rm -rf ~/.config/docker`);
-                await sshExec(`rootlesskit rm -rf ~/.local/share/docker`);
-                await writeLog(await dockerExec.disableDocker(domaindata['Username']));
-            }
             break;
         case 'python':
             if (value == 'off') {
@@ -264,9 +242,9 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             }
             break;
         default:
-            break;
+            return false;
     }
-    return arg;
+    return true;
 }
 
 
