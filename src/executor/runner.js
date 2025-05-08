@@ -273,28 +273,29 @@ export default async function runConfig(payload) {
                     await virtExec("modify-domain", value, {
                         domain,
                     });
-                    if (value.pass) {
-                        if (domaindata['Password for mysql'] == domaindata['Password']) {
-                            if (domaindata['Features']?.includes('mysql')) {
-                                await writeLog("$> virtualmin modify-database-pass mysql");
-                                await virtExec("modify-database-pass", {
-                                    domain,
-                                    pass: value.pass,
-                                    type: 'mysql',
-                                });
-                                domaindata['Password for mysql'] = value.pass;
-                            }
+                    if (!value.pass) {
+                        break;
+                    }
+                    if (domaindata['Password for mysql'] == domaindata['Password']) {
+                        if (domaindata['Features']?.includes('mysql')) {
+                            await writeLog("$> virtualmin modify-database-pass mysql");
+                            await virtExec("modify-database-pass", {
+                                domain,
+                                pass: value.pass,
+                                type: 'mysql',
+                            });
+                            domaindata['Password for mysql'] = value.pass;
                         }
-                        if (domaindata['Password for postgres'] == domaindata['Password']) {
-                            if (domaindata['Features']?.includes('postgres')) {
-                                await writeLog("$> virtualmin modify-database-pass postgres");
-                                await virtExec("modify-database-pass", {
-                                    domain,
-                                    pass: value.pass,
-                                    type: 'postgres',
-                                });
-                                domaindata['Password for postgres'] = value.pass;
-                            }
+                    }
+                    if (domaindata['Password for postgres'] == domaindata['Password']) {
+                        if (domaindata['Features']?.includes('postgres')) {
+                            await writeLog("$> virtualmin modify-database-pass postgres");
+                            await virtExec("modify-database-pass", {
+                                domain,
+                                pass: value.pass,
+                                type: 'postgres',
+                            });
+                            domaindata['Password for postgres'] = value.pass;
                         }
                     }
                     break;
@@ -417,6 +418,7 @@ export default async function runConfig(payload) {
                         firewallStatusCache = false;
                     }
                     break;
+                case 'ssh':
                 case 'sshpass':
                     if (sandbox) {
                         await writeLog("Can't perform " + key + " feature because it is denied");
@@ -438,6 +440,7 @@ export default async function runConfig(payload) {
                         });
                     }
                     break;
+                case 'fix':
                 case 'fixperm':
                     await writeLog("$> Fixing domain permissions");
                     await virtExec("fix-domain-permissions", {
@@ -445,6 +448,36 @@ export default async function runConfig(payload) {
                         'subservers': true,
                     });
                     break;
+                case 'lock':
+                case 'lockmod':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    let arg = value.trim() || 'public_html';
+                    arg = path.normalize(arg);
+                    if (/\.\./.test(arg)) {
+                        break;
+                    }
+                    await writeLog("$> Changing owner of " + arg + " to make it read-only");
+                    await writeLog((await spawnSudoUtil("SHELL_SUDO", ["root",
+                        "chown", "-R", "nobody:" + user, path.join(domaindata['Home directory'], arg)
+                    ])).stdout);
+                case 'unlock':
+                case 'unlockmod':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    arg = value.trim() || 'public_html';
+                    arg = path.normalize(arg);
+                    if (/\.\./.test(arg)) {
+                        break;
+                    }
+                    await writeLog("$> Changing owner of " + arg + " to make it read-write");
+                    await writeLog((await spawnSudoUtil("SHELL_SUDO", ["root",
+                        "chown", "-R", user + ":" + user, path.join(domaindata['Home directory'], arg)
+                    ])).stdout);
                 case 'docker':
                     if (value === '' || value === 'on') {
                         await writeLog("$> Enabling docker features");

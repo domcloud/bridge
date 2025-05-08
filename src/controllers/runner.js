@@ -244,13 +244,7 @@ async function runConfigInForeground(payload, res) {
 
 export default function () {
     var router = express.Router();
-    router.post('/cmd', checkGet(['user', 'cmd']), function (req, res, next) {
-        const user = req.query.user.toString()
-        const cmd = req.query.cmd.toString()
-        const exc = spawnSudoUtil('SHELL_SUDO', [user, "bash", "-c", cmd]);
-        exc.then((x) => res.send(x)).catch((err) => next(err))
-    });
-    router.post('/', checkGet(['domain']), function (req, res, next) {
+    const runnerFn = function (req, res, next) {
         const callback = req.header('x-callback');
         const sandbox = !!parseInt(req.query.sandbox?.toString() || '0');
         const domain = req.query.domain + "";
@@ -270,68 +264,28 @@ export default function () {
                 sandbox,
             }, res);
         }
+    }
+    router.post('/cmd', checkGet(['user', 'cmd']), function (req, res, next) {
+        const user = req.query.user.toString()
+        const cmd = req.query.cmd.toString()
+        const exc = spawnSudoUtil('SHELL_SUDO', [user, "bash", "-c", cmd]);
+        exc.then((x) => res.send(x)).catch((err) => next(err))
     });
+    router.post('/by-unix', checkGet(['user']), async function (req, res, next) {
+        const user = req.query.user.toString()
+        if (/^\d+$/.test(user)) {
+            next(new Error("user must be uid"));
+            return;
+        }
+        const exc = await spawnSudoUtil('SHELL_SUDO', ["root", "bash", "-c", "virtualmin list-domains --user $(id -nu " + user + ") --toplevel --name-only"]);
+        if (exc.code != 0) {
+            next(new Error("user not found"));
+            return;
+        }
+        req.query.domain = exc.stdout.trim();
+        runnerFn(req, res, next);
+    });
+    router.post('/', checkGet(['domain']), runnerFn);
     return router;
 }
 
-
-/**
- * Mimics axios.post using curl command.
- * 
- * @param {string} url - The URL to which the request is sent.
- * @param {Object|string} data - The payload to be sent in the request body.
- * @param {Object} config - Configuration object containing headers and other options.
- * @returns {Promise} - A promise that resolves with the response or rejects with an error.
- */
-function curlPost(url, data, config = {}) {
-    return new Promise((resolve, reject) => {
-        // Convert data to string if it's an object
-        const payload = typeof data === 'object' ? JSON.stringify(data) : data;
-
-        // Extract headers from config
-        const headers = config.headers || {};
-        const timeout = config.timeout || 0; // Timeout in seconds
-
-        // Convert headers object to an array of `-H` options for curl
-        const headerOptions = Object.entries(headers).flatMap(([key, value]) => ['-H', `${key}: ${value}`]);
-
-        // Prepare the curl command with the necessary arguments
-        const curlArgs = [
-            '-X', 'POST',
-            ...headerOptions,
-            '-d', payload,
-            url
-        ];
-
-        if (timeout > 0) {
-            curlArgs.push('--max-time', timeout.toString());
-        }
-
-        // Log the curl arguments
-        console.log('Curl Command:', 'curl', ...curlArgs);
-
-        const curl = spawn('curl', curlArgs);
-
-        let response = '';
-        let errorResponse = '';
-
-        // Capture the standard output
-        curl.stdout.on('data', (data) => {
-            response += data.toString();
-        });
-
-        // Capture the standard error
-        curl.stderr.on('data', (data) => {
-            errorResponse += data.toString();
-        });
-
-        // Handle process close
-        curl.on('close', (code) => {
-            if (code === 0) {
-                resolve(response);
-            } else {
-                reject(new Error(`Curl process exited with code ${code}: ${errorResponse}`));
-            }
-        });
-    });
-}

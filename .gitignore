@@ -1,6 +1,7 @@
 node_modules
 .env
 .tmp
+deployd/bin
 test/*.out
 phpmyadmin
 phppgadmin

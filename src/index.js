@@ -7,7 +7,7 @@ import status from './controllers/status.js';
 import nftables from './controllers/nftables.js';
 import redis from './controllers/redis.js';
 import screend from './controllers/screend.js';
-import { checkAuth, initUtils } from './util.js';
+import { checkAuth, initUtils, initDeployd } from './util.js';
 import runner from './controllers/runner.js';
 import virtualmin from './controllers/virtualmin.js';
 import docker from './controllers/docker.js';
@@ -16,6 +16,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerDocs from './controllers/swagger.cjs';
 
 initUtils();
+initDeployd();
 
 const app = express();
 app.set('trust proxy', 'loopback');
