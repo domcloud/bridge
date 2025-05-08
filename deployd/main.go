@@ -3,12 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"go/format"
 	"io"
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 
 	"syscall"
 )
@@ -28,7 +26,6 @@ func main() {
 	if targetPort == "" {
 		targetPort = "2223"
 	}
-	baseUri := 
 
 	secret := os.Getenv("SECRET")
 	if secret == "" {
