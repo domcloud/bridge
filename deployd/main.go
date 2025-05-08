@@ -63,7 +63,7 @@ func main() {
 		// 1. create a new http client
 		client := &http.Client{}
 		// 2. create a new request
-		uri := fmt.Sprintf("http://127.0.0.1:%s/runner/from-unix?user=%d", targetPort, credentials.Uid)
+		uri := fmt.Sprintf("http://127.0.0.1:%s/runner/from-unix?sandbox=1&user=%d", targetPort, credentials.Uid)
 		req, _ := http.NewRequest("POST", uri, r.Body)
 		// 3. copy headers
 		req.Header.Add("authorization", "Bearer "+secret)

@@ -34,6 +34,25 @@ class VirtualminExecutor {
         return result;
     }
     /**
+     * @param {string} user
+     */
+    async getDomainName(user) {
+        let r = await virtualminExec.execFormatted("list-domains", {
+            user,
+            toplevel: true,
+            'name-only': true,
+        });
+        if (process.env.NODE_ENV === 'development')
+            r = {
+                code: 0,
+                stdout: cat('./test/info'),
+                stderr: '',
+            }
+        if (r.code === 255)
+            throw r;
+        return r.stdout.split('\n').filter(x => x);
+    }
+    /**
      * @param {string} domain
      */
     async getDomainParentInfo(domain) {

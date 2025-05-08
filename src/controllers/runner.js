@@ -20,6 +20,8 @@ import {
     dirname
 } from 'path';
 import request from '../request.js';
+import { exec } from 'cli';
+import { virtualminExec } from '../executor/virtualmin.js';
 
 
 /**
@@ -277,12 +279,10 @@ export default function () {
             next(new Error("user must be uid"));
             return;
         }
-        const exc = await spawnSudoUtil('SHELL_SUDO', ["root", "bash", "-c", "virtualmin list-domains --user $(id -nu " + user + ") --toplevel --name-only"]);
-        if (exc.code != 0) {
-            next(new Error("user not found"));
-            return;
-        }
-        req.query.domain = exc.stdout.trim();
+        const name = await (new Promise((resolve, reject) => exec("id -nu " + user, resolve, reject)))[0]
+        const domain = (await virtualminExec.getDomainName(name))[0]
+        res.write(`Running deployment for user ${name} (${user}) [${domain}]...`)
+        req.query.domain = domain;
         runnerFn(req, res, next);
     });
     router.post('/', checkGet(['domain']), runnerFn);
