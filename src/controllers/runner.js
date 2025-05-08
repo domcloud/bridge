@@ -271,7 +271,7 @@ export default function () {
         const exc = spawnSudoUtil('SHELL_SUDO', [user, "bash", "-c", cmd]);
         exc.then((x) => res.send(x)).catch((err) => next(err))
     });
-    router.post('/by-unix', checkGet(['user']), async function (req, res, next) {
+    router.post('/from-unix', checkGet(['user']), async function (req, res, next) {
         const user = req.query.user.toString()
         if (/^\d+$/.test(user)) {
             next(new Error("user must be uid"));
