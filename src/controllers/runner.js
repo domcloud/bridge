@@ -273,7 +273,7 @@ export default function () {
     });
     router.post('/from-unix', checkGet(['user']), async function (req, res, next) {
         const user = req.query.user.toString()
-        if (/^\d+$/.test(user)) {
+        if (!/^\d+$/.test(user)) {
             next(new Error("user must be uid"));
             return;
         }

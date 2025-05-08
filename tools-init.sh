@@ -71,7 +71,7 @@ if ! command -v go &> /dev/null; then
     source ~/.config/envman/PATH.env
 fi
 
-if ! command -v ./deployd/bin &> /dev/null; then
+if [ -d "./deployd" ]; then
     cd deployd
     go build -o bin
     chmod +x bin
