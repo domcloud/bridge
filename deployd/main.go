@@ -17,7 +17,7 @@ func main() {
 	// and clients can communicate.
 	socketFile := os.Getenv("SOCKET_PATH")
 	if socketFile == "" {
-		socketFile = "/run/deployd.sock"
+		socketFile = "/run/bridge/deployd.sock"
 	}
 	os.Remove(socketFile)
 	listener, _ := net.Listen("unix", socketFile)

@@ -82,3 +82,4 @@ npm i
 chmod +x sudoutil.js sudokill.js sudocleanssl.js
 echo Done! don\'t forget add sudoutil.js to sudoers
 echo "echo '`whoami` ALL = (root) NOPASSWD: `echo $PWD`/sudoutil.js' | sudo EDITOR='tee' visudo /etc/sudoers.d/`whoami`"
+echo "sudo bash -c 'mkdir /run/bridge && chown -R $USER:$USER /run/bridge && chmod 0755 -R /run/bridge'"

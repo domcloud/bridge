@@ -58,6 +58,7 @@ export const initDeployd = function () {
             const x = spawn("./deployd/bin", [], {
                 env: {
                     SECRET: process.env.SECRET,
+                    SOCKET_PATH: process.env.SOCKET_PATH || '',
                 },
                 cwd: process.cwd(),
                 stdio: 'pipe',
