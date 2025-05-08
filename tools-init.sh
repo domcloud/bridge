@@ -66,15 +66,16 @@ else
     cd ../..
 fi
 
-if [ ! command -v go &> /dev/null ]; then
-    curl -sS https://webinstall.dev/golang${arg} | WEBI__GO_ESSENTIALS=true bash
+if ! command -v go &> /dev/null; then
+    curl -sS https://webinstall.dev/golang@stable | WEBI__GO_ESSENTIALS=true bash
     source ~/.config/envman/PATH.env
 fi
 
-if [ ! command -v ./deployd/bin &> /dev/null ]; then
+if ! command -v ./deployd/bin &> /dev/null; then
     cd deployd
     go build -o bin
     chmod +x bin
+    cd ..
 fi
 
 npm i

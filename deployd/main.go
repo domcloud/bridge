@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"go/format"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 
 	"syscall"
 )
@@ -25,6 +28,7 @@ func main() {
 	if targetPort == "" {
 		targetPort = "2223"
 	}
+	baseUri := 
 
 	secret := os.Getenv("SECRET")
 	if secret == "" {
@@ -62,7 +66,8 @@ func main() {
 		// 1. create a new http client
 		client := &http.Client{}
 		// 2. create a new request
-		req, _ := http.NewRequest("POST", "http://127.0.0.1:"+targetPort+"/runner/unix?user="+credentials.Uid, r.Body)
+		uri := fmt.Sprintf("http://127.0.0.1:%s/runner/unix?user=%d", targetPort, credentials.Uid)
+		req, _ := http.NewRequest("POST", uri, r.Body)
 		// 3. copy headers
 		req.Header.Add("authorization", "Bearer "+secret)
 		// 4. send the request
