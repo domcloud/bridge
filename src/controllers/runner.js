@@ -9,6 +9,7 @@ import {
     PassThrough
 } from 'stream';
 import {
+    exec,
     spawn
 } from 'child_process';
 import path from 'path';
@@ -20,7 +21,6 @@ import {
     dirname
 } from 'path';
 import request from '../request.js';
-import { exec } from 'cli';
 import { virtualminExec } from '../executor/virtualmin.js';
 
 
@@ -279,7 +279,9 @@ export default function () {
             next(new Error("user must be uid"));
             return;
         }
-        const name = await (new Promise((resolve, reject) => exec("id -nu " + user, resolve, reject)))[0]
+        const name = (await new Promise((resolve, reject) => exec("id -nu " + user, (err, stdout) => {
+            (err ? reject : resolve)(stdout)
+        }))).trim();
         const domain = (await virtualminExec.getDomainName(name))[0]
         res.write(`Running deployment for user ${name} (${user}) [${domain}]...`)
         req.query.domain = domain;
