@@ -283,9 +283,14 @@ export default function () {
             (err ? reject : resolve)(stdout)
         }))).trim();
         const domain = (await virtualminExec.getDomainName(name))[0]
-        res.write(`Running deployment for user ${name} (${user}) [${domain}]...`)
-        req.query.domain = domain;
-        runnerFn(req, res, next);
+        res.write(`Running deployment for user ${name} (${user}) [${domain}]...\n`)
+        const sandbox = !!parseInt(req.query.sandbox?.toString() || '0');
+        const body = req.body;
+        runConfigInForeground({
+            body,
+            domain,
+            sandbox,
+        }, res);
     });
     router.post('/', checkGet(['domain']), runnerFn);
     return router;
