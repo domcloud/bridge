@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -64,7 +65,8 @@ func main() {
 		client := &http.Client{}
 		// 2. create a new request
 		uri := fmt.Sprintf("http://127.0.0.1:%s/runner/from-unix?sandbox=1&user=%d", targetPort, credentials.Uid)
-		req, _ := http.NewRequest("POST", uri, r.Body)
+		body, _ := io.ReadAll(r.Body)
+		req, _ := http.NewRequest("POST", uri, bytes.NewBuffer(body))
 		// 3. copy headers
 		req.Header.Add("authorization", "Bearer "+secret)
 		// 4. send the request
