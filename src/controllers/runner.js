@@ -246,11 +246,14 @@ async function runConfigInForeground(payload, res) {
 
 export default function () {
     var router = express.Router();
-    const runnerFn = function (req, res, next) {
-        const callback = req.header('x-callback');
-        const sandbox = !!parseInt(req.query.sandbox?.toString() || '0');
-        const domain = req.query.domain + "";
-        const body = req.body;
+    const runnerFn = function (opts) {
+        const {
+            body,
+            domain,
+            sandbox,
+            callback,
+            res,
+        } = opts;
         if (/^https?:\/\/.+$/.test(callback)) {
             runConfigInBackgroundSingleton({
                 body,
@@ -283,16 +286,20 @@ export default function () {
             (err ? reject : resolve)(stdout)
         }))).trim();
         const domain = (await virtualminExec.getDomainName(name))[0]
+        
         res.write(`Running deployment for user ${name} (${user}) [${domain}]...\n`)
+        const callback = req.header('x-callback');
         const sandbox = !!parseInt(req.query.sandbox?.toString() || '0');
         const body = req.body;
-        runConfigInForeground({
-            body,
-            domain,
-            sandbox,
-        }, res);
+        runnerFn({ callback, sandbox, domain, body, res })
     });
-    router.post('/', checkGet(['domain']), runnerFn);
+    router.post('/', checkGet(['domain']), (req, res, next) => {
+        const callback = req.header('x-callback');
+        const sandbox = !!parseInt(req.query.sandbox?.toString() || '0');
+        const domain = req.query.domain + "";
+        const body = req.body;
+        runnerFn({ callback, sandbox, domain, body, res })
+    });
     return router;
 }
 
