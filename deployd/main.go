@@ -7,8 +7,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-
-	"syscall"
 )
 
 func main() {
@@ -42,12 +40,14 @@ func main() {
 		// and modify the `Context` which is subsequently made available to all
 		// HTTP handlers on the server for this connection.
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
-			// Obtain the file abstraction from the incoming connection.
-			file, _ := c.(*net.UnixConn).File()
-			// Obtain the Unix Credentials from the underlying file descriptor.
-			// > The credentials are of type `*unix.Ucred`.
-			credentials, _ := syscall.GetsockoptUcred(int(file.Fd()), syscall.SOL_SOCKET, syscall.SO_PEERCRED)
-			// Return a modified context that contains the credentials we obtained
+			conn, ok := c.(*net.UnixConn)
+			if !ok {
+				return ctx
+			}
+			credentials, err := getPeerCred(conn)
+			if err != nil {
+				return ctx
+			}
 			return context.WithValue(ctx, credentialsContextKey, credentials)
 		},
 	}
@@ -57,7 +57,7 @@ func main() {
 	// connection's credentials.
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Retrieve the credentials from the request context
-		credentials := r.Context().Value(credentialsContextKey).(*syscall.Ucred)
+		credentials := r.Context().Value(credentialsContextKey).(*Credentials)
 
 		// Send to target port
 		// 1. create a new http client

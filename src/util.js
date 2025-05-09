@@ -52,10 +52,10 @@ export const initUtils = () => {
 }
 
 export const initDeployd = function () {
-    if (existsSync("./deployd/bin")) {
+    if (existsSync("./deployd/deployd")) {
         executeLock('deployd', () => {
             console.log("running deployd")
-            const x = spawn("./deployd/bin", [], {
+            const x = spawn("./deployd/deployd", [], {
                 env: {
                     SECRET: process.env.SECRET,
                     SOCKET_PATH: process.env.SOCKET_PATH || '',

@@ -73,7 +73,7 @@ fi
 
 if [ -d "./deployd" ]; then
     cd deployd
-    go build -o bin
+    go build
     chmod +x bin
     cd ..
 fi
