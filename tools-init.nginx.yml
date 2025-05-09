@@ -2,27 +2,13 @@ nginx:
   locations:
     - fastcgi: 'on'
       root: public_html/
-      passenger:
-        enabled: 'off'
       match: /phpmyadmin/
     - fastcgi: 'on'
       root: public_html/
-      passenger:
-        enabled: 'off'
       match: /phppgadmin/
     - fastcgi: 'on'
       root: public_html/
-      passenger:
-        enabled: 'off'
       match: /phprdadmin/
-    - root: public_html/webssh/webssh/static
-      passenger:
-        app_root: public_html/webssh
-        enabled: 'on'
-        app_start_command: python run.py --port=$PORT
-        document_root: public_html/webssh/webssh/static
-      rewrite: ^/webssh/(.*)$ /$1 break
-      match: /webssh/
     - root: public_html/webssh2/app/client/public
       passenger:
         app_root: public_html/webssh2/app
@@ -30,7 +16,10 @@ nginx:
         enabled: 'on'
         document_root: public_html/webssh2/app/client/public
       match: /ssh/
-    - match: /
+    - proxy_pass: http://127.0.0.1:2223
+      match: /
+    - try_files: $uri /
+      match: /.well-known/
   fastcgi: 'on'
   index: index.html index.php
   root: public_html/public

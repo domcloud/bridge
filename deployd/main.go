@@ -72,9 +72,11 @@ func main() {
 		// 4. send the request
 		resp, _ := client.Do(req)
 		w.Header().Add("Content-Type", "text/plain")
-		w.Header().Add("Transfer-Encoding", " chunked")
+		w.Header().Add("Transfer-Encoding", "chunked")
 		if resp != nil {
 			defer resp.Body.Close()
+			w.Write(body)
+			w.Write([]byte("\n"))
 			io.Copy(w, resp.Body)
 		}
 	})

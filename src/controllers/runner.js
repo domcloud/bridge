@@ -246,7 +246,7 @@ async function runConfigInForeground(payload, res) {
 
 export default function () {
     var router = express.Router();
-    const runnerFn = function (opts) {
+    const runnerFn = function (/** @type {{ callback: string; sandbox: boolean; domain: string; body: any; res: any; }} */ opts) {
         const {
             body,
             domain,
