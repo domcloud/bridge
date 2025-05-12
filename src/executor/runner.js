@@ -463,6 +463,7 @@ export default async function runConfig(payload) {
                     await writeLog((await spawnSudoUtil("SHELL_SUDO", ["root",
                         "chown", "-R", "nobody:" + user, path.join(domaindata['Home directory'], arg)
                     ])).stdout);
+                    break;
                 case 'unlock':
                 case 'unlockmod':
                     if (sandbox) {
@@ -478,6 +479,7 @@ export default async function runConfig(payload) {
                     await writeLog((await spawnSudoUtil("SHELL_SUDO", ["root",
                         "chown", "-R", user + ":" + user, path.join(domaindata['Home directory'], arg)
                     ])).stdout);
+                    break;
                 case 'docker':
                     if (value === '' || value === 'on') {
                         await writeLog("$> Enabling docker features");
