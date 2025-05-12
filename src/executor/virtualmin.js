@@ -264,6 +264,19 @@ function extractYaml(str) {
      */
     let result = {};
     /**
+     * @param {string} neskey
+     */
+    function check(neskey) {
+        if (result[neskey]) {
+            for (let i = 2; i < 1000; i++) {
+                if (!result[neskey + ":" + i]) {
+                    return neskey + ":" + i;
+                }
+            }
+        }
+        return neskey;
+    }
+    /**
      * @type {Record<string, string>}
      */
     let nesval = {};
@@ -277,12 +290,12 @@ function extractYaml(str) {
             }
         } else if (line.length >= 1 && !line.includes(' ')) {
             if (neskey) {
-                result[neskey] = nesval;
+                result[check(neskey)] = nesval;
                 nesval = {};
             }
             neskey = line;
         }
     }
-    result[neskey] = nesval;
+    result[check(neskey)] = nesval;
     return result;
 }
