@@ -271,8 +271,15 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 if (dbneedcreate) {
                     await writeLog(`$> Creating db instance ${dbname} on Redis`);
                     await writeLog(await redisExec.add(domaindata['Username'], dbname, passRef));
+                } else if (value.startsWith("get ")) {
+                    let arg = value.substr("get ".length).trim();
+                    matchedDB = matchDB(arg);
+                    if (matchedDB) {
+                        passRef.pass = matchedDB.split(":")[1];
+                    }
                 } else if (sandbox && value) {
                     await writeLog("$> managing Redis database is denied");
+                    break;
                 } else if (value.startsWith("drop ")) {
                     let arg = value.substr("drop ".length).trim();
                     matchedDB = matchDB(arg);
@@ -291,12 +298,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     if (matchedDB) {
                         await writeLog(`$> Regenerating password for db instance ${dbname} on Redis`);
                         await writeLog(await redisExec.passwd(domaindata['Username'], dbname, passRef));
-                    }
-                } else if (value.startsWith("get ")) {
-                    let arg = value.substr("get ".length).trim();
-                    matchedDB = matchDB(arg);
-                    if (matchedDB) {
-                        passRef.pass = matchedDB.split(":")[1];
                     }
                 } else if (!value) {
                     await writeLog(`$> Redis is already initialized`);
