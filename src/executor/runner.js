@@ -454,14 +454,13 @@ export default async function runConfig(payload) {
                         await writeLog("Can't perform " + key + " feature because it is denied");
                         break;
                     }
-                    let arg = value.trim() || 'public_html';
-                    arg = path.normalize(arg);
-                    if (/\.\./.test(arg)) {
+                    const lpath = path.normalize(value.trim() || 'public_html');
+                    if (/\.\./.test(lpath)) {
                         break;
                     }
-                    await writeLog("$> Changing owner of " + arg + " to make it read-only");
+                    await writeLog("$> Changing owner of " + lpath + " to make it read-only");
                     await writeLog((await spawnSudoUtil("SHELL_SUDO", ["root",
-                        "chown", "-R", "nobody:" + user, path.join(domaindata['Home directory'], arg)
+                        "chown", "-R", "nobody:" + user, path.join(domaindata['Home directory'], lpath)
                     ])).stdout);
                     break;
                 case 'unlock':
@@ -470,14 +469,13 @@ export default async function runConfig(payload) {
                         await writeLog("Can't perform " + key + " feature because it is denied");
                         break;
                     }
-                    arg = value.trim() || 'public_html';
-                    arg = path.normalize(arg);
-                    if (/\.\./.test(arg)) {
+                    const upath = path.normalize(value.trim() || 'public_html');
+                    if (/\.\./.test(upath)) {
                         break;
                     }
-                    await writeLog("$> Changing owner of " + arg + " to make it read-write");
+                    await writeLog("$> Changing owner of " + upath + " to make it read-write");
                     await writeLog((await spawnSudoUtil("SHELL_SUDO", ["root",
-                        "chown", "-R", user + ":" + user, path.join(domaindata['Home directory'], arg)
+                        "chown", "-R", user + ":" + user, path.join(domaindata['Home directory'], upath)
                     ])).stdout);
                     break;
                 case 'docker':
