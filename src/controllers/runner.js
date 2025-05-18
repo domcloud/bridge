@@ -278,16 +278,19 @@ export default function () {
     });
     router.post('/from-unix', checkGet(['user']), async function (req, res, next) {
         const user = req.query.user.toString()
-        if (!/^\d+$/.test(user)) {
-            next(new Error("user must be uid"));
+        const isUid = /^\d+$/.test(user) 
+        const name = isUid ? (await new Promise((resolve, reject) => exec("id -nu " + user, (err, stdout) => {
+            (err ? reject : resolve)(stdout)
+        }))).trim() : user.trim();
+        
+        const domain = name.contains('@') ? name.split('@')[1] : (await virtualminExec.getDomainName(name))[0];
+
+        if (!domain || domain.contains('@')) {
+            next(new Error("invalid domain name"));
             return;
         }
-        const name = (await new Promise((resolve, reject) => exec("id -nu " + user, (err, stdout) => {
-            (err ? reject : resolve)(stdout)
-        }))).trim();
-        const domain = (await virtualminExec.getDomainName(name))[0]
         
-        res.write(`Running deployment for user ${name} (${user}) [${domain}]...\n`)
+        res.write(`Running deployment for user ${name} ${isUid ? `(${user})` : ''} [${domain}]...\n`)
         const callback = req.header('x-callback');
         const sandbox = !!parseInt(req.query.sandbox?.toString() || '0');
         const body = req.body;

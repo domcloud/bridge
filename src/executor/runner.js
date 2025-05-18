@@ -418,6 +418,28 @@ export default async function runConfig(payload) {
                         firewallStatusCache = false;
                     }
                     break;
+                case 'create-user':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    await virtExec("create-user", {
+                        ...value,
+                        noemail: typeof value.noemail == 'boolean' ?  value.noemail: true,
+                        shell: typeof value.shell == 'string' ?  value.shell : '/bin/bash',
+                        domain,
+                    });
+                    break;
+                case 'delete-user':
+                    if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    }
+                    await virtExec("delete-user", {
+                        ...value,
+                        domain,
+                    });
+                    break;
                 case 'ssh':
                 case 'sshpass':
                     if (sandbox) {

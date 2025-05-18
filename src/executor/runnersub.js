@@ -201,8 +201,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         domain: subdomain,
                         name: dbname,
                         type: 'postgres',
-                    }
-                    );
+                    });
                 } else if (sandbox && value) {
                     await writeLog("$> managing PostgreSQL database is denied");
                 } else if (value.startsWith("drop ")) {
