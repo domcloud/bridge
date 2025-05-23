@@ -503,6 +503,16 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     nginxInfos.root = subdomaindata['HTML directory'];
                     changed = true;
                 }
+                const domip4 = (subdomaindata['IP address'] || "").split(' ')[0];
+                const domip6 = (subdomaindata['IPv6 address'] || "").split(' ')[0];
+                if (domip4 && !["", domip4].every(x => x !== nginxInfos.ip)) {
+                    nginxInfos.ip = domip4
+                    changed = true;
+                }
+                if (domip6 && !["", "[::]", `[${domip6}]`].every(x => x !== nginxInfos.ip)) {
+                    nginxInfos.ip6 = `[${domip6}]`
+                    changed = true;
+                }
                 if (expectedSslMode && expectedSslMode != ["", "off", "always", "on"][nginxInfos.ssl]) {
                     nginxInfos.config.ssl = expectedSslMode;
                     changed = true;
