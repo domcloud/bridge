@@ -271,8 +271,12 @@ class DockerExecutor {
     } else {
       composeObject.services = services;
     }
-    let nginxStatus = '';
-    [composeObject.services, nginxStatus] = await this.rewriteServices(composeObject.services, domain, username, hint);
+    let [composeParsed, nginxStatus] = await this.rewriteServices(composeObject.services, domain, username, hint);
+    if (!composeParsed.services) {
+      throw new Error('The compose file is either invalid or not found');
+    } else {
+      composeObject.services = composeParsed.services;
+    }
     if (logWriter) {
       await logWriter(nginxStatus)
     }
