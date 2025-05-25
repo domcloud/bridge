@@ -400,7 +400,7 @@ switch (cli.args.shift()) {
         var storagec = exec(`df -h | grep ^/dev`, { silent: true });
         var storagefull = isDfFull(storagec, 100);
         var exitcode = 0;
-        if (statutes.some((s) => s !== 'active') || storagefull)
+        if (statutes.some((s) => s === 'failed') || storagefull)
             exitcode = 1;
         ShellString(JSON.stringify({
             status: exitcode === 0 ? 'OK' : 'ERROR',
