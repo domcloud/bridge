@@ -3,7 +3,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 NFIP_ADDRESSES=""
 HOST_ADDRESSES=""
-DNS_SERVERS=("127.0.0.1" "1.1.1.1")
+DNS_SERVERS=("1.1.1.1")
 
 for RECORD_TYPE in A AAAA; do
   while read -r line; do
@@ -17,7 +17,7 @@ for RECORD_TYPE in A AAAA; do
       domain="$line"
     fi
 
-    printf '\r%s Fetching NS %s of %s' "$(tput el 2> /dev/null)" "$RECORD_TYPE" "$domain"
+    printf '\rFetching NS %s of %s ' "$RECORD_TYPE" "$domain"
     FFI=""
     for dns in "${DNS_SERVERS[@]}"; do
       TEMP_RESULT=$(dig +short "$RECORD_TYPE" "$domain" @"$dns" | grep -v '\.$')
