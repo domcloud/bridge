@@ -44,15 +44,22 @@ export default function () {
             res.json({ ip: req.ip })
         }
     });
+    router.get('/ping', async function (req, res, next) {
+        if (!lastCheckResult || lastCheckResult.status == 'OK') {
+            res.status(200).send("pong");
+        } else {
+            res.status(500).send("/status/check was failed last time");
+        }
+    });
     router.get('/check', async function (req, res, next) {
         try {
+            let lastTestResult = null;
             if (lastCheck < Date.now() - refreshTime) {
                 await spawnSudoUtil('SHELL_CHECK');
                 lastCheckResult = JSON.parse(cat(tmpCheck));
                 lastCheckOK = lastCheckResult.status == 'OK';
                 lastCheck = Date.now();
             }
-            let lastTestResult = null;
             if (!lastCheckOK) {
                 for (const [key, val] of Object.entries(lastCheckResult.statuses)) {
                     if (val != "failed") {
