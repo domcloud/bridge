@@ -75,7 +75,7 @@ class LogmanExecutor {
     /**
      * @param {string} user
      * @param {string} name
-     * @returns {Promise<{ code: number, stderr: string, stdout: any, raw?: any }>}
+     * @returns {Promise<{ code: number, stderr: string, stdout: any }>}
      */
     async getPassengerPids(user, name = null) {
         let peo, pe;
@@ -91,15 +91,19 @@ class LogmanExecutor {
                 if (error.stdout.startsWith('It appears that multiple Phusion Passenger(R) instances are running') && !name) {
                     var pids = error.stdout.match(/^\w{8}\b/gm)
                     var objs = {};
+                    var errs = [];
                     var code = 0;
                     for (const p of pids) {
                         const i = await this.getPassengerPids(user, p);
                         Object.assign(objs, i.stdout);
-                        code = Math.max(code, i.code)
+                        code = Math.max(code, i.code);
+                        if (i.code !== 0) {
+                            errs.push(i.stderr);
+                        }
                     }
                     return {
                         code,
-                        stderr: codeToErr[code] || '',
+                        stderr: codeToErr[code] || errs.join('\n'),
                         stdout: objs
                     }
                 } else {
@@ -117,7 +121,6 @@ class LogmanExecutor {
                 code: 254,
                 stderr: codeToErr[254],
                 stdout: {},
-                raw: pe,
             }
         }
         const parser = new XMLParser();
