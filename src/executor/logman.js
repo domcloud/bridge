@@ -164,8 +164,8 @@ class LogmanExecutor {
 
 const codeToErr = {
     250: 'Application error: ',
-    254: 'Incomplete response from passenger-status',
-    255: 'No processes reported from passenger-status',
+    254: 'Got incomplete response from passenger-status',
+    255: 'No processes were reported by passenger-status',
 }
 
 export const logmanExec = new LogmanExecutor();
