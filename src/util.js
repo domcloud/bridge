@@ -2,6 +2,7 @@ import path, { dirname } from 'path';
 import { spawn } from 'child_process';
 import lock from './helpers/lockfile.js';
 import fs, { existsSync } from 'fs';
+import { constants } from 'os';
 import binaries from './binaries/metadata.cjs';
 import { virtualminExec } from './executor/virtualmin.js';
 const {
@@ -322,7 +323,7 @@ export function checkPost(args) {
  * 
  * @param {string} mode 
  * @param {string[]} args 
- * @returns  {Promise<{code: number | string, stdout: string, stderr: string}>}
+ * @returns  {Promise<{code: number, stdout: string, stderr: string}>}
  */
 export const spawnSudoUtil = function (
     mode,
@@ -347,7 +348,7 @@ export const spawnSudoUtil = function (
             });
             child.on('close', (code, signal) => {
                 (code === 0 || code === null ? resolve : reject)({
-                    code: typeof code === 'number' ? code : signal,
+                    code: typeof code === 'number' ? code : constants.signals[signal],
                     stdout,
                     stderr
                 });

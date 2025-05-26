@@ -75,12 +75,13 @@ class LogmanExecutor {
     /**
      * @param {string} user
      * @param {string} name
+     * @returns {Promise<{ code: number, stderr: string, stdout: any, raw?: any }>}
      */
     async getPassengerPids(user, name = null) {
         let peo, pe;
         try {
             pe = process.env.NODE_ENV === 'development' ?
-                { stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }), stderr: '' } :
+                { code: 0, stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }), stderr: '' } :
                 await spawnSudoUtil("SHELL_SUDO", name ? [user,
                     "passenger-status", name, "--show=xml"] : [user,
                     "passenger-status", "--show=xml"]);
@@ -90,18 +91,23 @@ class LogmanExecutor {
                 if (error.stdout.startsWith('It appears that multiple Phusion Passenger(R) instances are running') && !name) {
                     var pids = error.stdout.match(/^\w{8}\b/gm)
                     var objs = {};
+                    var code = 0;
                     for (const p of pids) {
-                        Object.assign(objs, (await this.getPassengerPids(user, p)).stdout);
+                        const i = await this.getPassengerPids(user, p);
+                        Object.assign(objs, i.stdout);
+                        code = Math.max(code, i.code)
                     }
                     return {
-                        code: 0,
-                        stderr: '',
+                        code,
+                        stderr: codeToErr[code] || '',
                         stdout: objs
                     }
+                } else {
+                    return error;
                 }
             }
             return {
-                code: 253,
+                code: 250,
                 stderr: error,
                 stdout: {},
             }
@@ -109,7 +115,7 @@ class LogmanExecutor {
         if (!peo) {
             return {
                 code: 254,
-                stderr: 'No passenger app is found or it\'s not initialized yet ' + (name || ''),
+                stderr: codeToErr[254],
                 stdout: {},
                 raw: pe,
             }
@@ -120,7 +126,7 @@ class LogmanExecutor {
         if (!peoma) {
             return {
                 code: 255,
-                stderr: 'incomplete response from passenger-status',
+                stderr: codeToErr[255],
                 stdout: {}
             }
         }
@@ -128,8 +134,8 @@ class LogmanExecutor {
         let peomaps = peomaa.map(x => x.group).filter(x => x.processes);
         if (!peomaps.length) {
             return {
-                code: 255,
-                stderr: 'No processes reported from passenger-status is running',
+                code: 253,
+                stderr: codeToErr[253],
                 stdout: {}
             }
         }
@@ -144,6 +150,12 @@ class LogmanExecutor {
             stdout: procs
         };
     }
+}
+
+const codeToErr = {
+    253: 'No processes reported from passenger-status is running',
+    254: 'No passenger app is found or it\'s not initialized yet',
+    255: 'Incomplete response from passenger-status',
 }
 
 export const logmanExec = new LogmanExecutor();
