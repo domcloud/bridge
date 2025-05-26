@@ -98,13 +98,19 @@ class LogmanExecutor {
                         Object.assign(objs, i.stdout);
                         code = Math.max(code, i.code);
                         if (i.code !== 0) {
-                            errs.push(i.stderr);
+                            errs.push(i.stderr.trim());
                         }
                     }
                     return {
                         code,
                         stderr: codeToErr[code] || errs.join('\n'),
                         stdout: objs
+                    }
+                } else if (!error.stdout) {
+                    return {
+                        code: 254,
+                        stderr: codeToErr[254],
+                        stdout: {},
                     }
                 } else {
                     return error;
