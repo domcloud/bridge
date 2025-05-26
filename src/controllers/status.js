@@ -45,6 +45,7 @@ export default function () {
         }
     });
     router.get('/ping', async function (req, res, next) {
+        res.contentType('text/plain')
         if (!lastCheckResult || lastCheckResult.status == 'OK') {
             res.status(200).send("pong");
         } else {
@@ -110,7 +111,8 @@ export default function () {
     });
     router.get('/opcache', checkGet(['version']), async function (req, res, next) {
         try {
-            await spawnSudoUtil("OPCACHE_STATUS_HTML", [req.query.version.toString(), new URL(req.url, `http://${req.headers.host}`).search.substring(1)])
+            const queryStr = new URL(req.url, `http://${req.headers.host}`).search.substring(1);
+            await spawnSudoUtil("OPCACHE_STATUS_HTML", [req.query.version.toString(), queryStr])
             const text = cat(path.join(process.cwd(), '/.tmp/opcache'));
             res.setHeader('content-type', ' text/html').send(text);
             return;
