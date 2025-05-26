@@ -78,15 +78,15 @@ class LogmanExecutor {
      * @returns {Promise<{ code: number, stderr: string, stdout: any }>}
      */
     async getPassengerPids(user, name = null) {
-        let peo, pe;
+        let pe;
         try {
             pe = process.env.NODE_ENV === 'development' ?
                 { code: 0, stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }), stderr: '' } :
                 await spawnSudoUtil("SHELL_SUDO", name ? [user,
                     "passenger-status", name, "--show=xml"] : [user,
                     "passenger-status", "--show=xml"]);
-            peo = pe.stdout.trim();
         } catch (error) {
+            // non zero exit code
             if (typeof error.stdout === 'string') {
                 if (error.stdout.startsWith('It appears that multiple Phusion Passenger(R) instances are running') && !name) {
                     var pids = error.stdout.match(/^\w{8}\b/gm)
@@ -101,38 +101,44 @@ class LogmanExecutor {
                             errs.push(i.stderr.trim());
                         }
                     }
-                    return {
-                        code,
-                        stderr: codeToErr[code] || errs.join('\n'),
-                        stdout: objs
+                    if (Object.keys(objs).length > 0) {
+                        return {
+                            code: 0,
+                            stderr: '',
+                            stdout: objs
+                        }
+                    } else {
+                        return {
+                            code,
+                            stderr: codeToErr[code] || errs.join('\n'),
+                            stdout: objs
+                        }
                     }
-                } else if (!error.stdout) {
+                } else if (!error.stdout && error.code < 127) {
+                    // something like "500 Internal Server Error" and not bash error
                     return {
                         code: 254,
                         stderr: codeToErr[254],
                         stdout: {},
                     }
                 } else {
+                    // need to report process error
                     return error;
                 }
             }
             return {
+                // not process error
                 code: 250,
-                stderr: error,
+                stderr: codeToErr[250] + error.toString(),
                 stdout: {},
             }
         }
-        if (!peo) {
-            return {
-                code: 254,
-                stderr: codeToErr[254],
-                stdout: {},
-            }
-        }
+        const peout = pe.stdout.trim();
         const parser = new XMLParser();
-        let peom = parser.parse(peo);
+        let peom = parser.parse(peout);
         let peoma = peom?.info?.supergroups?.supergroup;
         if (!peoma) {
+            // Phusion Passenger(R) is currently not serving any applications
             return {
                 code: 255,
                 stderr: codeToErr[255],
@@ -141,13 +147,6 @@ class LogmanExecutor {
         }
         let peomaa = Array.isArray(peoma) ? peoma : [peoma];
         let peomaps = peomaa.map(x => x.group).filter(x => x.processes);
-        if (!peomaps.length) {
-            return {
-                code: 253,
-                stderr: codeToErr[253],
-                stdout: {}
-            }
-        }
         let procs = peomaps.reduce((a, b) => {
             let x = (Array.isArray(b.processes.process) ? b.processes.process : [b.processes.process]);
             a[b.name] = x.map(y => y.pid).filter(y => typeof y === "number");
@@ -162,9 +161,9 @@ class LogmanExecutor {
 }
 
 const codeToErr = {
-    253: 'No processes reported from passenger-status is running',
-    254: 'No passenger app is found or it\'s not initialized yet',
-    255: 'Incomplete response from passenger-status',
+    250: 'Application error: ',
+    254: 'Incomplete response from passenger-status',
+    255: 'No processes reported from passenger-status',
 }
 
 export const logmanExec = new LogmanExecutor();
