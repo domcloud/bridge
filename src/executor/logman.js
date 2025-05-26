@@ -41,11 +41,7 @@ class LogmanExecutor {
                 }
                 let pids = Object.values(procs.stdout).flatMap(x => x).join('\\|');
                 let pes = await spawnSudoUtil("PASSENGERLOG_GET", [pids, n + '']);
-                if (pes.code == 0) {
-                    // @ts-ignore
-                    pes.processes = procs;
-                }
-                return pes;
+                return { ...pes, processes: procs.stdout };
             default:
                 return {
                     code: 255,
@@ -63,7 +59,7 @@ class LogmanExecutor {
         if (procs.code !== 0) {
             return procs.stderr;
         }
-        let pids = Object.values(procs.stdout).flatMap(x => x);
+        let pids = Object.values(procs.stdout).flatMap(x => x).map(x => x.toString());
         if (pids) {
             await spawnSudoUtil("SHELL_SUDO", ["root",
                 "kill", "-9", ...pids
@@ -75,7 +71,7 @@ class LogmanExecutor {
     /**
      * @param {string} user
      * @param {string} name
-     * @returns {Promise<{ code: number, stderr: string, stdout: any }>}
+     * @returns {Promise<{ code: number, stderr: string, stdout: Record<string, number[]>}>}
      */
     async getPassengerPids(user, name = null) {
         let pe;
@@ -90,6 +86,9 @@ class LogmanExecutor {
             if (typeof error.stdout === 'string') {
                 if (error.stdout.startsWith('It appears that multiple Phusion Passenger(R) instances are running') && !name) {
                     var pids = error.stdout.match(/^\w{8}\b/gm)
+                    /**
+                     * @type {Record<string, number[]>}
+                     */
                     var objs = {};
                     var errs = [];
                     var code = 0;
@@ -147,6 +146,9 @@ class LogmanExecutor {
         }
         let peomaa = Array.isArray(peoma) ? peoma : [peoma];
         let peomaps = peomaa.map(x => x.group).filter(x => x.processes);
+        /**
+         * @type {Record<string, number[]>}
+         */
         let procs = peomaps.reduce((a, b) => {
             let x = (Array.isArray(b.processes.process) ? b.processes.process : [b.processes.process]);
             a[b.name] = x.map(y => y.pid).filter(y => typeof y === "number");
