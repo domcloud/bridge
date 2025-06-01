@@ -841,7 +841,7 @@
           "200": {
             "description": "Normal daemon last status",
             "content": {
-              "application/json": {
+              "text/plain": {
                 "schema": {
                   "type": "string"
                 }
@@ -851,7 +851,7 @@
           "500": {
             "description": "Abnormal daemon last status",
             "content": {
-              "application/json": {
+              "text/plain": {
                 "schema": {
                   "type": "string"
                 }

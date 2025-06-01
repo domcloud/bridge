@@ -46,7 +46,7 @@ export default function () {
     });
     router.get('/ping', async function (req, res, next) {
         res.contentType('text/plain')
-        if (!lastCheckResult || lastCheckResult.status == 'OK') {
+        if (!lastCheckResult?.status || lastCheckResult.status == 'OK') {
             res.status(200).send("pong");
         } else {
             res.status(500).send("/status/check was failed last time");
