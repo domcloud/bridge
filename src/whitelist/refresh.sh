@@ -5,17 +5,26 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 bash "$SCRIPT_DIR/resolve.sh"
 
-if [ ! -f "$SCRIPT_DIR/nftables.txt" ]; then
-    cat /etc/nftables-whitelist.conf > "$SCRIPT_DIR/nftables.txt"
-fi
-cat "$SCRIPT_DIR/nftables.txt" > /etc/nftables-whitelist.conf
-cat "$SCRIPT_DIR/nfip_addresses.txt" >> /etc/nftables-whitelist.conf
+merge_files() {
+    local original_file="$1"
+    local backup_file="$2"
+    local append_file="$3"
 
-if [ ! -f "$SCRIPT_DIR/hosts.txt" ]; then
-    cat /etc/hosts > "$SCRIPT_DIR/hosts.txt"
-fi
-cat "$SCRIPT_DIR/hosts.txt" > /etc/hosts
-cat "$SCRIPT_DIR/host_addresses.txt" >> /etc/hosts
+    if [ ! -f "$backup_file" ]; then
+        cat "$original_file" > "$backup_file"
+    fi
+
+    cat "$backup_file" > "$original_file"
+    cat "$append_file" >> "$original_file"
+}
+
+merge_files /etc/nftables-whitelist.conf \
+    "$SCRIPT_DIR/nftables.txt" \
+    "$SCRIPT_DIR/nfip_addresses.txt"
+
+merge_files /etc/hosts \
+    "$SCRIPT_DIR/hosts.txt" \
+    "$SCRIPT_DIR/host_addresses.txt"
 
 sync && sleep 0.5 # sometimes nft not picking up changes
 nft -f "/etc/nftables-whitelist.conf" || { ec=$?; echo "err $(date): $ec" >> /etc/nftables-whitelist.err; }
