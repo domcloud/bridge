@@ -44,15 +44,23 @@ export default function () {
             res.json({ ip: req.ip })
         }
     });
+    router.get('/ping', async function (req, res, next) {
+        res.contentType('text/plain')
+        if (!lastCheckResult?.status || lastCheckResult.status == 'OK') {
+            res.status(200).send("pong");
+        } else {
+            res.status(500).send("/status/check was failed last time");
+        }
+    });
     router.get('/check', async function (req, res, next) {
         try {
+            let lastTestResult = null;
             if (lastCheck < Date.now() - refreshTime) {
                 await spawnSudoUtil('SHELL_CHECK');
                 lastCheckResult = JSON.parse(cat(tmpCheck));
                 lastCheckOK = lastCheckResult.status == 'OK';
                 lastCheck = Date.now();
             }
-            let lastTestResult = null;
             if (!lastCheckOK) {
                 for (const [key, val] of Object.entries(lastCheckResult.statuses)) {
                     if (val != "failed") {
@@ -103,7 +111,8 @@ export default function () {
     });
     router.get('/opcache', checkGet(['version']), async function (req, res, next) {
         try {
-            await spawnSudoUtil("OPCACHE_STATUS_HTML", [req.query.version.toString(), new URL(req.url, `http://${req.headers.host}`).search.substring(1)])
+            const queryStr = new URL(req.url, `http://${req.headers.host}`).search.substring(1);
+            await spawnSudoUtil("OPCACHE_STATUS_HTML", [req.query.version.toString(), queryStr])
             const text = cat(path.join(process.cwd(), '/.tmp/opcache'));
             res.setHeader('content-type', ' text/html').send(text);
             return;

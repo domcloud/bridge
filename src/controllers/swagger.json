@@ -830,6 +830,37 @@
         }
       }
     },
+    "/status/ping": {
+      "get": {
+        "summary": "Get cached check info",
+        "tags": [
+          "Status"
+        ],
+        "description": "Returns \"pong\" or \"/status/check was failed last time\"",
+        "responses": {
+          "200": {
+            "description": "Normal daemon last status",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }, 
+          "500": {
+            "description": "Abnormal daemon last status",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/status/ip": {
       "get": {
         "summary": "Get requester's IP and system info",

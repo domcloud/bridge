@@ -98,6 +98,32 @@ function getFpmList() {
     return ls(env.PHPFPM_REMILIST).filter((f) => f.match(isDebian ? /\d\.\d/ : /php\d\d/));
 }
 
+function isDfFull(/** @type {string} */ df, /** @type {number} */ limit) {
+    var r = /([\d\.]+[GMK]?)\s+\d+% +(.+)/g;
+    var m;
+    while (m = r.exec(df)) {
+        if (!m) return false;
+        if ((m[2] || '').startsWith('/boot')) continue;
+        let bytes_str = m[1];
+        if (bytes_str.match(/^\d+$/)) {
+            bytes_str += "B";
+        }
+        var size = parseFloat(m[1].slice(0, -1));
+        var unit = m[1].slice(-1);
+        size = size * {
+            T: 1024 * 1024,
+            G: 1024,
+            M: 1,
+            K: 1 / 1024,
+            B: 1 / (1024 * 1024),
+        }[unit];
+        if (size < limit) {
+            return true;
+        }
+    }
+    return false;
+}
+
 cd(__dirname); // making sure because we're in sudo
 let arg;
 switch (cli.args.shift()) {
@@ -131,7 +157,7 @@ switch (cli.args.shift()) {
     case 'PASSENGERLOG_GET':
         arg = cli.args.shift();
         var n = parseInt(cli.args.shift());
-        console.log(exec(`grep -w "\\(^App\\|process\\) \\(${arg}\\)" "${env.PASSENGERLOG_PATH}"`).tail({'-n': n}).stdout);
+        console.log(exec(`grep -w "\\(^App\\|process\\) \\(${arg}\\)" "${env.PASSENGERLOG_PATH}"`).tail({ '-n': n }).stdout);
         exit(0);
     case 'COMPOSE_GET':
         arg = cli.args.shift();
@@ -371,42 +397,19 @@ switch (cli.args.shift()) {
             'earlyoom',
         ]
         var statutes = exec(`systemctl is-failed ${services.join(' ')}`, { silent: true }).split('\n').filter((s) => s !== '');
-
+        var storagec = exec(`df -h | grep ^/dev`, { silent: true });
+        var storagefull = isDfFull(storagec, 100);
         var exitcode = 0;
-        if (statutes.some((s) => s !== 'active'))
+        if (statutes.some((s) => s === 'failed') || storagefull)
             exitcode = 1;
         ShellString(JSON.stringify({
             status: exitcode === 0 ? 'OK' : 'ERROR',
             statuses: Object.fromEntries(services.map((k, i) => [k, statutes[i]])),
+            storagefull,
             timestamp: Date.now(),
         })).to(env.SHELLCHECK_TMP);
         exit(0);
     case 'SHELL_TEST':
-        var isDfFull = function (/** @type {string} */ df) {
-            var r = /([\d\.]+[GMK]?)\s+\d+% +(.+)/g;
-            var m;
-            while (m = r.exec(df)) {
-                if (!m) return false;
-                if ((m[2] || '').startsWith('/boot')) continue;
-                let bytes_str = m[1];
-                if (bytes_str.match(/^\d+$/)) {
-                    bytes_str += "B";
-                }
-                var size = parseFloat(m[1].slice(0, -1));
-                var unit = m[1].slice(-1);
-                size = size * {
-                    T: 1024 * 1024,
-                    G: 1024,
-                    M: 1,
-                    K: 1 / 1024,
-                    B: 1 / (1024 * 1024),
-                }[unit];
-                if (size < 5 * 1024) {
-                    return true;
-                }
-            }
-            return false;
-        }
         var nginx = exec(`${env.NGINX_BIN} -t`, { silent: true });
         var fpmlist = getFpmList();
         var fpmpaths = fpmlist.map((f) => env.PHPFPM_REMILOC.replace('$', f));
@@ -414,7 +417,7 @@ switch (cli.args.shift()) {
         var storage = exec(`df -h | grep ^/dev`, { silent: true });
         var quota = exec(`findmnt -r | grep -P '(/ |/home )'`, { silent: true }).stdout.trim().split('\n');
         var named = exec(`named-checkconf -z /etc/named.conf`, { silent: true });
-        var storagefull = isDfFull(storage.stdout);
+        var storagefull = isDfFull(storage.stdout, 5 * 1024);
         var quotaOK = quota.every(x => x.includes('usrquota') && x.includes('grpquota'));
         var chkmem = exec(`free -h`, { silent: true });
         var chkcpu = exec(`uptime`, { silent: true });

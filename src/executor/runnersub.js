@@ -201,8 +201,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         domain: subdomain,
                         name: dbname,
                         type: 'postgres',
-                    }
-                    );
+                    });
                 } else if (sandbox && value) {
                     await writeLog("$> managing PostgreSQL database is denied");
                 } else if (value.startsWith("drop ")) {
@@ -502,6 +501,16 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (subdomaindata['HTML directory'] != nginxInfos.root) {
                     nginxInfos.root = subdomaindata['HTML directory'];
+                    changed = true;
+                }
+                const domip4 = (subdomaindata['IP address'] || "").split(' ')[0];
+                const domip6 = (subdomaindata['IPv6 address'] || "").split(' ')[0];
+                if (domip4 && ["", domip4].every(x => x !== nginxInfos.ip)) {
+                    nginxInfos.ip = domip4
+                    changed = true;
+                }
+                if (domip6 && ["", "[::]", `[${domip6}]`].every(x => x !== nginxInfos.ip6)) {
+                    nginxInfos.ip6 = `[${domip6}]`
                     changed = true;
                 }
                 if (expectedSslMode && expectedSslMode != ["", "off", "always", "on"][nginxInfos.ssl]) {

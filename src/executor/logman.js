@@ -41,11 +41,7 @@ class LogmanExecutor {
                 }
                 let pids = Object.values(procs.stdout).flatMap(x => x).join('\\|');
                 let pes = await spawnSudoUtil("PASSENGERLOG_GET", [pids, n + '']);
-                if (pes.code == 0) {
-                    // @ts-ignore
-                    pes.processes = procs;
-                }
-                return pes;
+                return { ...pes, processes: procs.stdout };
             default:
                 return {
                     code: 255,
@@ -63,7 +59,7 @@ class LogmanExecutor {
         if (procs.code !== 0) {
             return procs.stderr;
         }
-        let pids = Object.values(procs.stdout).flatMap(x => x);
+        let pids = Object.values(procs.stdout).flatMap(x => x).map(x => x.toString());
         if (pids) {
             await spawnSudoUtil("SHELL_SUDO", ["root",
                 "kill", "-9", ...pids
@@ -75,64 +71,84 @@ class LogmanExecutor {
     /**
      * @param {string} user
      * @param {string} name
+     * @returns {Promise<{ code: number, stderr: string, stdout: Record<string, number[]>}>}
      */
     async getPassengerPids(user, name = null) {
-        let peo, pe;
+        let pe;
         try {
             pe = process.env.NODE_ENV === 'development' ?
-                { stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }), stderr: '' } :
+                { code: 0, stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }), stderr: '' } :
                 await spawnSudoUtil("SHELL_SUDO", name ? [user,
                     "passenger-status", name, "--show=xml"] : [user,
                     "passenger-status", "--show=xml"]);
-            peo = pe.stdout.trim();
         } catch (error) {
+            // non zero exit code
             if (typeof error.stdout === 'string') {
                 if (error.stdout.startsWith('It appears that multiple Phusion Passenger(R) instances are running') && !name) {
                     var pids = error.stdout.match(/^\w{8}\b/gm)
+                    /**
+                     * @type {Record<string, number[]>}
+                     */
                     var objs = {};
+                    var errs = [];
+                    var code = 0;
                     for (const p of pids) {
-                        Object.assign(objs, (await this.getPassengerPids(user, p)).stdout);
+                        const i = await this.getPassengerPids(user, p);
+                        Object.assign(objs, i.stdout);
+                        code = Math.max(code, i.code);
+                        if (i.code !== 0) {
+                            errs.push(i.stderr.trim());
+                        }
                     }
+                    if (Object.keys(objs).length > 0) {
+                        return {
+                            code: 0,
+                            stderr: '',
+                            stdout: objs
+                        }
+                    } else {
+                        return {
+                            code,
+                            stderr: codeToErr[code] || errs.join('\n'),
+                            stdout: objs
+                        }
+                    }
+                } else if (!error.stdout && error.code < 127) {
+                    // something like "500 Internal Server Error" and not bash error
                     return {
-                        code: 0,
-                        stderr: '',
-                        stdout: objs
+                        code: 254,
+                        stderr: codeToErr[254],
+                        stdout: {},
                     }
+                } else {
+                    // need to report process error
+                    return error;
                 }
             }
             return {
-                code: 253,
-                stderr: error,
+                // not process error
+                code: 250,
+                stderr: codeToErr[250] + error.toString(),
                 stdout: {},
             }
         }
-        if (!peo) {
-            return {
-                code: 254,
-                stderr: 'No passenger app is found or it\'s not initialized yet ' + (name || ''),
-                stdout: {},
-                raw: pe,
-            }
-        }
+        const peout = pe.stdout.trim();
         const parser = new XMLParser();
-        let peom = parser.parse(peo);
+        let peom = parser.parse(peout);
         let peoma = peom?.info?.supergroups?.supergroup;
         if (!peoma) {
+            // Phusion Passenger(R) is currently not serving any applications
             return {
                 code: 255,
-                stderr: 'incomplete response from passenger-status',
+                stderr: codeToErr[255],
                 stdout: {}
             }
         }
         let peomaa = Array.isArray(peoma) ? peoma : [peoma];
         let peomaps = peomaa.map(x => x.group).filter(x => x.processes);
-        if (!peomaps.length) {
-            return {
-                code: 255,
-                stderr: 'No processes reported from passenger-status is running',
-                stdout: {}
-            }
-        }
+        /**
+         * @type {Record<string, number[]>}
+         */
         let procs = peomaps.reduce((a, b) => {
             let x = (Array.isArray(b.processes.process) ? b.processes.process : [b.processes.process]);
             a[b.name] = x.map(y => y.pid).filter(y => typeof y === "number");
@@ -144,6 +160,12 @@ class LogmanExecutor {
             stdout: procs
         };
     }
+}
+
+const codeToErr = {
+    250: 'Application error: ',
+    254: 'Got incomplete response from passenger-status',
+    255: 'No processes were reported by passenger-status',
 }
 
 export const logmanExec = new LogmanExecutor();
