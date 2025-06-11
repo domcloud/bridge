@@ -404,21 +404,41 @@ export const executeLock = function (
 /**
  * @param {any} object
  * @param {Record<string, any>} attrs
+ * @param {string} zone
  */
-export function isMatch(object, attrs) {
-    var _keys = Object.keys(attrs),
-        length = _keys.length;
-    if (object == null) return !length;
-    var obj = Object(object);
-    for (var i = 0; i < length; i++) {
+export function isNsMatch(object, attrs, zone) {
+    var _keys = Object.keys(attrs);
+    if (object == null) return !_keys.length;
+    for (var i = 0; i < _keys.length; i++) {
         var key = _keys[i];
-        if (attrs[key] !== obj[key] || !(key in obj)) return false;
+        if (!(key in object)) {
+            return false;
+        } else if (["name", "host", "alias"].includes(key)) {
+            // must compare in absolute
+            if (turnNsToAbsolute(attrs[key], zone) !== turnNsToAbsolute(object[key], zone)) {
+                return false;
+            }
+            // TODO: TXT
+        } else {
+            if (attrs[key] !== object[key]) return false;
+        }
     }
     return true;
 }
 
-export const deleteIfExist = ( /** @type {any[]} */ arr, /** @type {any} */ record) => {
-    const idx = arr.findIndex((x) => isMatch(x, record));
+export const turnNsToAbsolute = (drec, zone) => {
+    // must be absolute
+    if (!drec.endsWith('.')) {
+        if (drec.endsWith('@')) {
+            drec = drec.substring(0, drec.length - 1);
+        }
+        drec += zone + ".";
+    }
+    return drec;
+}
+
+export const deleteIfExist = (/** @type {string} */ zone, /** @type {any[]} */ arr, /** @type {any} */ record) => {
+    const idx = arr.findIndex((x) => isNsMatch(x, record, zone));
     if (idx === -1) {
         return false;
     } else {
@@ -426,8 +446,8 @@ export const deleteIfExist = ( /** @type {any[]} */ arr, /** @type {any} */ reco
         return true;
     }
 }
-export const appendIfNotExist = ( /** @type {any[]} */ arr, /** @type {{}} */ record) => {
-    const idx = arr.findIndex((x) => isMatch(x, record));
+export const appendIfNotExist = (/** @type {string} */ zone,  /** @type {any[]} */ arr, /** @type {{}} */ record) => {
+    const idx = arr.findIndex((x) => isNsMatch(x, record, zone));
     if (idx === -1) {
         arr.push(record);
         return true;

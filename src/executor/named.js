@@ -4,6 +4,7 @@ import {
     deleteIfExist,
     executeLock,
     spawnSudoUtil,
+    turnNsToAbsolute,
     writeTo
 } from '../util.js';
 import {
@@ -75,7 +76,7 @@ const mapKey = {
     }),
 }
 
-const getArrayOf = ( /** @type {any} */ file, /** @type {string} */ type) => {
+const getArrayOf = ( /** @type {any} */ file, /** @type {keyof typeof arrayKey | String} */ type) => {
     if (!arrayKey[type])
         throw new Error('Unknown type ' + type);
     return file[arrayKey[type]] || (file[arrayKey[type]] = []);
@@ -113,7 +114,7 @@ class NamedExecutor {
             var file = parse(cat(tmpFile));
             var arr = getArrayOf(file, type);
             var map = mapKey[type](domain, ...("" + value).split(' '));
-            if (!appendIfNotExist(arr, map)) {
+            if (!appendIfNotExist(zone, arr, map)) {
                 return "Done unchanged";
             }
             file.soa.serial++;
@@ -134,7 +135,7 @@ class NamedExecutor {
             var file = parse(cat(tmpFile));
             var arr = getArrayOf(file, type);
             var map = mapKey[type](domain, ...("" + value).split(' '));
-            if (!deleteIfExist(arr, map)) {
+            if (!deleteIfExist(zone, arr, map)) {
                 return "Done unchanged";
             }
             file.soa.serial++;
@@ -159,16 +160,17 @@ class NamedExecutor {
                 if (!mod || !mod.action || !mod.domain || !mod.type || !mod.value) {
                     return "Invalid config";
                 }
+                var action = mod.action.toLowerCase();
                 var arr = getArrayOf(file, mod.type.toUpperCase());
-                var domain = (mod.domain || '').toLowerCase();
+                var domain = turnNsToAbsolute((mod.domain || '').toLowerCase(), zone);
                 var map = mapKey[mod.type.toLowerCase()](domain, ...("" + mod.value).split(' '));
-                if (mod.action === 'add') {
-                    if (appendIfNotExist(arr, map)) {
+                if (action === 'add') {
+                    if (appendIfNotExist(zone, arr, map)) {
                         changecount++;
                     }
                 }
-                if (mod.action === 'del') {
-                    if (deleteIfExist(arr, map)) {
+                if (action === 'del') {
+                    if (deleteIfExist(zone, arr, map)) {
                         changecount++;
                     }
                 }

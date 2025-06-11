@@ -2,7 +2,7 @@ import path from "path";
 import {
     detectCanShareSSL,
     escapeShell, getDbName, getLtsPhp,
-    isDebian, spawnSudoUtil, splitLimit
+    isDebian, spawnSudoUtil, splitLimit,
 } from "../util.js";
 import { nftablesExec } from "./nftables.js";
 import { namedExec } from "./named.js";
@@ -352,15 +352,15 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     if (typeof value[i] !== 'string') {
                         continue;
                     }
-                    if (!value[i].startsWith("add ") && !value[i].startsWith("del ")) {
+                    if (!value[i].test(/^(add|del)/i )) {
                         value[i] = `add ${value[i]}`;
                     }
                     const values = splitLimit(value[i] + '', / /g, 4);
                     if (values.length == 4) {
                         value[i] = {
-                            action: values[0].toLowerCase() === 'del' ? 'del' : 'add',
-                            type: values[1].toLowerCase(),
-                            domain: values[2].toLowerCase(),
+                            action: values[0],
+                            type: values[1],
+                            domain: values[2],
                             value: values[3],
                         };
                     }
