@@ -352,7 +352,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     if (typeof value[i] !== 'string') {
                         continue;
                     }
-                    if (!value[i].test(/^(add|del)/i )) {
+                    if (!/^(add|del) /i.test(value[i])) {
                         value[i] = `add ${value[i]}`;
                     }
                     const values = splitLimit(value[i] + '', / /g, 4);
