@@ -348,23 +348,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     break;
                 }
                 await writeLog("$> Applying DNS records");
-                for (let i = 0; i < value.length; i++) {
-                    if (typeof value[i] !== 'string') {
-                        continue;
-                    }
-                    if (!/^(add|del) /i.test(value[i])) {
-                        value[i] = `add ${value[i]}`;
-                    }
-                    const values = splitLimit(value[i] + '', / /g, 4);
-                    if (values.length == 4) {
-                        value[i] = {
-                            action: values[0],
-                            type: values[1],
-                            domain: values[2],
-                            value: values[3],
-                        };
-                    }
-                }
                 await writeLog(await namedExec.set(subdomain, value));
                 break;
             case 'php':

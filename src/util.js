@@ -400,62 +400,6 @@ export const executeLock = function (
     });
 }
 
-// Returns whether an object has a given set of `key:value` pairs.
-/**
- * @param {any} object
- * @param {Record<string, any>} attrs
- * @param {string} zone
- */
-export function isNsMatch(object, attrs, zone) {
-    var _keys = Object.keys(attrs);
-    if (object == null) return !_keys.length;
-    for (var i = 0; i < _keys.length; i++) {
-        var key = _keys[i];
-        if (!(key in object)) {
-            return false;
-        } else if (["name", "host", "alias"].includes(key)) {
-            // must compare in absolute
-            if (turnNsToAbsolute(attrs[key], zone) !== turnNsToAbsolute(object[key], zone)) {
-                return false;
-            }
-            // TODO: TXT
-        } else {
-            if (attrs[key] !== object[key]) return false;
-        }
-    }
-    return true;
-}
-
-export const turnNsToAbsolute = (drec, zone) => {
-    // must be absolute
-    if (!drec.endsWith('.')) {
-        if (drec.endsWith('@')) {
-            drec = drec.substring(0, drec.length - 1);
-        }
-        drec += zone + ".";
-    }
-    return drec;
-}
-
-export const deleteIfExist = (/** @type {string} */ zone, /** @type {any[]} */ arr, /** @type {any} */ record) => {
-    const idx = arr.findIndex((x) => isNsMatch(x, record, zone));
-    if (idx === -1) {
-        return false;
-    } else {
-        arr.splice(idx, 1);
-        return true;
-    }
-}
-export const appendIfNotExist = (/** @type {string} */ zone,  /** @type {any[]} */ arr, /** @type {{}} */ record) => {
-    const idx = arr.findIndex((x) => isNsMatch(x, record, zone));
-    if (idx === -1) {
-        arr.push(record);
-        return true;
-    } else {
-        return false;
-    }
-}
-
 // https://github.com/xxorax/node-shell-escape/blob/master/shell-escape.js
 export const escapeShell = function ( /** @type {string[]} */ ...a) {
     var ret = [];
@@ -474,32 +418,6 @@ export const escapeShell = function ( /** @type {string[]} */ ...a) {
 
 export const normalizeShellOutput = function ( /** @type {string[]} */ output) {
     var text = output.join('');
-    // var text2 = '';
-    // for (let i = 0; i < text.length; i++) {
-    //     const char = text[i];
-    //     const next = text.length > i + 1 ? text[i + 1] : '';
-    //     const prev = 0 <= i - 1 ? text[i - 1] : '';
-    //     if (char === '\r') {
-    //         if (next === '\u001b') {
-    //             i++;
-    //             // ANSI navigation controls
-    //             while (text.substr(i, 1) === '\u001b' && /\[[ABCDK]/.test(text.substr(i + 1, 2))) {
-    //                 i += 3;
-    //             }
-    //         } else if (next === '\n') {
-    //             text2 += '\n';
-    //             i++;
-    //         } else if (next === prev) {
-    //             i++;
-    //         } else {
-    //             // clear last line
-    //             text2 = text2.substr(0, text2.lastIndexOf('\n') + 1);
-    //         }
-    //     } else {
-    //         text2 += char;
-    //     }
-    // }
-    // text = text2;
     text = text.replace(/\x1b\[A.+?\x1b\[Ke/g, '\n');
     text = text.replace(/^\$> (.+)/gm, '\u001b[37m$$> $1\u001b[0m');
     text = text.replace(/^\$< "(.+)"( \+)?/gm, '\u001b[37m$$< "\u001b[36m$1\u001b[37m"$2\u001b[0m');
