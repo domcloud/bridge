@@ -24,17 +24,6 @@ app.use(express.static('public'));
 app.use(express.json());
 app.use('/status', status());
 app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-app.use(checkAuth);
-app.use('/logman', logman());
-app.use('/named', named());
-app.use('/nginx', nginx());
-app.use('/nftables', nftables());
-app.use('/screend', screend());
-app.use('/redis', redis());
-app.use('/docker', docker());
-app.use('/runner', runner());
-app.use('/virtualmin', virtualmin());
-app.use('/unit', unit());
 app.use('/filestash', async function (req, res, next) {
     try {
         const baseUrl = process.env.FILESTASH_URL;
@@ -47,6 +36,19 @@ app.use('/filestash', async function (req, res, next) {
         next(error);
     }
 });
+
+// all endpoints need auth
+app.use(checkAuth);
+app.use('/logman', logman());
+app.use('/named', named());
+app.use('/nginx', nginx());
+app.use('/nftables', nftables());
+app.use('/screend', screend());
+app.use('/redis', redis());
+app.use('/docker', docker());
+app.use('/runner', runner());
+app.use('/virtualmin', virtualmin());
+app.use('/unit', unit());
 app.use(function (err, req, res, next) {
     if (err instanceof Error) {
         res.status(500);
