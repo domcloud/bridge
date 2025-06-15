@@ -19,7 +19,7 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@domcloud/zone-editor": "^0.9.2",
+    "@domcloud/zone-editor": "^0.10.0",
     "@redis/client": "^1.6.0",
     "cli": "^1.0.1",
     "dotenv": "^16.4.7",

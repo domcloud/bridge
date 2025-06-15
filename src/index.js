@@ -29,6 +29,7 @@ app.use('/filestash', async function (req, res, next) {
         const baseUrl = process.env.FILESTASH_URL;
         if (!baseUrl || !/^https?:\/\//.test(baseUrl)) {
             res.status(404).end();
+            return;
         }
         const url = new URL(req.url, baseUrl);
         res.redirect(baseUrl + "/login" + url.search);

@@ -40,7 +40,7 @@ class NamedExecutor {
                 mods = [mods];
             }
             var file = parseNS(cat(tmpFile));
-            var changecount = editNS(file, mods);
+            var changecount = editNS(file, mods, { zone });
             if (changecount === 0) {
                 return "Done unchanged";
             }
