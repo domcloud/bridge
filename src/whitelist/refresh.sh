@@ -26,5 +26,6 @@ merge_files /etc/hosts \
     "$SCRIPT_DIR/hosts.txt" \
     "$SCRIPT_DIR/host_addresses.txt"
 
-sync && sleep 0.5 # sometimes nft not picking up changes
+sync # just in case
+
 /usr/sbin/nft -f "/etc/nftables-whitelist.conf" || { ec=$?; echo "err $(date): $ec" >> /etc/nftables-whitelist.err; }
