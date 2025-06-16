@@ -1,6 +1,6 @@
 {
   "name": "domcloud-bridge",
-  "version": "1.4.250611",
+  "version": "1.4.250615",
   "description": "Deployment runner for DOM Cloud",
   "main": "app.js",
   "engines": {
@@ -19,6 +19,7 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
+    "@domcloud/zone-editor": "^0.10.0",
     "@redis/client": "^1.6.0",
     "cli": "^1.0.1",
     "dotenv": "^16.4.7",

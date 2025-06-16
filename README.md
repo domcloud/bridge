@@ -20,14 +20,16 @@ All environment variables are saved to `.env` file. Please note "Portal" below m
 | `SSL_WILDCARDS` | A comma separated lists of domains available for wildcard SSL sharing |
 | `NGINX_FREE_DOMAIN` | Which domain need to be added banner |
 | `ALLOW_IP` | IPs to allow API communication |
+| `FILESTASH_URL` | Base URL for filestash endpoint |
 
 When adding a self-hosted instance to DOM Cloud portal, you'll want to set a strong `SECRET` and an allow list IP like below
 
 ```sh
 SECRET="<your strong secret here>"
-SSL_WILDCARDS=yoursite.com
-NGINX_FREE_DOMAIN=
+SSL_WILDCARDS=domcloud.dev,mnz.dom.my.id
+NGINX_FREE_DOMAIN=dom.my.id
 ALLOW_IP=159.89.198.103,2400:6180:0:d0::e08:a001
+FILESTASH_URL=https://filestash.mnz.domcloud.co
 ```
 
 ## Changelog

@@ -24,11 +24,25 @@ app.use(express.static('public'));
 app.use(express.json());
 app.use('/status', status());
 app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use('/filestash', async function (req, res, next) {
+    try {
+        const baseUrl = process.env.FILESTASH_URL;
+        if (!baseUrl || !/^https?:\/\//.test(baseUrl)) {
+            res.status(404).end();
+            return;
+        }
+        const url = new URL(req.url, baseUrl);
+        res.redirect(baseUrl + "/login" + url.search);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// all endpoints need auth
 app.use(checkAuth);
 app.use('/logman', logman());
 app.use('/named', named());
 app.use('/nginx', nginx());
-app.use('/iptables', nftables()); // legacy compat
 app.use('/nftables', nftables());
 app.use('/screend', screend());
 app.use('/redis', redis());
