@@ -19,7 +19,7 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@domcloud/zone-editor": "^0.10.0",
+    "@domcloud/zone-editor": "^0.10.1",
     "@redis/client": "^1.6.0",
     "cli": "^1.0.1",
     "dotenv": "^16.4.7",
@@ -36,6 +36,5 @@
     "@types/cli": "^0.11.25",
     "@types/express": "^5.0.1",
     "@types/shelljs": "^0.8.15"
-  },
-  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+  }
 }
