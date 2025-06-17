@@ -23,16 +23,16 @@ class LogmanExecutor {
         }
         switch (type) {
             case 'access':
-                return await spawnSudoUtil("SHELL_SUDO", ["root",
+                return await spawnSudoUtil("SHELL_SUDO", ["nginx",
                     "tail", "-n", n + '', `${home}/logs/access_log`]);
             case 'error':
-                return await spawnSudoUtil("SHELL_SUDO", ["root",
+                return await spawnSudoUtil("SHELL_SUDO", ["nginx",
                     "tail", "-n", n + '', `${home}/logs/error_log`]);
             case 'php':
-                return await spawnSudoUtil("SHELL_SUDO", ["root",
+                return await spawnSudoUtil("SHELL_SUDO", [user,
                     "tail", "-n", n + '', `${home}/logs/php_log`]);
             case 'proxfix':
-                return await spawnSudoUtil("SHELL_SUDO", ["root",
+                return await spawnSudoUtil("SHELL_SUDO", [user,
                     "tail", "-n", n + '', `/home/${user}/tmp/app.log`]);
             case 'passenger':
                 const procs = await this.getPassengerPids(user);

@@ -482,7 +482,7 @@ export default async function runConfig(payload) {
                     }
                     await writeLog("$> Changing owner of " + lpath + " to make it read-only");
                     await writeLog((await spawnSudoUtil("SHELL_SUDO", ["root",
-                        "chown", "-R", "nobody:" + user, path.join(domaindata['Home directory'], lpath)
+                        "chown", "-hR", "nobody:" + user, path.join(domaindata['Home directory'], lpath)
                     ])).stdout);
                     break;
                 case 'unlock':
@@ -497,7 +497,7 @@ export default async function runConfig(payload) {
                     }
                     await writeLog("$> Changing owner of " + upath + " to make it read-write");
                     await writeLog((await spawnSudoUtil("SHELL_SUDO", ["root",
-                        "chown", "-R", user + ":" + user, path.join(domaindata['Home directory'], upath)
+                        "chown", "-hR", user + ":" + user, path.join(domaindata['Home directory'], upath)
                     ])).stdout);
                     break;
                 case 'docker':
