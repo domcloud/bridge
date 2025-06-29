@@ -438,12 +438,15 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 // ssl also fix any misconfigurations
                 var changed = false;
                 let regenerateSsl = false;
+                let justCheckSsl = false;
                 let selfSignSsl = false;
                 let expectedSslMode = null;
                 if (['off', 'always', 'on'].includes(value)) {
                     expectedSslMode = value;
                 } else if (value == 'letsencrypt' || value == 'lets-encrypt' || value == 'renew') {
                     regenerateSsl = true;
+                } else if (value == 'check') {
+                    justCheckSsl = true;
                 } else if (value == 'selfsign' || value == 'self-sign') {
                     selfSignSsl = true;
                 }
@@ -508,8 +511,8 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     if (!sharedSSL && (regenerateSsl || (!expectedSslMode && !selfSignSsl))) {
                         const remaining = subdomaindata['SSL cert expiry'] ? (Date.parse(subdomaindata['SSL cert expiry']) - Date.now()) / 86400000 : 0;
                         // if force LE or remaining > 30 days, get fresh one
-                        if (!regenerateSsl && subdomaindata['SSL candidate hostnames'] == subdomain && subdomaindata['Lets Encrypt renewal'] == 'Enabled' && (remaining > 30)) {
-                            await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away so skipping renewal");
+                        if (!regenerateSsl && subdomaindata['SSL candidate hostnames'] == subdomain && subdomaindata['Lets Encrypt renewal'] == 'Enabled' && (remaining > 30 || justCheckSsl)) {
+                            await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away");
                             await writeLog("$> To enforce renewal please use 'ssl renew'");
                         } else {
                             await writeLog("$> Generating SSL cert with Let's Encrypt");
