@@ -511,7 +511,12 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     if (!sharedSSL && (regenerateSsl || (!expectedSslMode && !selfSignSsl))) {
                         const remaining = subdomaindata['SSL cert expiry'] ? (Date.parse(subdomaindata['SSL cert expiry']) - Date.now()) / 86400000 : 0;
                         // if force LE or remaining > 30 days, get fresh one
-                        if (!regenerateSsl && subdomaindata['SSL candidate hostnames'] == subdomain && subdomaindata['Lets Encrypt renewal'] == 'Enabled' && (remaining > 30 || justCheckSsl)) {
+                        if (!regenerateSsl && justCheckSsl) {
+                            await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away");
+                            const matchStr = subdomaindata['SSL candidate hostnames'] == subdomain ? 'matched' : `unmatched [${subdomaindata['SSL candidate hostnames']}]`
+                            await writeLog(`$> SSL cert domain is ${matchStr} and renewal is ${subdomaindata['Lets Encrypt renewal']}`);
+                            await writeLog("$> To perform renewal please use 'ssl renew'");
+                        } else if (!regenerateSsl && subdomaindata['SSL candidate hostnames'] == subdomain && subdomaindata['Lets Encrypt renewal'] == 'Enabled' && remaining > 30) {
                             await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away");
                             await writeLog("$> To enforce renewal please use 'ssl renew'");
                         } else {
