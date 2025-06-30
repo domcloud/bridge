@@ -33,7 +33,7 @@ fi
 
 
 if [ ! -d "./phprdadmin" ]; then
-    git clone https://github.com/willnode/phpRedisAdmin phprdadmin --filter=tree:0
+    git clone https://github.com/erikdubbelboer/phpRedisAdmin phprdadmin --filter=tree:0
     cd ./phprdadmin
     composer install -o
     cp includes/config.sample.inc.php includes/config.inc.php
