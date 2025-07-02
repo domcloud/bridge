@@ -507,16 +507,20 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     changed = true;
                 }
                 try {
+                    const renewalStatus = subdomaindata['Lets Encrypt renewal'] || subdomaindata['SSL provider renewal'];
+                    const certExpiry = subdomaindata['SSL cert expiry'];
+
                     // if NOT shared AND force LE or no explicit command, check regeration
                     if (!sharedSSL && (regenerateSsl || (!expectedSslMode && !selfSignSsl))) {
-                        const remaining = subdomaindata['SSL cert expiry'] ? (Date.parse(subdomaindata['SSL cert expiry']) - Date.now()) / 86400000 : 0;
+                        const remaining = certExpiry ? (Date.parse(certExpiry) - Date.now()) / 86400000 : 0;
+                        const candidateHostnames = subdomaindata['SSL candidate hostnames'];
                         // if force LE or remaining > 30 days, get fresh one
                         if (!regenerateSsl && justCheckSsl) {
                             await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away");
-                            const matchStr = subdomaindata['SSL candidate hostnames'] == subdomain ? 'matched' : `unmatched [${subdomaindata['SSL candidate hostnames']}]`
-                            await writeLog(`$> SSL cert domain is ${matchStr} and renewal is ${subdomaindata['Lets Encrypt renewal']}`);
+                            const matchStr = candidateHostnames == subdomain ? 'matched' : `unmatched [${candidateHostnames}]`
+                            await writeLog(`$> SSL cert domain is ${matchStr} and renewal is ${renewalStatus}`);
                             await writeLog("$> To perform renewal please use 'ssl renew'");
-                        } else if (!regenerateSsl && subdomaindata['SSL candidate hostnames'] == subdomain && subdomaindata['Lets Encrypt renewal'] == 'Enabled' && remaining > 30) {
+                        } else if (!regenerateSsl && candidateHostnames == subdomain && renewalStatus == 'Enabled' && remaining > 30) {
                             await writeLog("$> SSL cert expiry is " + Math.trunc(remaining) + " days away");
                             await writeLog("$> To enforce renewal please use 'ssl renew'");
                         } else {
@@ -537,7 +541,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                         // 1. Explicit request || SSL off
                         // 2. Let's Encrypt renewal enabled
                         // 3. sharing SSL and was not
-                    } else if ((selfSignSsl || expectedSslMode == 'off') || (subdomaindata['Lets Encrypt renewal'] == 'Enabled') || ((sharedSSL && !subdomaindata['SSL shared with'] && !expectedSslMode))) {
+                    } else if ((selfSignSsl || expectedSslMode == 'off') || (renewalStatus == 'Enabled') || ((sharedSSL && !subdomaindata['SSL shared with'] && !expectedSslMode))) {
                         if (subdomaindata['SSL shared with']) {
                             throw new Error('Cannot turn off SSL while using shared domain!')
                         }
@@ -547,6 +551,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                             'self': true,
                         });
                         delete subdomaindata['Lets Encrypt renewal'];
+                        delete subdomaindata['SSL provider renewal'];
                         delete subdomaindata['SSL shared with'];
                     } else if (!changed) {
                         await writeLog("$> SSL config seems OK, nothing changed");

@@ -7,7 +7,7 @@ const { exec, ShellString, cat } = shelljs;
 
 const cmdListCertsRenewals = 'virtualmin list-domains --name-only --with-feature letsencrypt_renew';
 const askDomainDetailPrefix = 'virtualmin list-domains --simple-multiline --domain ';
-const test = process.env.NODE_ENV == "test";
+const test = (process.env.NODE_ENV || '').toLowerCase() == "test";
 
 if (test) {
     console.log("Running in test mode");
@@ -39,8 +39,11 @@ const listCertsRenewals = cmd(cmdListCertsRenewals).trim().split('\n');
 let count = 0;
 
 for (const domain of listCertsRenewals) {
+    if (test) {
+        console.log(`TEST: Checking ${domain}`);
+    }
     const domainDetail = cmd(askDomainDetailPrefix + domain);
-    const lastIssuedDateStr = domainDetail.match(/Lets Encrypt cert issued: (.+)/);
+    const lastIssuedDateStr = domainDetail.match(/Lets Encrypt cert issued: (.+)/) || domainDetail.match(/SSL provider cert issued: (.+)/);
     const expiryDateStr = domainDetail.match(/SSL cert expiry: (.+)/);
     const domainFileStr = domainDetail.match(/File: (.+)/);
     const sharedWithStr = domainDetail.match(/SSL shared with: (.+)/);
