@@ -192,10 +192,10 @@ class DockerExecutor {
     if (!wellKnownConf) {
       if (!nginx.config.locations)
         nginx.config.locations = [];
-      nginx.config.locations.push({
-        match: '/.well-known/',
-        alias: nginx.root + '/.well-known/',
-      });
+        nginx.config.locations.push({
+          match: '/.well-known/',
+          alias: nginx.root.substring(0, nginx.home.length) + '/.well-known/',
+        });
       nginxChanged = true;
     }
 
