@@ -425,8 +425,8 @@ export default async function runConfig(payload) {
                     }
                     await virtExec("create-user", {
                         ...value,
-                        noemail: typeof value.noemail == 'boolean' ?  value.noemail: true,
-                        shell: typeof value.shell == 'string' ?  value.shell : '/bin/bash',
+                        noemail: typeof value.noemail == 'boolean' ? value.noemail : true,
+                        shell: typeof value.shell == 'string' ? value.shell : '/bin/bash',
                         domain,
                     });
                     break;
@@ -465,10 +465,14 @@ export default async function runConfig(payload) {
                 case 'fix':
                 case 'fixperm':
                     await writeLog("$> Fixing domain permissions");
+                    // this fixes chown
                     await virtExec("fix-domain-permissions", {
                         domain,
                         'subservers': true,
-                    });
+                    }); 
+                    await writeLog((await spawnSudoUtil("SHELL_SUDO", [user,
+                        "chmod", "-R", "750", domaindata['Home directory']
+                    ])).stdout);
                     break;
                 case 'lock':
                 case 'lockmod':
