@@ -322,7 +322,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     if (sandbox) {
                         await writeLog("$> turning off DNS feature is denied");
                     } if (subenabled) {
-                        await virtExec("disable-feature", value, {
+                        await virtExec("disable-feature", {
                             domain: subdomain,
                             dns: true,
                         });
@@ -334,7 +334,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 }
                 if (!subenabled) {
                     await writeLog("$> Enabling DNS feature");
-                    await virtExec("enable-feature", value, {
+                    await virtExec("enable-feature", {
                         domain: subdomain,
                         dns: true,
                     });
