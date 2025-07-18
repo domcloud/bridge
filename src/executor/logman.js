@@ -23,10 +23,10 @@ class LogmanExecutor {
         }
         switch (type) {
             case 'access':
-                return await spawnSudoUtil("SHELL_SUDO", ["nginx",
+                return await spawnSudoUtil("SHELL_SUDO", ["root",
                     "tail", "-n", n + '', `/var/log/virtualmin/${sub}_access_log`]);
             case 'error':
-                return await spawnSudoUtil("SHELL_SUDO", ["nginx",
+                return await spawnSudoUtil("SHELL_SUDO", ["root",
                     "tail", "-n", n + '', `/var/log/virtualmin/${sub}_error_log`]);
             case 'php':
                 return await spawnSudoUtil("SHELL_SUDO", [user,
