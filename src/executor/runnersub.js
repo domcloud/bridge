@@ -783,6 +783,19 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
 
         if (config.services) {
+            // a hack
+            if (typeof config.services == 'object') {
+                // @ts-ignore
+                if (config.networks && typeof config.networks == 'object') {
+                    // @ts-ignore
+                    config.services.networks = config.networks;
+                }
+                // @ts-ignore
+                if (config.volumes && typeof config.networks == 'object') {
+                    // @ts-ignore
+                    config.services.volumes = config.volumes;
+                }
+            }
             await serviceRunner(config.services);
         }
 

@@ -14,7 +14,8 @@ import {
     fileURLToPath
 } from 'url';
 import {
-    spawn
+    spawn,
+    spawnSync
 } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(
@@ -51,7 +52,7 @@ const env = Object.assign({}, {
     NGINX_TMP: path.join(__dirname, '.tmp/nginx'),
     UNIT_SOCKET: '/var/run/unit/control.sock',
     UNIT_TMP: path.join(__dirname, '.tmp/unit'),
-    COMPOSE_TMP: path.join(__dirname, '.tmp/compose'),
+    FILE_TMP: path.join(__dirname, '.tmp/file'),
     NFTABLES_PATH: '/etc/nftables-firewall.conf',
     NFTABLES_OUT: '/etc/nftables-firewall.conf',
     NFTABLES_LOAD: 'nft',
@@ -86,12 +87,16 @@ const env = Object.assign({}, {
  * @param {import("fs").PathLike} filePath
  */
 function fixOwner(filePath) {
-    const {
-        uid,
-        gid
-    } = statSync(path.join(__dirname, './sudoutil.js'));
-    chownSync(filePath, uid, gid);
-    chmodSync(filePath, 0o750);
+    if (!existsSync(filePath)) {
+        new ShellString('').to(filePath.toString());
+
+        const {
+            uid,
+            gid
+        } = statSync(path.join(__dirname, './sudoutil.js'));
+        chownSync(filePath, uid, gid);
+        chmodSync(filePath, 0o750);
+    }
 }
 
 function getFpmList() {
@@ -128,6 +133,7 @@ cd(__dirname); // making sure because we're in sudo
 let arg;
 switch (cli.args.shift()) {
     case 'NGINX_GET':
+        fixOwner(env.NGINX_TMP);
         arg = cli.args.shift();
         const ngpath = env.NGINX_PATH.replace('$', arg);
         if (existsSync(ngpath)) {
@@ -139,7 +145,6 @@ switch (cli.args.shift()) {
             // TODO: doesn't know what would it get if not exists
             cat(ngpath).to(env.NGINX_TMP);
         }
-        fixOwner(env.NGINX_TMP);
         exit(0);
     case 'NGINX_SET':
         arg = cli.args.shift();
@@ -159,15 +164,23 @@ switch (cli.args.shift()) {
         var n = parseInt(cli.args.shift());
         console.log(exec(`grep -w "\\(^App\\|process\\) \\(${arg}\\)" "${env.PASSENGERLOG_PATH}"`).tail({ '-n': n }).stdout);
         exit(0);
-    case 'COMPOSE_GET':
+    case 'FILE_GET':
+        fixOwner(env.FILE_TMP);
         arg = cli.args.shift();
-        cat(arg).to(env.COMPOSE_TMP);
-        fixOwner(env.COMPOSE_TMP);
-        exit(0);
-    case 'COMPOSE_SET':
+        var fileGet = spawnSync(env.BASH_SUDO, ['-u', arg, '-i', 'cat', cli.args[0]], {
+            timeout: 10000,
+            stdio: ['inherit', 'pipe', 'inherit']
+        });
+        new ShellString(fileGet.stdout.toString()).to(env.FILE_TMP);
+        exit(fileGet.status);
+    case 'FILE_SET':
         arg = cli.args.shift();
-        cat(env.COMPOSE_TMP).to(arg);
-        exit(0);
+        var fileSet = spawnSync(env.BASH_SUDO, ['-u', arg, '-i', 'tee', cli.args[0]], {
+            input: cat(env.FILE_TMP).toString(),
+            timeout: 10000,
+            stdio: ['pipe', 'inherit', 'inherit']
+        });
+        exit(fileSet.status);
     case 'UNIT_GET':
         arg = cli.args.shift();
         var unit = spawn('curl', ['--unix-socket', env.UNIT_SOCKET, 'http://localhost' + arg], {
@@ -214,9 +227,9 @@ switch (cli.args.shift()) {
         }, 1000 * 600).unref();
         break;
     case 'VIRTUAL_SERVER_GET':
+        fixOwner(env.VIRTUAL_SERVER_TMP);
         arg = cli.args.shift();
         cat(env.VIRTUAL_SERVER_PATH.replace('$', arg)).to(env.VIRTUAL_SERVER_TMP);
-        fixOwner(env.VIRTUAL_SERVER_TMP);
         exit(0);
     case 'VIRTUAL_SERVER_SET':
         arg = cli.args.shift();
@@ -227,9 +240,9 @@ switch (cli.args.shift()) {
         console.log(cat(env.REDIS_ACLMAP).grep('^' + arg + ':').toString());
         exit(0);
     case 'REDIS_GET':
+        fixOwner(env.REDIS_ACLTMP);
         arg = cli.args.shift();
         cat(env.REDIS_ACLMAP).to(env.REDIS_ACLTMP);
-        fixOwner(env.REDIS_ACLTMP);
         exit(0);
     case 'REDIS_SET':
         cat(env.REDIS_ACLTMP).to(env.REDIS_ACLMAP);
@@ -239,9 +252,9 @@ switch (cli.args.shift()) {
         console.log(cat(env.PORTS_PATH).toString());
         exit(0);
     case 'PORTS_GET':
+        fixOwner(env.PORTS_TMP);
         arg = cli.args.shift();
         cat(env.PORTS_PATH).to(env.PORTS_TMP);
-        fixOwner(env.PORTS_TMP);
         exit(0);
     case 'PORTS_SET':
         cat(env.PORTS_TMP).to(env.PORTS_OUT);
@@ -254,8 +267,8 @@ switch (cli.args.shift()) {
         exec(env.NGINX_START);
         exit(0);
     case 'FIREWALL_GET':
-        cat(env.NFTABLES_PATH).to(env.NFTABLES_TMP);
         fixOwner(env.NFTABLES_TMP);
+        cat(env.NFTABLES_PATH).to(env.NFTABLES_TMP);
         exit(0);
     case 'FIREWALL_SET':
         if (exec(`${env.NFTABLES_LOAD} -f ${env.NFTABLES_TMP} --check`).code !== 0)
@@ -264,9 +277,9 @@ switch (cli.args.shift()) {
         exec(`${env.NFTABLES_LOAD} -f ${env.NFTABLES_OUT}`);
         exit(0);
     case 'NAMED_GET':
+        fixOwner(env.NAMED_TMP);
         arg = cli.args.shift();
         cat(env.NAMED_PATHS.replace('$', arg)).to(env.NAMED_TMP);
-        fixOwner(env.NAMED_TMP);
         exit(0);
     case 'NAMED_SET':
         arg = cli.args.shift();

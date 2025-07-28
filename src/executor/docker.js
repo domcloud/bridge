@@ -11,7 +11,7 @@ import * as yaml from 'yaml';
 import { ShellString } from 'shelljs';
 import { exec } from 'child_process';
 
-const composeTmpFile = path.join(process.cwd(), '/.tmp/compose')
+const composeTmpFile = path.join(process.cwd(), '/.tmp/file')
 const portsTmpFile = path.join(process.cwd(), '/.tmp/ports')
 const standardPortRegex = /^(\$\{?\w+\}?|\d+):(\$\{?\w+\}?|\d+)$/;
 const complexPortRegex = /^127\.0\.0\.1:(\$\{?\w+\}?|\d+):(\$\{?\w+\}?|\d+)$/;
@@ -192,10 +192,10 @@ class DockerExecutor {
     if (!wellKnownConf) {
       if (!nginx.config.locations)
         nginx.config.locations = [];
-        nginx.config.locations.push({
-          match: '/.well-known/',
-          alias: nginx.root.substring(0, nginx.home.length) + '/.well-known/',
-        });
+      nginx.config.locations.push({
+        match: '/.well-known/',
+        alias: nginx.root.substring(0, nginx.home.length) + '/.well-known/',
+      });
       nginxChanged = true;
     }
 
@@ -247,7 +247,7 @@ class DockerExecutor {
    * @return {Promise<string>}
    */
   async executeServices(services, home, domain, username, logWriter) {
-    let filename = path.join(home, 'docker-compose.yml');
+    let filepath = path.join(home, 'docker-compose.yml');
     let composeObject = {};
     let hint = null;
     if (typeof services === 'string') {
@@ -259,17 +259,25 @@ class DockerExecutor {
         }
         services = services.substring(0, sepIdx);
       }
-      filename = path.join(home, services);
+      filepath = path.join(home, services);
       // cat from file
-      composeObject = yaml.parse(await executeLock('compose', () => {
+      composeObject = yaml.parse(await executeLock('file', () => {
         return new Promise((resolve, reject) => {
-          spawnSudoUtil('COMPOSE_GET', [filename]).then(() => {
+          spawnSudoUtil('FILE_GET', [username, filepath]).then(() => {
             resolve(cat(composeTmpFile));
           }).catch(reject);
         });
       }));
     } else {
       composeObject.services = services;
+      if (services.networks) {
+        composeObject.networks = services.networks;
+        delete services.networks;
+      }
+      if (services.volumes) {
+        composeObject.volumes = services.volumes;
+        delete services.volumes;
+      }
     }
     let [composeServices, nginxStatus] = await this.rewriteServices(composeObject.services, domain, username, hint);
     if (!composeServices) {
@@ -284,10 +292,10 @@ class DockerExecutor {
       delete composeObject.version;
     }
     let composeFile = yaml.stringify(composeObject);
-    await executeLock('compose', () => {
-      return new Promise((resolve, reject) => {
+    await executeLock('file', () => {
+      return new Promise(() => {
         ShellString(composeFile).to(composeTmpFile)
-        spawnSudoUtil('COMPOSE_SET', [filename]).then(resolve).catch(reject);
+        return spawnSudoUtil('FILE_SET', [username, filepath]);
       });
     });
     return composeFile;
