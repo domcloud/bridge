@@ -237,8 +237,9 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await writeLog("$> Removing Neovim config");
                 await sshExec(`rm -rf ~/.config/nvim ~/.local/state/nvim ~/.local/share/nvim`);
             } else {
-                await writeLog("$> Installing Neovim Nvchad config");
-                await sshExec(`git clone https://github.com/NvChad/starter ~/.config/nvim`);
+                await writeLog("$> Installing Neovim LazyVim config");
+                await sshExec(`git clone https://github.com/LazyVim/starter ~/.config/nvim`);
+                await sshExec(`rm -rf ~/.config/nvim/.git`);
             }
             break;
         default:
