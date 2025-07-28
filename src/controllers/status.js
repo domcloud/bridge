@@ -54,6 +54,12 @@ export default function () {
     });
     router.get('/check', async function (req, res, next) {
         try {
+            add_cors(res);
+            if (req.method === 'OPTIONS') {
+                res.status(204).end();
+                return;
+            }
+            
             let lastTestResult = null;
             if (lastCheck < Date.now() - refreshTime) {
                 await spawnSudoUtil('SHELL_CHECK');
@@ -88,6 +94,12 @@ export default function () {
     });
     router.get('/test', async function (req, res, next) {
         try {
+            add_cors(res);
+            if (req.method === 'OPTIONS') {
+                res.status(204).end();
+                return;
+            }
+
             if (lastTest < Date.now() - refreshTime) {
                 await spawnSudoUtil('SHELL_TEST');
                 lastTestResult = JSON.parse(cat(tmpTest));
@@ -121,4 +133,10 @@ export default function () {
         }
     });
     return router;
+}
+
+function add_cors(res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
