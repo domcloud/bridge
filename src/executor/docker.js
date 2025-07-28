@@ -293,10 +293,8 @@ class DockerExecutor {
     }
     let composeFile = yaml.stringify(composeObject);
     await executeLock('file', () => {
-      return new Promise(() => {
-        ShellString(composeFile).to(composeTmpFile)
-        return spawnSudoUtil('FILE_SET', [username, filepath]);
-      });
+      ShellString(composeFile).to(composeTmpFile)
+      return spawnSudoUtil('FILE_SET', [username, filepath]);
     });
     return composeFile;
   }
