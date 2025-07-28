@@ -776,6 +776,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     } else if (cmd.feature) {
                         await featureRunner(cmd.feature);
                     } else if (cmd.services) {
+                        wrapServices(cmd);
                         await serviceRunner(cmd.services);
                     } else if (cmd.filename && cmd.content) {
                         await writeLog("$> writing " + cmd.filename);
@@ -786,19 +787,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
 
         if (config.services) {
-            // a hack
-            if (typeof config.services == 'object') {
-                // @ts-ignore
-                if (config.networks && typeof config.networks == 'object') {
-                    // @ts-ignore
-                    config.services.networks = config.networks;
-                }
-                // @ts-ignore
-                if (config.volumes && typeof config.networks == 'object') {
-                    // @ts-ignore
-                    config.services.volumes = config.volumes;
-                }
-            }
+            wrapServices(config);
             await serviceRunner(config.services);
         }
 
@@ -815,6 +804,21 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await featureRunner(feature);
                 }
             }
+        }
+    }
+}
+
+function wrapServices(config) {
+    if (typeof config.services == 'object') {
+        // @ts-ignore
+        if (config.networks && typeof config.networks == 'object') {
+            // @ts-ignore
+            config.services.networks = config.networks;
+        }
+        // @ts-ignore
+        if (config.volumes && typeof config.volumes == 'object') {
+            // @ts-ignore
+            config.services.volumes = config.volumes;
         }
     }
 }
