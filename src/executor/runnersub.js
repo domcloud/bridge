@@ -44,6 +44,12 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
     async function featureRunner(/** @type {object|string} */ feature) {
         let key = typeof feature === 'string' ? splitLimit(feature, / /g, 2)[0] : Object.keys(feature)[0];
         let value = typeof feature === 'string' ? feature.substring(key.length + 1) : feature[key];
+
+        // alias names
+        key == "mariadb" && (key = "mysql");
+        key == "postgresql" && (key = "postgres");
+        key == "valkey" && (key = "redis");
+
         let enabled = domaindata['Features'].includes(key);
         let subenabled = subdomaindata['Features'].includes(key);
         let dbneedcreate = false;
@@ -87,7 +93,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
         }
 
         switch (key) {
-            case 'mariadb':
             case 'mysql':
                 if (!stillroot && !enabled) {
                     await writeLog("Problem: Can't manage MySQL while it is disabled in parent domain");
@@ -157,7 +162,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog(`$> MySQL is already initialized. To create another database, use "mysql create dbname"`);
                 }
                 break;
-            case 'postgresql':
             case 'postgres':
                 if (!stillroot && !enabled) {
                     await writeLog("Problem: Can't manage PostgreSQL while it is disabled in parent domain");
@@ -227,7 +231,6 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                     await writeLog(`$> PostgreSQL is already initialized. To create another database, use "postgresql create dbname"`);
                 }
                 break;
-            case 'valkey':
             case 'redis':
                 const dbuser = domaindata['Username'];
                 let instances = await redisExec.show(dbuser);
