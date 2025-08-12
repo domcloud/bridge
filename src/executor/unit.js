@@ -1,9 +1,9 @@
-import { ShellString } from 'shelljs';
 import path from 'path';
 import {
     executeLock,
     spawnSudoUtil,
     splitLimit,
+    writeTo,
 } from '../util.js';
 
 const tmpFile = path.join(process.cwd(), '/.tmp/unit')
@@ -25,7 +25,7 @@ class UnitExecutor {
      */
     async set(path, body) {
         return await executeLock('unit', async () => {
-            ShellString(body).to(tmpFile);
+            await writeTo(tmpFile, body);
             return await spawnSudoUtil("UNIT_SET", [path]);
         });
     }

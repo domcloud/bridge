@@ -1,6 +1,5 @@
 import {
     cat,
-    checkAuth,
     checkGet,
     getAuth,
     getRevision,
@@ -12,9 +11,9 @@ import express from 'express';
 import path from 'path';
 import os from 'os';
 import { fixNGINX, fixPHP } from '../executor/pulse.js';
+import { portmanExec } from '../executor/portman.js';
 
-const tmpCheck = path.join(process.cwd(), '/.tmp/check')
-const tmpTest = path.join(process.cwd(), '/.tmp/test')
+const webminStat = '/var/webmin/modules/authentic-theme/real-time-monitoring.json';
 const refreshTime = 15000;
 
 let lastCheck = 0;
@@ -59,11 +58,11 @@ export default function () {
                 res.status(204).end();
                 return;
             }
-            
+
             let lastTestResult = null;
             if (lastCheck < Date.now() - refreshTime) {
-                await spawnSudoUtil('SHELL_CHECK');
-                lastCheckResult = JSON.parse(cat(tmpCheck));
+                const r = await spawnSudoUtil('SHELL_CHECK');
+                lastCheckResult = JSON.parse(r.stdout);
                 lastCheckOK = lastCheckResult.status == 'OK';
                 lastCheck = Date.now();
             }
@@ -74,14 +73,14 @@ export default function () {
                     }
                     if (key.endsWith("-php-fpm")) {
                         if (!lastTestResult) {
-                            await spawnSudoUtil('SHELL_TEST');
-                            lastTestResult = JSON.parse(cat(tmpTest));
+                            const r = await spawnSudoUtil('SHELL_TEST');
+                            lastTestResult = JSON.parse(r.stdout);
                         }
                         await fixPHP(lastTestResult);
                     } else if (key == "nginx") {
                         if (!lastTestResult) {
-                            await spawnSudoUtil('SHELL_TEST');
-                            lastTestResult = JSON.parse(cat(tmpTest));
+                            const r = await spawnSudoUtil('SHELL_TEST');
+                            lastTestResult = JSON.parse(r.stdout);
                         }
                         await fixNGINX(lastTestResult);
                     }
@@ -101,8 +100,8 @@ export default function () {
             }
 
             if (lastTest < Date.now() - refreshTime) {
-                await spawnSudoUtil('SHELL_TEST');
-                lastTestResult = JSON.parse(cat(tmpTest));
+                const r = await spawnSudoUtil('SHELL_TEST');
+                lastTestResult = JSON.parse(r.stdout);
                 lastTestOK = lastTestResult.status == 'OK';
                 lastTest = Date.now();
             }
@@ -119,14 +118,32 @@ export default function () {
     });
     router.get('/repquota', async function (req, res, next) {
         let spawn = await spawnSudoUtil('SHELL_SUDO', ["root", "repquota", "-a"]);
-        res.setHeader('content-type', ' text/plain').send(spawn.stdout);
+        res.setHeader('content-type', 'text/plain').send(spawn.stdout);
+    });
+    router.get('/stats', async function (req, res, next) {
+        add_cors(res);
+        if (req.method === 'OPTIONS') {
+            res.status(204).end();
+            return;
+        }
+        let spawn = await spawnSudoUtil('FILE_GET', ["root", webminStat]);
+        res.setHeader('content-type', 'application/json').send(spawn.stdout);
+    });
+    router.get('/ports', async function (req, res, next) {
+        add_cors(res);
+        if (req.method === 'OPTIONS') {
+            res.status(204).end();
+            return;
+        }
+        let ports = await portmanExec.listPortsExtended();
+        res.setHeader('content-type', 'application/json').send(JSON.stringify(ports));
     });
     router.get('/opcache', checkGet(['version']), async function (req, res, next) {
         try {
             const queryStr = new URL(req.url, `http://${req.headers.host}`).search.substring(1);
             await spawnSudoUtil("OPCACHE_STATUS_HTML", [req.query.version.toString(), queryStr])
-            const text = cat(path.join(process.cwd(), '/.tmp/opcache'));
-            res.setHeader('content-type', ' text/html').send(text);
+            const text = await cat(path.join(process.cwd(), '/.tmp/opcache'));
+            res.setHeader('content-type', 'text/html').send(text);
             return;
         } catch (error) {
             next(error);

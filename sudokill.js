@@ -2,28 +2,21 @@
 
 // kill all processes that outside SSH and root
 
+import { execSync } from 'child_process';
 import cli from 'cli'
-import shelljs from 'shelljs';
 import { existsSync, readdirSync } from 'fs';
 
 const LOGINLINGERDIR = process.env.LOGINLINGERDIR || '/var/lib/systemd/linger';
 
-const { exec } = shelljs;
 
 const opts = cli.parse({
     test: ['t', 'Test mode', 'bool', false],
     ignore: ['i', 'Ignore user list', 'string', ''],
 });
 
-const psOutput = exec('ps -eo user:70,pid,uid,etimes,command --forest --no-headers', {
-    silent: true,
-    fatal: true,
-}).stdout.trim().split('\n');
+const psOutput = execSync('ps -eo user:70,pid,uid,etimes,command --forest --no-headers').toString('utf-8').trim().split('\n');
 
-const whoOutput = exec('who', {
-    silent: true,
-    fatal: true,
-}).stdout.trim().split('\n').filter(x => x);
+const whoOutput = execSync('who').toString('utf-8').trim().split('\n').filter(x => x);
 
 const ignoreUsers = opts.ignore ? opts.ignore.split(',')
     .reduce((acc, cur) => {
@@ -62,13 +55,13 @@ for (const item of whoOutput) {
 }
 
 // scan for any processes not in ssh sessions or longer than 3 hours
-let candidates = lists.filter(x =>(!(x.command[0] == ' ' || x.uid <= 1001 || ignoreUsers[x.user] || x.etimes < 10800)));
+let candidates = lists.filter(x => (!(x.command[0] == ' ' || x.uid <= 1001 || ignoreUsers[x.user] || x.etimes < 10800)));
 
 if (opts.test) {
     console.table(candidates);
 } else {
     for (let x of candidates) {
-        exec(`pkill -KILL -P ${x.pid}`);
-        exec(`kill -9 ${x.pid}`);
+        execSync(`pkill -KILL -P ${x.pid}`);
+        execSync(`kill -9 ${x.pid}`);
     }
 }

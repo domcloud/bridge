@@ -1,7 +1,8 @@
 import path, { dirname } from 'path';
 import { spawn } from 'child_process';
 import lock from './helpers/lockfile.js';
-import fs, { existsSync } from 'fs';
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import fs from 'fs/promises';
 import { constants } from 'os';
 import binaries from './binaries/metadata.cjs';
 import { virtualminExec } from './executor/virtualmin.js';
@@ -35,13 +36,13 @@ export const initUtils = () => {
         return a;
     }, {}) || null
     sudoutil = path.join(process.cwd(), '/sudoutil.js');
-    version = JSON.parse(cat('package.json')).version;
-    const rev = cat('.git/HEAD').trim();
-    revision = rev.indexOf(':') === -1 ? rev : cat('.git/' + rev.substring(5)).trim();
+    version = JSON.parse(readFileSync('package.json', { encoding: 'utf-8' })).version;
+    const rev = readFileSync('.git/HEAD', { encoding: 'utf-8' }).trim();
+    revision = rev.indexOf(':') === -1 ? rev : readFileSync('.git/' + rev.substring(5), { encoding: 'utf-8' }).trim();
     revision = revision.substring(0, 7);
     try {
         const phpPath = process.env.PHPFPM_REMILIST || (isThisDebian ? '/etc/php/' : '/etc/opt/remi/');
-        const phpFiles = fs.readdirSync(phpPath, { withFileTypes: true });
+        const phpFiles = readdirSync(phpPath, { withFileTypes: true });
         phpVersionsList = phpFiles
             .filter(dirent => dirent.isDirectory())
             .map(dirent => dirent.name.replace(/php(\d)(\d+)/, '$1.$2'))
@@ -80,7 +81,7 @@ async function updateWildcardData() {
         return;
     }
     try {
-        sslWildcardsMap = JSON.parse(cat(cachepath));
+        sslWildcardsMap = JSON.parse(await cat(cachepath));
         for (const domain of sslWildcardStr.split(',').map(x => x.split(':')[0])) {
             if (!(domain in sslWildcardsMap) || ['id', 'domain', 'path'].every(k => !(k in sslWildcardsMap[domain]))) {
                 throw new Error();
@@ -88,7 +89,7 @@ async function updateWildcardData() {
         }
         return
     } catch (error) {
-
+        // can't parse is OK
     }
     try {
         const domains = sslWildcardStr.split(',').map(x => x.split(':')[0]);
@@ -99,9 +100,9 @@ async function updateWildcardData() {
                 domain,
             }
         }
-        writeTo(cachepath, JSON.stringify(sslWildcardsMap))
+        await writeTo(cachepath, JSON.stringify(sslWildcardsMap))
     } catch (error) {
-        console.error("Cant get valid ssl domain", error)
+        console.error("Can't get valid ssl domain", error)
     }
 }
 
@@ -524,22 +525,110 @@ export function sortSemver(arr) {
 }
 
 /**
- * @param {fs.PathOrFileDescriptor} path
- * @returns {string}
+ * spawnSync but not blocking thread
+ * @param {'id'|'ss'} prog
+ * @param {string[]} arg
+ */
+async function spawnSync(prog, arg) {
+    return new Promise((resolve, reject) => {
+        const child = spawn(prog, arg);
+
+        let stdoutData = '', stderrData = '';
+
+        child.stdout.on('data', (data) => {
+            stdoutData += data.toString();
+        });
+        child.stderr.on('data', (data) => {
+            stderrData += data.toString();
+        });
+        child.on('error', (error) => {
+            reject(error);
+        });
+
+        child.on('close', (code) => {
+            if (code !== 0) {
+                reject(new Error(stderrData.trim()));
+                return;
+            }
+            resolve(stdoutData.trim());
+        });
+    });
+}
+
+export async function getListeningPorts() {
+    const output = await spawnSync('ss', ['-ltn4']);
+    /**
+     * @type {Set<number>}
+     */
+    const ports = new Set();
+
+    output.split('\n').slice(1).forEach(line => {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 4) {
+            const localAddr = parts[3];
+            const [ip, portStr] = localAddr.split(':');
+            const port = parseInt(portStr, 10);
+
+            if (!isNaN(port) && (ip === '0.0.0.0' || ip === '127.0.0.1')) {
+                ports.add(port);
+            }
+        }
+    });
+
+    return ports;
+}
+
+export async function getUnameMap() {
+    const passwdContent = await cat('/etc/passwd');
+    const uidToUser = new Map();
+
+    passwdContent.split('\n').forEach(line => {
+        if (!line || line.startsWith('#')) return;
+        const fields = line.split(':');
+        const uname = fields[0];
+        const uid = parseInt(fields[2], 10);
+        if (!isNaN(uid)) {
+            uidToUser.set(uid, uname);
+        }
+    });
+
+    return uidToUser;
+}
+
+/**
+ * @param {string} user
+ * @returns {Promise<string>}
+ */
+export async function getUid(user) {
+    return spawnSync('id', ['-u', user])
+}
+
+/**
+ * @param {string} user
+ * @returns {Promise<string>}
+ */
+export async function getUname(user) {
+    return spawnSync('id', ['-nu', user])
+}
+
+/**
+ * @param {import('fs').PathLike} path
+ * @returns {Promise<string>}
  */
 export function cat(path) {
-    return fs.readFileSync(path, {
+    return fs.readFile(path, {
         encoding: 'utf-8'
     });
 }
 
 
 /**
- * @param {fs.PathOrFileDescriptor} path
+ * @param {import('fs').PathLike} path
  * @param {string | NodeJS.ArrayBufferView} content
+ * @returns {Promise}
  */
 export function writeTo(path, content) {
-    fs.writeFileSync(path, content, {
+    return fs.writeFile(path, content, {
         encoding: 'utf-8'
     });
 }

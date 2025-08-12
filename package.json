@@ -1,6 +1,6 @@
 {
   "name": "domcloud-bridge",
-  "version": "1.4.250728",
+  "version": "1.4.250813",
   "description": "Deployment runner for DOM Cloud",
   "main": "app.js",
   "engines": {
@@ -24,17 +24,17 @@
     "cli": "^1.0.1",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
-    "fast-xml-parser": "^5.0.9",
+    "fast-xml-parser": "^5.2.5",
     "graceful-fs": "^4.2.11",
     "nginx-conf": "^2.1.0",
     "retry": "^0.13.1",
-    "shelljs": "^0.9.2",
+    "shelljs": "^0.10.0",
     "swagger-ui-express": "^5.0.1",
-    "yaml": "^2.7.1"
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@types/cli": "^0.11.25",
-    "@types/express": "^5.0.1",
-    "@types/shelljs": "^0.8.15"
+    "@types/express": "^5.0.3",
+    "@types/shelljs": "^0.8.17"
   }
 }

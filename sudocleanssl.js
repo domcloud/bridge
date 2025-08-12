@@ -2,8 +2,8 @@
 
 // stop renewing failed SSL certs if found
 
-import shelljs from 'shelljs';
-const { exec, ShellString, cat } = shelljs;
+import { execSync } from 'child_process';
+import { readFileSync, writeFileSync } from 'fs';
 
 const cmdListCertsRenewals = 'virtualmin list-domains --name-only --with-feature letsencrypt_renew';
 const askDomainDetailPrefix = 'virtualmin list-domains --simple-multiline --domain ';
@@ -17,10 +17,7 @@ if (test) {
  * @param {string} str
  */
 function cmd(str) {
-    return exec(str, {
-        silent: true,
-        fatal: true,
-    }).stdout.trim();
+    return execSync(str).toString('utf-8');
 }
 
 /**
@@ -29,8 +26,8 @@ function cmd(str) {
  * @param {string} domainFile 
  */
 function disableRenewal(domain, domainFile) {
-    var c = cat(domainFile).replace(/\nletsencrypt_renew=1/, '');
-    new ShellString(c).to(domainFile);
+    var c = readFileSync(domainFile, { encoding: 'utf-8' }).replace(/\nletsencrypt_renew=1/, '');
+    writeFileSync(domainFile, c, { encoding: 'utf-8' });
     count++;
 }
 

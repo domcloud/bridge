@@ -26,18 +26,18 @@ class IptablesExecutor {
         await executeLock('nftables', async () => {
             await spawnSudoUtil('FIREWALL_GET');
         });
-        return parseIptablesDoc(cat(tmpFile));
+        return parseIptablesDoc(await cat(tmpFile));
     }
     async setAddUser(userName, userID = "") {
         return await executeLock('nftables', async () => {
             await spawnSudoUtil('FIREWALL_GET');
-            var rules = parseIptablesDoc(cat(tmpFile));
+            var rules = parseIptablesDoc(await cat(tmpFile));
             const setRules = genRules(userName, userID);
 
             if (!appendIfRecordNotExist(rules, setRules)) {
                 return "Done unchanged for nftables";
             }
-            writeTo(tmpFile, encodeIptablesDoc(rules));
+            await writeTo(tmpFile, encodeIptablesDoc(rules));
             await spawnSudoUtil('FIREWALL_SET');
             return "Updated for nftables";
         });
@@ -45,13 +45,13 @@ class IptablesExecutor {
     async setDelUser(userName, userID = "") {
         return await executeLock('nftables', async () => {
             await spawnSudoUtil('FIREWALL_GET');
-            var rules = parseIptablesDoc(cat(tmpFile));
+            var rules = parseIptablesDoc(await cat(tmpFile));
             const setRules = genRules(userName, userID);
 
             if (!deleteIfRecordExist(rules, setRules)) {
                 return "Done unchanged for nftables";
             }
-            writeTo(tmpFile, encodeIptablesDoc(rules));
+            await writeTo(tmpFile, encodeIptablesDoc(rules));
             await spawnSudoUtil('FIREWALL_SET');
             return "Updated for nftables";
         });

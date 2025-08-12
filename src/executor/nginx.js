@@ -404,7 +404,7 @@ class NginxExecutor {
     set(domain, config) {
         return executeLock('nginx', async () => {
             await spawnSudoUtil('NGINX_GET', [domain]);
-            const src = cat(tmpFile).toString();
+            const src = await cat(tmpFile);
             const conf = await new Promise((resolve, reject) => {
                 NginxConfFile.createFromSource(src, (err, conf) => {
                     if (err)
@@ -436,7 +436,7 @@ class NginxExecutor {
             if (src === dst) {
                 return "Nothing changed";
             }
-            writeTo(tmpFile, conf.toString());
+            await writeTo(tmpFile, conf.toString());
             await spawnSudoUtil('NGINX_SET', [domain]);
             return "Done updated\n" + conf.toString();
         })
@@ -448,8 +448,8 @@ class NginxExecutor {
     setDirect(domain, info) {
         return executeLock('nginx', async () => {
             await spawnSudoUtil('NGINX_GET', [domain]);
+            var src = await cat(tmpFile);
             return await new Promise((resolve, reject) => {
-                var src = cat(tmpFile).toString();
                 NginxConfFile.createFromSource(src, (err, conf) => {
                     if (err)
                         return reject(err);
@@ -462,12 +462,13 @@ class NginxExecutor {
                     if (src === dst) {
                         return resolve("Nothing changed");
                     }
-                    writeTo(tmpFile, dst);
-                    spawnSudoUtil('NGINX_SET', [domain]).then(() => {
-                        resolve("Done updated\n" + node.toString());
-                    }).catch((err) => {
-                        reject(err);
-                    })
+                    writeTo(tmpFile, dst)
+                        .then(() => spawnSudoUtil('NGINX_SET', [domain]))
+                        .then(() => {
+                            resolve("Done updated\n" + node.toString());
+                        }).catch((err) => {
+                            reject(err);
+                        })
                 });
             });
         })
@@ -480,8 +481,8 @@ class NginxExecutor {
     setSsl(domain, ssl, http) {
         return executeLock('nginx', async () => {
             await spawnSudoUtil('NGINX_GET', [domain]);
+            var src = await cat(tmpFile);
             return await new Promise((resolve, reject) => {
-                var src = cat(tmpFile).toString();
                 // https://github.com/virtualmin/virtualmin-nginx/issues/18
                 src = src.replace(/ default_server/g, '');
                 NginxConfFile.createFromSource(src, (err, conf) => {
@@ -505,12 +506,13 @@ class NginxExecutor {
                         info.config.http = http;
                     }
                     this.applyInfo(node, info);
-                    writeTo(tmpFile, conf.toString());
-                    spawnSudoUtil('NGINX_SET', [domain]).then(() => {
-                        resolve("Done updated\n" + node.toString());
-                    }).catch((err) => {
-                        reject(err);
-                    })
+                    writeTo(tmpFile, conf.toString())
+                        .then(() => spawnSudoUtil('NGINX_SET', [domain]))
+                        .then(() => {
+                            resolve("Done updated\n" + node.toString());
+                        }).catch((err) => {
+                            reject(err);
+                        })
                 });
             });
         })

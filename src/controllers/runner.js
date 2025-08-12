@@ -1,5 +1,6 @@
 import {
     checkGet,
+    getUname,
     normalizeShellOutput,
     spawnSudoUtil,
 } from '../util.js';
@@ -278,18 +279,16 @@ export default function () {
     });
     router.post('/from-unix', checkGet(['user']), async function (req, res, next) {
         const user = req.query.user.toString()
-        const isUid = /^\d+$/.test(user) 
-        const name = isUid ? (await new Promise((resolve, reject) => exec("id -nu " + user, (err, stdout) => {
-            (err ? reject : resolve)(stdout)
-        }))).trim() : user.trim();
-        
-        const domain = name.contains('@') ? name.split('@')[1] : (await virtualminExec.getDomainName(name))[0];
+        const isUid = /^\d+$/.test(user)
+        const name = isUid ? (await getUname(user)) : user.trim();
 
-        if (!domain || domain.contains('@')) {
+        const domain = name.includes('@') ? name.split('@')[1] : (await virtualminExec.getDomainName(name))[0];
+
+        if (!domain || domain.includes('@')) {
             next(new Error("invalid domain name"));
             return;
         }
-        
+
         res.write(`Running deployment for user ${name} ${isUid ? `(${user})` : ''} [${domain}]...\n`)
         const callback = req.header('x-callback');
         const sandbox = !!parseInt(req.query.sandbox?.toString() || '0');

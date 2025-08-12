@@ -1,8 +1,5 @@
 import {
-    cat,
-    executeLock,
     spawnSudoUtil,
-    writeTo
 } from '../util.js';
 import { XMLParser } from "fast-xml-parser";
 import { readFile } from "fs/promises";

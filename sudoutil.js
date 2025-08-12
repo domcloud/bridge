@@ -77,8 +77,6 @@ const env = Object.assign({}, {
     PHPFPM_REMICONF: isDebian ? '/etc/php/$/fpm/pool.d' : '/etc/opt/remi/$/php-fpm.d',
     PHPFPM_REMILOC: isDebian ? '/usr/sbin/php-fpm$' : '/opt/remi/$/root/usr/sbin/php-fpm',
     OPCACHE_TMP: path.join(__dirname, '.tmp/opcache'),
-    SHELLCHECK_TMP: path.join(__dirname, '.tmp/check'),
-    SHELLTEST_TMP: path.join(__dirname, '.tmp/test'),
     SSL_WILDCARDS_TMP: path.join(__dirname, '.tmp/wildcardssl.json'),
     SCRIPT: path.join(__dirname, 'sudoutil.js'),
 }, process.env);
@@ -101,6 +99,16 @@ function fixOwner(filePath) {
 
 function getFpmList() {
     return ls(env.PHPFPM_REMILIST).filter((f) => f.match(isDebian ? /\d\.\d/ : /php\d\d/));
+}
+
+function printJson(/** @type {any} */ s) {
+    process.stdout.write(JSON.stringify(s));
+    return exit(0);
+}
+
+function printText(/** @type {string} */ s) {
+    process.stdout.write(s);
+    return exit(0);
 }
 
 function isDfFull(/** @type {string} */ df, /** @type {number} */ limit) {
@@ -162,8 +170,7 @@ switch (cli.args.shift()) {
     case 'PASSENGERLOG_GET':
         arg = cli.args.shift();
         var n = parseInt(cli.args.shift());
-        console.log(exec(`grep -w "\\(^App\\|process\\) \\(${arg}\\)" "${env.PASSENGERLOG_PATH}"`).tail({ '-n': n }).stdout);
-        exit(0);
+        printText(exec(`grep -w "\\(^App\\|process\\) \\(${arg}\\)" "${env.PASSENGERLOG_PATH}"`).tail({ '-n': n }).stdout);
     case 'FILE_GET':
         fixOwner(env.FILE_TMP);
         arg = cli.args.shift();
@@ -237,8 +244,7 @@ switch (cli.args.shift()) {
         exit(0);
     case 'REDIS_GETUSER':
         arg = cli.args.shift();
-        console.log(cat(env.REDIS_ACLMAP).grep('^' + arg + ':').toString());
-        exit(0);
+        printText(cat(env.REDIS_ACLMAP).grep('^' + arg + ':').toString());
     case 'REDIS_GET':
         fixOwner(env.REDIS_ACLTMP);
         arg = cli.args.shift();
@@ -249,8 +255,7 @@ switch (cli.args.shift()) {
         exit(0);
     case 'PORTS_LIST':
         arg = cli.args.shift();
-        console.log(cat(env.PORTS_PATH).toString());
-        exit(0);
+        printText(cat(env.PORTS_PATH).toString());
     case 'PORTS_GET':
         fixOwner(env.PORTS_TMP);
         arg = cli.args.shift();
@@ -415,13 +420,12 @@ switch (cli.args.shift()) {
         var exitcode = 0;
         if (statutes.some((s) => s === 'failed') || storagefull)
             exitcode = 1;
-        ShellString(JSON.stringify({
+        printJson({
             status: exitcode === 0 ? 'OK' : 'ERROR',
             statuses: Object.fromEntries(services.map((k, i) => [k, statutes[i]])),
             storagefull,
             timestamp: Date.now(),
-        })).to(env.SHELLCHECK_TMP);
-        exit(0);
+        });
     case 'SHELL_TEST':
         var nginx = exec(`${env.NGINX_BIN} -t`, { silent: true });
         var fpmlist = getFpmList();
@@ -450,7 +454,7 @@ switch (cli.args.shift()) {
                 exitcode = 1
             }
         }
-        ShellString(JSON.stringify({
+        printJson({
             status: exitcode === 0 ? 'OK' : 'ERROR',
             codes: {
                 nginx: nginx.code,
@@ -470,8 +474,7 @@ switch (cli.args.shift()) {
                 fpms: Object.fromEntries(fpmlist.map((_, i) => [fpmlist[i], fpms[i].stderr.trimEnd().split('\n').filter(x => !x.includes('test is successful'))])),
             },
             timestamp: Date.now(),
-        })).to(env.SHELLTEST_TMP);
-        exit(0);
+        });
     default:
         console.error(`Unknown Mode`);
         exit(1);

@@ -1,12 +1,10 @@
-import { cat, executeLock, spawnSudoUtil } from "../util.js";
+import { cat, executeLock, getUid, spawnSudoUtil, writeTo } from "../util.js";
 import path from "path";
 import { createClient } from "@redis/client";
-import { exec } from "child_process";
-import { ShellString } from "shelljs";
 
 const tmpFile = path.join(process.cwd(), "/.tmp/redis-acl");
 
-const aclSetUser = (user, pass) =>
+const aclSetUser = (/** @type {string} */ user, /** @type {string} */ pass) =>
   `on >${pass} ~${user}:* &${user}:* sanitize-payload ` +
   `-@all +@connection +@read +@write +@scripting +@keyspace -KEYS ` +
   `+@transaction +@geo +@hash +@set +@sortedset +@bitmap +@pubsub ` +
@@ -35,21 +33,6 @@ return #keys
 
 class RedisExecutor {
   /**
-   * @param {string} user
-   * @returns {Promise<string>}
-   */
-  async getUid(user) {
-    return await new Promise((resolve, reject) => {
-      exec(`id -u ${user}`, (error, stdout, stderr) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve(stdout.toString().trim());
-      });
-    });
-  }
-  /**
    * @param {string} name
    */
   checkNameValid(name) {
@@ -71,7 +54,7 @@ class RedisExecutor {
    * @param {string} user
    */
   async show(user) {
-    let uid = await this.getUid(user);
+    let uid = await getUid(user);
     let result = await spawnSudoUtil("REDIS_GETUSER", [uid]);
     return result.stdout
       .trim()
@@ -87,10 +70,10 @@ class RedisExecutor {
   async add(user, name, passRef) {
     this.checkNameValid(name);
     let redCon = await this.getClient();
-    const uid = await this.getUid(user);
+    const uid = await getUid(user);
     return await executeLock("redis", async () => {
       await spawnSudoUtil("REDIS_GET", []);
-      var lines = cat(tmpFile).trim().split("\n");
+      var lines = (await cat(tmpFile)).trim().split("\n");
       var line = lines.find((e) => {
         const parts = e.split(":");
         return parts.length >= 2 && parts[1] == name;
@@ -109,7 +92,7 @@ class RedisExecutor {
       const pass = await redCon.aclGenPass();
       lines.push([uid, name, pass].join(":"));
       await redCon.aclSetUser(name, aclSetUser(name, pass).split(" "));
-      ShellString(lines.join("\n") + "\n").to(tmpFile);
+      await writeTo(tmpFile, lines.join("\n") + "\n");
       await spawnSudoUtil("REDIS_SET", []);
       await redCon.aclSave();
       passRef.pass = pass;
@@ -123,10 +106,10 @@ class RedisExecutor {
   async del(user, name) {
     this.checkNameValid(name);
     let redCon = await this.getClient();
-    const uid = await this.getUid(user);
+    const uid = await getUid(user);
     return await executeLock("redis", async () => {
       await spawnSudoUtil("REDIS_GET", []);
-      var lines = cat(tmpFile).trim().split("\n");
+      var lines = (await cat(tmpFile)).trim().split("\n");
       var exists = lines.findIndex((e) => {
         const parts = e.split(":");
         if (parts.length < 2) {
@@ -139,10 +122,10 @@ class RedisExecutor {
       }
       lines.splice(exists, 1);
       await redCon.aclDelUser(name);
-      ShellString(lines.join("\n") + "\n").to(tmpFile);
+      await writeTo(tmpFile, lines.join("\n") + "\n");
       await spawnSudoUtil("REDIS_SET", []);
       await redCon.aclSave();
-      return  "Database " + name + " dropped";
+      return "Database " + name + " dropped";
     });
   }
 
@@ -168,10 +151,10 @@ class RedisExecutor {
   async passwd(user, name, passRef) {
     this.checkNameValid(name);
     let redCon = await this.getClient();
-    const uid = await this.getUid(user);
+    const uid = await getUid(user);
     return await executeLock("redis", async () => {
       await spawnSudoUtil("REDIS_GET", []);
-      var lines = cat(tmpFile).trim().split("\n");
+      var lines = (await cat(tmpFile)).trim().split("\n");
       var exists = lines.findIndex((e) => {
         const parts = e.split(":");
         if (parts.length != 2) {
@@ -185,7 +168,7 @@ class RedisExecutor {
       const lineSplit = lines[exists].split(":");
       const pass = await redCon.aclGenPass();
       lineSplit[2] = pass;
-      ShellString(lines.join("\n") + "\n").to(tmpFile);
+      await writeTo(tmpFile, lines.join("\n") + "\n");
       await spawnSudoUtil("REDIS_SET", []);
       await redCon.aclSetUser(name, ["nopass", ">" + pass]);
       await redCon.aclSave();

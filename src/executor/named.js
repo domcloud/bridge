@@ -22,7 +22,7 @@ class NamedExecutor {
     async show(zone) {
         return await executeLock('named', async () => {
             await spawnSudoUtil('NAMED_GET', [zone]);
-            const file = cat(tmpFile);
+            const file = await cat(tmpFile);
             return {
                 ...parseNS(file),
                 raw: file
@@ -39,13 +39,13 @@ class NamedExecutor {
             if (!Array.isArray(mods)) {
                 mods = [mods];
             }
-            var file = parseNS(cat(tmpFile));
+            var file = parseNS(await cat(tmpFile));
             var changecount = editNS(file, mods, { zone });
             if (changecount === 0) {
                 return "Done unchanged";
             }
             var result = generateNS(file);
-            writeTo(tmpFile, result);
+            await writeTo(tmpFile, result);
             await spawnSudoUtil('NAMED_SET', ["" + zone]);
             return `Done updating ${changecount} records\n${result}`;
         });

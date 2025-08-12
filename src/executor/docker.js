@@ -1,18 +1,17 @@
 import {
   cat,
   executeLock,
+  getUid,
   spawnSudoUtil,
-  splitLimit,
+  writeTo,
 } from '../util.js';
 import { existsSync } from 'fs';
 import { nginxExec } from './nginx.js';
 import path from 'path';
 import * as yaml from 'yaml';
-import { ShellString } from 'shelljs';
-import { exec } from 'child_process';
+import { portmanExec } from './portman.js';
 
 const composeTmpFile = path.join(process.cwd(), '/.tmp/file')
-const portsTmpFile = path.join(process.cwd(), '/.tmp/ports')
 const standardPortRegex = /^(\$\{?\w+\}?|\d+):(\$\{?\w+\}?|\d+)$/;
 const complexPortRegex = /^127\.0\.0\.1:(\$\{?\w+\}?|\d+):(\$\{?\w+\}?|\d+)$/;
 
@@ -22,54 +21,6 @@ class DockerExecutor {
     if (process.env.LOGINLINGERDIR) {
       this.LOGINLINGERDIR = process.env.LOGINLINGERDIR;
     }
-  }
-  /**
-   * @param {string} user
-   * @returns {Promise<string>}
-   */
-  async getUid(user) {
-    return await new Promise((resolve, reject) => {
-      exec(`id -u ${user}`, (error, stdout, stderr) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve(stdout.toString().trim());
-      });
-    });
-  }
-  async listPorts() {
-    let result = await spawnSudoUtil("PORTS_LIST");
-    return result.stdout
-      .trim()
-      .split("\n")
-      .filter(x => x)
-      .map((x) => splitLimit(x, ":", 2));
-  }
-  /**
-   * @param {string} uid
-   * @param {number[]} ports
-   */
-  async writePorts(uid, ports) {
-    return await executeLock("ports", async () => {
-      await spawnSudoUtil("PORTS_GET", []);
-      var lines = cat(portsTmpFile).trim().split("\n");
-      let changed = false;
-      for (const port of ports) {
-        const findLine = uid + ":" + port;
-        if (lines.findIndex(x => x == findLine) == -1) {
-          lines.push(findLine);
-          changed = true;
-        }
-      }
-      if (changed) {
-        ShellString(lines.join("\n") + "\n").to(portsTmpFile);
-        await spawnSudoUtil("PORTS_SET", []);
-        return "Ports allocation added";
-      } else {
-        return "Ports allocation unchanged";
-      }
-    });
   }
   /**
    * @param {string} user
@@ -121,8 +72,8 @@ class DockerExecutor {
     const nginx = nginxExec.extractInfo(nginxNode, domain);
     let nginxChanged = false;
     let portsChanged = false;
-    let ports = await this.listPorts();
-    let uid = await this.getUid(username);
+    let ports = await portmanExec.listPorts();
+    let uid = await getUid(username);
     let availablePorts = ports.filter(x => x[0] == uid).map(x => x[1]);
     /**
      * @type {number[]}
@@ -233,7 +184,7 @@ class DockerExecutor {
       nginxStatus = "Done unchanged";
     }
     if (portsChanged) {
-      await this.writePorts(uid, exposedPorts.filter(x => x < 30000));
+      await portmanExec.writePorts(uid, exposedPorts.filter(x => x < 30000));
     }
     return [services, nginxStatus];
   }
@@ -261,12 +212,9 @@ class DockerExecutor {
       }
       filepath = path.join(home, services);
       // cat from file
-      composeObject = yaml.parse(await executeLock('file', () => {
-        return new Promise((resolve, reject) => {
-          spawnSudoUtil('FILE_GET', [username, filepath]).then(() => {
-            resolve(cat(composeTmpFile));
-          }).catch(reject);
-        });
+      composeObject = yaml.parse(await executeLock('file', async () => {
+        await spawnSudoUtil('FILE_GET', [username, filepath]);
+        return await cat(composeTmpFile);
       }));
     } else {
       composeObject.services = services;
@@ -293,7 +241,7 @@ class DockerExecutor {
     }
     let composeFile = yaml.stringify(composeObject);
     await executeLock('file', () => {
-      ShellString(composeFile).to(composeTmpFile)
+      writeTo(composeTmpFile, composeFile);
       return spawnSudoUtil('FILE_SET', [username, filepath]);
     });
     return composeFile;

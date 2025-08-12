@@ -3,9 +3,9 @@ import {
     nftablesExec as executor
 } from '../executor/nftables.js';
 import {
-    checkPost
+    checkPost,
+    getUid
 } from '../util.js';
-import shelljs from 'shelljs';
 
 export default function () {
     var router = express.Router();
@@ -17,8 +17,7 @@ export default function () {
                 if (user.match(/[^\w.-]/)) {
                     throw new Error("invalid username");
                 }
-                const id = shelljs.exec("id -u " + user).stdout.trim();
-                res.json(executor.getByUser(p, user, id));
+                res.json(executor.getByUser(p, user, await getUid(user)));
                 return;
             }
             res.json(p);
@@ -32,8 +31,7 @@ export default function () {
             if (user.match(/[^\w.-]/)) {
                 throw new Error("invalid username");
             }
-            const id = shelljs.exec("id -u " + user).stdout.trim();
-            res.json(await executor.setAddUser(user, id));
+            res.json(await executor.setAddUser(user, await getUid(user)));
         } catch (error) {
             next(error);
         }
@@ -44,8 +42,7 @@ export default function () {
             if (user.match(/[^\w.-]/)) {
                 throw new Error("invalid username");
             }
-            const id = shelljs.exec("id -u " + user).stdout.trim();
-            res.json(await executor.setDelUser(user, id));
+            res.json(await executor.setDelUser(user, await getUid(user)));
         } catch (error) {
             next(error);
         }

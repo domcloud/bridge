@@ -22,7 +22,7 @@ class VirtualminExecutor {
         if (process.env.NODE_ENV === 'development')
             r = {
                 code: 0,
-                stdout: cat('./test/info'),
+                stdout: await cat('./test/info'),
                 stderr: '',
             }
         if (r.code === 255)
@@ -45,7 +45,7 @@ class VirtualminExecutor {
         if (process.env.NODE_ENV === 'development')
             r = {
                 code: 0,
-                stdout: cat('./test/info'),
+                stdout: await cat('./test/info'),
                 stderr: '',
             }
         if (r.code === 255)
@@ -80,7 +80,7 @@ class VirtualminExecutor {
         if (process.env.NODE_ENV === 'development')
             r = {
                 code: 0,
-                stdout: cat('./test/bandwidth'),
+                stdout: await cat('./test/bandwidth'),
                 stderr: '',
             }
         if (r.code === 255)
@@ -121,7 +121,7 @@ class VirtualminExecutor {
         if (process.env.NODE_ENV === 'development')
             r = {
                 code: 0,
-                stdout: cat('./test/database'),
+                stdout: await cat('./test/database'),
                 stderr: '',
             }
         if (r.code === 255)
@@ -144,7 +144,7 @@ class VirtualminExecutor {
         if (process.env.NODE_ENV === 'development')
             r = {
                 code: 0,
-                stdout: cat('./test/user'),
+                stdout: await cat('./test/user'),
                 stderr: '',
             }
         if (r.code === 255)
@@ -222,33 +222,27 @@ class VirtualminExecutor {
      * @param {{ [s: string]: string; }} props
      */
     async pushVirtualServerConfig(id, props) {
-        return await executeLock('virtual-server', () => {
-            return new Promise((resolve, reject) => {
-                spawnSudoUtil('VIRTUAL_SERVER_GET', [id]).then(() => {
-                    const fileConf = cat(tmpFile);
-                    const config = fileConf.trimEnd().split("\n");
-                    for (const [key, value] of Object.entries(props)) {
-                        let i = config.findIndex(x => x.startsWith(key + '='));
-                        if (i >= 0) {
-                            config[i] = key + '=' + value;
-                        } else {
-                            config.push(key + '=' + value)
-                        }
-                    }
-                    config.push('');
-                    const outConf = config.join("\n");
-                    if (outConf != fileConf) {
-                        writeTo(tmpFile, outConf);
-                        spawnSudoUtil('VIRTUAL_SERVER_SET', [id]).then(() => {
-                            resolve("Done updated\n");
-                        }).catch((err) => {
-                            reject(err);
-                        })
-                    } else {
-                        resolve("Nothing changed\n");
-                    }
-                }).catch(reject);
-            });
+        return await executeLock('virtual-server', async () => {
+            await spawnSudoUtil('VIRTUAL_SERVER_GET', [id]);
+            const fileConf = await cat(tmpFile);
+            const config = fileConf.trimEnd().split("\n");
+            for (const [key, value] of Object.entries(props)) {
+                let i = config.findIndex(x => x.startsWith(key + '='));
+                if (i >= 0) {
+                    config[i] = key + '=' + value;
+                } else {
+                    config.push(key + '=' + value)
+                }
+            }
+            config.push('');
+            const outConf = config.join("\n");
+            if (outConf != fileConf) {
+                await writeTo(tmpFile, outConf);
+                await spawnSudoUtil('VIRTUAL_SERVER_SET', [id]);
+                return "Done updated\n";
+            } else {
+                return "Nothing changed\n";
+            }
         })
     }
 }
