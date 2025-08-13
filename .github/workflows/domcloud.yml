@@ -8,12 +8,12 @@ jobs:
   push:
     runs-on: ubuntu-latest
     steps:
-      - name: Invoke SGA deployment hook
+      - name: Invoke SGX deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: https://my.domcloud.co/api/githubdeploy
-          webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGA }}
-          webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGA }}
+          webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGX }}
+          webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGX }}
           data: >-
             {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
       - name: Invoke WDC deployment hook
@@ -62,13 +62,5 @@ jobs:
           webhook_url: https://my.domcloud.co/api/githubdeploy
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_MNZ }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_MNZ }}
-          data: >-
-            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
-      - name: Invoke SGN deployment hook
-        uses: distributhor/workflow-webhook@v3
-        env:
-          webhook_url: https://my.domcloud.co/api/githubdeploy
-          webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGN }}
-          webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGN }}
           data: >-
             {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
