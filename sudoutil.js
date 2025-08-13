@@ -180,6 +180,15 @@ switch (cli.args.shift()) {
         });
         new ShellString(fileGet.stdout.toString()).to(env.FILE_TMP);
         exit(fileGet.status);
+    case 'FILE_READ':
+        arg = cli.args.shift();
+        var fileGet = spawnSync(env.BASH_SUDO, ['-u', arg, '-i', 'cat', cli.args[0]], {
+            timeout: 10000,
+            stdio: ['inherit', 'pipe', 'inherit']
+        });
+        if (fileGet.status != 0)
+            exit(fileGet.status);
+        printText(fileGet.stdout.toString());
     case 'FILE_SET':
         arg = cli.args.shift();
         var fileSet = spawnSync(env.BASH_SUDO, ['-u', arg, '-i', 'tee', cli.args[0]], {

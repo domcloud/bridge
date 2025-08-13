@@ -36,7 +36,7 @@ class PortmanExecutor {
       if (port && user) {
         return [user, port, listens.has(port)]
       } else {
-        return null;
+        return [x[0], x[1], listens.has(port)]
       }
     }).filter(x => x);
   }

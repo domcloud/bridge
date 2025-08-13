@@ -126,7 +126,7 @@ export default function () {
             res.status(204).end();
             return;
         }
-        let spawn = await spawnSudoUtil('FILE_GET', ["root", webminStat]);
+        let spawn = await spawnSudoUtil('FILE_READ', ["root", webminStat]);
         res.setHeader('content-type', 'application/json').send(spawn.stdout);
     });
     router.get('/ports', async function (req, res, next) {
