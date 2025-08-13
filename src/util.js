@@ -558,7 +558,7 @@ async function spawnSync(prog, arg) {
 export async function getListeningPorts() {
     const output = await spawnSync('ss', ['-ltn4']);
     /**
-     * @type {Set<number>}
+     * @type {Set<string>}
      */
     const ports = new Set();
 
@@ -566,8 +566,7 @@ export async function getListeningPorts() {
         const parts = line.trim().split(/\s+/);
         if (parts.length >= 4) {
             const localAddr = parts[3];
-            const [ip, portStr] = localAddr.split(':');
-            const port = parseInt(portStr, 10);
+            const [ip, port] = localAddr.split(':');
 
             if (!isNaN(port) && (ip === '0.0.0.0' || ip === '127.0.0.1')) {
                 ports.add(port);
@@ -586,8 +585,8 @@ export async function getUnameMap() {
         if (!line || line.startsWith('#')) return;
         const fields = line.split(':');
         const uname = fields[0];
-        const uid = parseInt(fields[2], 10);
-        if (!isNaN(uid)) {
+        const uid = fields[2];
+        if (uid && uname) {
             uidToUser.set(uid, uname);
         }
     });

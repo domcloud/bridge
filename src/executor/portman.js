@@ -31,14 +31,8 @@ class PortmanExecutor {
     let listens = await getListeningPorts();
 
     return ports.map(x => {
-      var port = parseInt(x[1]);
-      var user = users.get(x[0]);
-      if (port && user) {
-        return [user, port, listens.has(port)]
-      } else {
-        return [x[0], x[1], listens.has(port)]
-      }
-    }).filter(x => x);
+      return [users.get(x[0]) || x[0], x[1], listens.has(x[1])]
+    });
   }
   /**
    * @param {string} uid
