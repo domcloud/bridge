@@ -510,8 +510,16 @@ export default async function runConfig(payload) {
                         await writeLog(await dockerExec.enableDocker(domaindata['Username']));
                         await sshExec(`mkdir -p ~/.config/docker  ~/.config/systemd/user/docker.service.d`, false);
                         await sshExec(`[[ -z $DOCKER_HOST ]] && echo "export DOCKER_HOST=unix:///run/user/\\$(id -u)/docker.sock" >>  ~/.bashrc`);
-                        await sshExec(`printf '{\\n\\t"exec-opts": ["native.cgroupdriver=cgroupfs"],\\n\\t"host-gateway-ip": "10.0.2.2"\\n}\\n' > ~/.config/docker/daemon.json`);
-                        await sshExec(`printf '[Service]\\nEnvironment="DOCKERD_ROOTLESS_ROOTLESSKIT_NET=pasta"\\nEnvironment="DOCKERD_ROOTLESS_ROOTLESSKIT_PORT_DRIVER=implicit"\\nEnvironment="DOCKERD_ROOTLESS_ROOTLESSKIT_DISABLE_HOST_LOOPBACK=false"\\n' > ~/.config/systemd/user/docker.service.d/override.conf`);
+                        await sshExec(`printf '{\\n\\t${[
+                            `"exec-opts": ["native.cgroupdriver=cgroupfs"]`,
+                            `"host-gateway-ip": "10.0.2.2"`,
+                            `"dns": ["1.1.1.1", "1.0.0.1"]"`,
+                        ].join(',\\n\\t')}\\n}\\n' > ~/.config/docker/daemon.json`);
+                        await sshExec(`printf '${[`[Service]`,
+                            `Environment="DOCKERD_ROOTLESS_ROOTLESSKIT_NET=pasta"`,
+                            `Environment="DOCKERD_ROOTLESS_ROOTLESSKIT_PORT_DRIVER=implicit"`,
+                            `Environment="DOCKERD_ROOTLESS_ROOTLESSKIT_DISABLE_HOST_LOOPBACK=false"`
+                        ].join('\\n')}\\n' > ~/.config/systemd/user/docker.service.d/override.conf`);
                         await sshExec(`dockerd-rootless-setuptool.sh install --skip-iptables`);
                         await sshExec(`[[ -z $DOCKER_HOST ]] || (systemctl daemon-reload --user; systemctl restart docker --user)`);
                         await sshExec(`export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`, false);
