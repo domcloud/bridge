@@ -39,7 +39,7 @@ class NginxExecutor {
                 } else if (key === "root" || key == "alias") {
                     node._add(key, path.join(`/home/${info.user}`, config[key]));
                 } else if (key === "proxy_pass") {
-                    if (/^http:\/\/127\.\d+\.\d+\.\d+:\d+(\$\w+|\/.*)?$/.test(config[key])) {
+                    if (/^http:\/\/(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|\[::1\]):\d+(\$\w+|\/.*)?$/.test(config[key])) {
                         node._add(key, config[key]);
                     }
                 } else if (key == "limit_except") {
