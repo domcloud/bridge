@@ -22,7 +22,7 @@
     "@domcloud/zone-editor": "^0.10.1",
     "@redis/client": "^1.6.0",
     "cli": "^1.0.1",
-    "dotenv": "^17.2.3",
+    "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "fast-xml-parser": "^5.3.2",
     "graceful-fs": "^4.2.11",
