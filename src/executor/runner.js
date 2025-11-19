@@ -513,7 +513,7 @@ export default async function runConfig(payload) {
                         await sshExec(`printf '{\\n\\t${[
                             `"exec-opts": ["native.cgroupdriver=cgroupfs"]`,
                             `"host-gateway-ip": "10.0.2.2"`,
-                            `"dns": ["1.1.1.1", "1.0.0.1"]"`,
+                            `"dns": ["1.1.1.1", "1.0.0.1"]`,
                         ].join(',\\n\\t')}\\n}\\n' > ~/.config/docker/daemon.json`);
                         await sshExec(`printf '${[`[Service]`,
                             `Environment="DOCKERD_ROOTLESS_ROOTLESSKIT_NET=pasta"`,
