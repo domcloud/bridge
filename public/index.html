@@ -21,23 +21,32 @@
             text-decoration: none;
         }
 
-        #swagger {
+        #links {
             position: absolute;
             font-size: 0.8rem;
             left: 2em;
             bottom: 2em;
         }
 
-        #swagger a {
+        #links a {
             color: grey;
+            margin: 0 0.5em;
         }
     </style>
 </head>
 
 <body>
     <p id="stat">Checking this server's health....</p>
-    <p id="swagger"><a href="/swagger/">Open Swagger</a></p>
+    <p id="links">
+        <a href="/swagger/">Swagger</a>
+        <a href="/filestash/">Filestash</a>
+        <a href="/phpmyadmin/">PhpMyAdmin</a>
+        <a href="/phppgadmin/">PhpPgAdmin</a>
+        <a href="/ssh/localhost/">WebSSH</a>
+        <a href=":2443" id="webmin">Webmin</a>
+    </p>
     <script>
+        document.getElementById('webmin').href = location.origin + ':2443';
         var statTxt = document.getElementById('stat');
         fetch('/status/check')
             .then(res => res.json())
