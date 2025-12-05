@@ -13,7 +13,7 @@ for RECORD_TYPE in A AAAA; do
     if [[ "$line" == 4:* ]]; then
       domain="${line#4:}"
       [[ "$RECORD_TYPE" != "A" ]] && continue  # skip AAAA if 4: prefix
-    else if [[ "$line" == 6:* ]]; then
+    elif [[ "$line" == 6:* ]]; then
       domain="${line#6:}"
       [[ "$RECORD_TYPE" != "AAAA" ]] && continue  # skip A if 6: prefix
     else
