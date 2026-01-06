@@ -28,6 +28,13 @@ class VirtualminExecutor {
         if (r.code === 255)
             throw r;
         let result = extractYaml(r.stdout);
+        // workaround postgres bug
+        for (const domainName of Object.keys(result)) {
+            const pgVal = result[domainName]['Password for postgres'];
+            if (/^'.+'$/.test(pgVal)) {
+                result[domainName]['Password for postgres'] = pgVal.substring(1, pgVal.length - 1);
+            }
+        }
         if (typeof domain === 'string') {
             return result[domain];
         }

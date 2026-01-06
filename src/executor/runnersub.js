@@ -355,7 +355,7 @@ export async function runConfigSubdomain(config, domaindata, subdomain, sshExec,
                 break;
             case 'php':
                 if (value == 'lts' || value == 'latest') {
-                    value = getLtsPhp();
+                    value = getLtsPhp('');
                 } else if (value == 'off') {
                     value = 'off';
                 } else if (!value.includes('.')) {
