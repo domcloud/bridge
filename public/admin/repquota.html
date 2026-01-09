@@ -48,6 +48,7 @@
         <h3>Paste repquota Output</h3>
         <textarea v-model="rawInput" placeholder="Paste results here..."></textarea>
         <div style="text-align: right;">
+            <button @click="getQuota" style="border: none; padding: 12px 24px;">Fetch from Server</button>
             <button @click="parseQuota" style="background: #3182ce; color: white; border: none; padding: 12px 24px;">Analyze Storage</button>
         </div>
       </div>
@@ -95,6 +96,12 @@
         };
       },
       methods: {
+        async getQuota() {
+          try {
+            const resp = await fetch('/status/repquota');
+            this.rawInput = await resp.text();
+          } catch(e) { alert("Failed to fetch: " + e); }
+        },
         formatSize(kb) {
           if (kb === 0) return '0 KB';
           if (kb < 1024) return kb + ' KB';
