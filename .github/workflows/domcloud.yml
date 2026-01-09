@@ -15,7 +15,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGX }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGX }}
           data: >-
-            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
+            {"commands":["git reset --hard && git pull","npm ci","npm test","sudo systemctl restart bridge"]}
       - name: Invoke WDC deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -23,7 +23,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_WDC }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_WDC }}
           data: >-
-            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
+            {"commands":["git reset --hard && git pull","npm ci","npm test","sudo systemctl restart bridge"]}
       - name: Invoke NUE deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -31,7 +31,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_NUE }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_NUE }}
           data: >-
-            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
+            {"commands":["git reset --hard && git pull","npm ci","npm test","sudo systemctl restart bridge"]}
       - name: Invoke OSK deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -39,7 +39,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_OSK }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_OSK }}
           data: >-
-            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
+            {"commands":["git reset --hard && git pull","npm ci","npm test","sudo systemctl restart bridge"]}
       - name: Invoke SAO deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -47,7 +47,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_SAO }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_SAO }}
           data: >-
-            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
+            {"commands":["git reset --hard && git pull","npm ci","npm test","sudo systemctl restart bridge"]}
       - name: Invoke SGP deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -55,7 +55,7 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_SGP }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_SGP }}
           data: >-
-            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
+            {"commands":["git reset --hard && git pull","npm ci","npm test","sudo systemctl restart bridge"]}
       - name: Invoke MNZ deployment hook
         uses: distributhor/workflow-webhook@v3
         env:
@@ -63,4 +63,4 @@ jobs:
           webhook_secret: ${{ secrets.WEBHOOK_SECRET_MNZ }}
           webhook_auth: ${{ secrets.WEBHOOK_AUTH_MNZ }}
           data: >-
-            {"commands":["git pull","npm i","npm test","sudo systemctl restart bridge"]}
+            {"commands":["git reset --hard && git pull","npm ci","npm test","sudo systemctl restart bridge"]}
