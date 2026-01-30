@@ -35,7 +35,7 @@ const {
     ShellString,
 } = shelljs;
 
-const isDebian = existsSync('/etc/lsb-release');
+const isDebian = existsSync('/etc/debian_version');
 
 const env = Object.assign({}, {
     BASH_PATH: '/bin/bash',
