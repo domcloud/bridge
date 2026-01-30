@@ -264,6 +264,15 @@
 const { createApp, ref, reactive, computed, onMounted } = Vue;
 
 const apiDef = [
+    { method: 'POST', path: '/runner', tags: ['Runner'], summary: 'Run Config', params: [{name: 'domain', required: true, schema: {type: 'string'}}, {name: 'sandbox', required: false, schema: {type: 'integer', enum: [0, 1]}}], hasBody: true, bodyType: 'object' },
+    { method: 'POST', path: '/runner/cmd', tags: ['Runner'], summary: 'Run Shell Cmd', hasBody: false, params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'cmd', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/create-link', tags: ['Virtualmin'], summary: 'Create Login Link', params: [{name: 'user', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-domains', tags: ['Virtualmin'], summary: 'List Specific Domains', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-subdomains', tags: ['Virtualmin'], summary: 'List Subdomains', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-all-domains', tags: ['Virtualmin'], summary: 'List All Domains', params: [] },
+    { method: 'GET', path: '/virtualmin/list-bandwidth', tags: ['Virtualmin'], summary: 'Bandwidth Info', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-databases', tags: ['Virtualmin'], summary: 'List Databases', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-users', tags: ['Virtualmin'], summary: 'List Users', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
     { method: 'GET', path: '/logman/get', tags: ['Logman'], summary: 'Get logs for user', params: [ {name: 'dom', required: true, schema: {type: 'string'}}, {name: 'user', required: true, schema: {type: 'string'}}, {name: 'type', required: true, schema: {type: 'string', enum: ['access','error','php','proxfix','passenger']}}, {name: 'sub', required: false, schema: {type: 'string'}}, {name: 'n', required: false, schema: {type: 'integer', default: 100}} ] },
     { method: 'POST', path: '/named/resync', tags: ['Named'], summary: 'Resync zone', params: [{name: 'zone', required: true, schema: {type: 'string'}}] },
     { method: 'GET', path: '/named/show', tags: ['Named'], summary: 'Show zone', params: [{name: 'zone', required: true, schema: {type: 'string'}}] },
@@ -277,20 +286,11 @@ const apiDef = [
     { method: 'GET', path: '/redis/list', tags: ['Redis'], summary: 'List Redis DBs', params: [{name: 'user', required: true, schema: {type: 'string'}}] },
     { method: 'POST', path: '/redis/add', tags: ['Redis'], summary: 'Add Redis DB', params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'name', required: true, schema: {type: 'string'}}] },
     { method: 'POST', path: '/redis/del', tags: ['Redis'], summary: 'Delete Redis DB', params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'name', required: true, schema: {type: 'string'}}] },
-    { method: 'POST', path: '/runner', tags: ['Runner'], summary: 'Run Config', params: [{name: 'domain', required: true, schema: {type: 'string'}}, {name: 'sandbox', required: false, schema: {type: 'integer', enum: [0, 1]}}], hasBody: true, bodyType: 'object' },
-    { method: 'POST', path: '/runner/cmd', tags: ['Runner'], summary: 'Run Shell Cmd', hasBody: false, params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'cmd', required: true, schema: {type: 'string'}}] },
     { method: 'GET', path: '/status/about', tags: ['Status'], summary: 'About Info', params: [] },
     { method: 'GET', path: '/status/ping', tags: ['Status'], summary: 'Ping Daemon', params: [] },
     { method: 'GET', path: '/status/ip', tags: ['Status'], summary: 'Get Requester IP', params: [] },
     { method: 'GET', path: '/status/check', tags: ['Status'], summary: 'Check Status', params: [] },
     { method: 'GET', path: '/status/test', tags: ['Status'], summary: 'Test Config', params: [] },
-    { method: 'GET', path: '/virtualmin/create-link', tags: ['Virtualmin'], summary: 'Create Login Link', params: [{name: 'user', required: true, schema: {type: 'string'}}] },
-    { method: 'GET', path: '/virtualmin/list-domains', tags: ['Virtualmin'], summary: 'List Specific Domains', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
-    { method: 'GET', path: '/virtualmin/list-subdomains', tags: ['Virtualmin'], summary: 'List Subdomains', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
-    { method: 'GET', path: '/virtualmin/list-all-domains', tags: ['Virtualmin'], summary: 'List All Domains', params: [] },
-    { method: 'GET', path: '/virtualmin/list-bandwidth', tags: ['Virtualmin'], summary: 'Bandwidth Info', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
-    { method: 'GET', path: '/virtualmin/list-databases', tags: ['Virtualmin'], summary: 'List Databases', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
-    { method: 'GET', path: '/virtualmin/list-users', tags: ['Virtualmin'], summary: 'List Users', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
 ];
 
 createApp({
