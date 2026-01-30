@@ -539,7 +539,7 @@ createApp({
             const path = domainInfo.value['HTML directory'] || `/home/${user}/public_html`;
 
             // Copy password to clipboard
-            if (pass) {
+            if (pass && navigator.clipboard) {
                 navigator.clipboard.writeText(pass).catch(err => console.error('Copy failed', err));
             }
 
