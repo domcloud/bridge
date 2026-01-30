@@ -72,9 +72,29 @@
             <div class="vr mx-2 text-white opacity-25"></div>
             
             <div class="navbar-text text-light small d-none d-md-block">
-                <span v-if="sysInfo.version" class="me-3"><i class="bi bi-tag-fill me-1"></i>v{{ sysInfo.version }}</span>
-                <span v-if="sysInfo.ip" class="me-3"><i class="bi bi-hdd-network-fill me-1"></i>{{ sysInfo.ip }}</span>
-                <span v-if="sysInfo.status" class="badge" :class="sysInfo.status === 'OK' ? 'bg-success' : 'bg-danger'">{{ sysInfo.status }}</span>
+                <span v-if="sysInfo.version" class="me-3" title="Server Version">
+                    <i class="bi bi-tag-fill me-1"></i> v{{ sysInfo.version }}
+                </span>
+                
+                <span v-if="sysInfo.ip" class="me-3" title="Client IP">
+                    <i class="bi bi-geo-alt-fill me-1"></i> {{ sysInfo.ip }}
+                </span>
+
+                <span v-if="sysInfo.arch" class="me-3" title="System Architecture">
+                    <i class="bi bi-motherboard-fill me-1"></i> {{ sysInfo.arch }}
+                </span>
+
+                <span v-if="sysInfo.cpu" class="me-3" title="CPU Cores">
+                    <i class="bi bi-cpu-fill me-1"></i> {{ sysInfo.cpu }} Core
+                </span>
+
+                <span v-if="sysInfo.mem" class="me-3" title="Total Memory">
+                    <i class="bi bi-memory me-1"></i> {{ sysInfo.mem }} GB
+                </span>
+
+                <span v-if="sysInfo.status" class="badge" :class="sysInfo.status === 'OK' ? 'bg-success' : 'bg-danger'">
+                    {{ sysInfo.status }}
+                </span>
             </div>
 
             <div class="ms-auto d-flex align-items-center">
@@ -156,20 +176,30 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="d-flex gap-2 mb-3">
+                            <button @click="openVscode" class="btn btn-sm btn-outline-secondary" title="Copy Password & Open VSCode">
+                                <i class="bi bi-code-slash me-1"></i> VSCode
+                            </button>
 
-                        <details>
-                            <summary class="btn btn-sm btn-outline-secondary mb-2">Show Full Configuration</summary>
-                            <div class="table-responsive border rounded bg-white" style="max-height: 300px; overflow:auto;">
-                                <table class="table table-sm table-striped mb-0 small">
-                                    <tbody>
-                                        <tr v-for="(val, key) in domainInfo" :key="key">
-                                            <td class="fw-bold text-muted w-25">{{ key }}</td>
-                                            <td class="font-monospace text-break">{{ val }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </details>
+                            <button @click="openWebSsh" class="btn btn-sm btn-outline-secondary" title="Open Web Terminal">
+                                <i class="bi bi-terminal me-1"></i> WebSSH
+                            </button>
+
+                            <button @click="showConfig = !showConfig" class="btn btn-sm btn-outline-secondary ms-auto">
+                                <i class="bi" :class="showConfig ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i> Show Config
+                            </button>
+                        </div>
+
+                        <div v-if="showConfig" class="table-responsive border rounded bg-white" style="max-height: 300px; overflow:auto;">
+                            <table class="table table-sm table-striped mb-0 small">
+                                <tbody>
+                                    <tr v-for="(val, key) in domainInfo" :key="key">
+                                        <td class="fw-bold text-muted w-25">{{ key }}</td>
+                                        <td class="font-monospace text-break">{{ val }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -300,10 +330,18 @@ createApp({
             url: localStorage.getItem('dc_url') || window.location.origin
         });
         
-        const sysInfo = reactive({ ip: '', version: '', status: '' });
+        const sysInfo = reactive({ 
+            ip: '', 
+            version: '', 
+            status: '', 
+            arch: '', 
+            cpu: 0, 
+            mem: 0 
+        });
         const domains = ref([]);
         const domainFilter = ref('');
         const selectedDomain = ref('');
+        const showConfig = ref(false);
         
         // Domain Details State
         const domainInfo = ref(null);
@@ -344,6 +382,10 @@ createApp({
             return new Date(dateStr) < new Date(new Date().setMonth(new Date().getMonth() + 1));
         };
 
+        const getHostname = () => {
+            try { return new URL(auth.url).hostname; } catch(e) { return window.location.hostname; }
+        };
+
         // AUTH & INIT
         const login = async () => {
             isLoading.value = true;
@@ -378,7 +420,15 @@ createApp({
         const fetchSystemInfo = () => {
             const h = { 'Authorization': `Bearer ${auth.token}` };
             const base = getBaseUrl();
-            axios.get(`${base}/status/ip`, {headers:h}).then(r => sysInfo.ip = r.data.ip).catch(()=>{});
+            axios.get(`${base}/status/ip`, {headers:h}).then(r => {
+                sysInfo.ip = r.data.ip;
+                
+                if(r.data.granted) {
+                    sysInfo.arch = r.data.arch;
+                    sysInfo.cpu = r.data.cpu;
+                    sysInfo.mem = r.data.mem ? parseFloat(r.data.mem).toFixed(1) : 0;
+                }
+            }).catch(()=>{});
             axios.get(`${base}/status/about`, {headers:h}).then(r => sysInfo.version = r.data.version).catch(()=>{});
             axios.get(`${base}/status/check`, {headers:h}).then(r => sysInfo.status = 'OK').catch(()=> sysInfo.status = 'ERR');
         };
@@ -479,6 +529,55 @@ createApp({
             }
         };
 
+        const openVscode = () => {
+            if (!domainInfo.value) return;
+            
+            const user = domainInfo.value.Username;
+            const pass = domainInfo.value.Password;
+            const host = getHostname();
+            // Prefer explicit HTML directory, fallback to standard pattern
+            const path = domainInfo.value['HTML directory'] || `/home/${user}/public_html`;
+
+            // Copy password to clipboard
+            if (pass) {
+                navigator.clipboard.writeText(pass).catch(err => console.error('Copy failed', err));
+            }
+
+            // Open VSCode URI
+            window.open(`vscode://vscode-remote/ssh-remote+${user}@${host}${path}`);
+        };
+
+        const openWebSsh = () => {
+            if (!domainInfo.value) return;
+
+            const hostname = getHostname();
+            const targetUrl = `https://${hostname}/ssh/host/localhost`;
+            const user = domainInfo.value.Username;
+            const pass = domainInfo.value.Password;
+
+            // Create dynamic form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = targetUrl;
+            form.target = '_blank'; // Open in new tab
+
+            const addField = (name, val) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = val;
+                form.appendChild(input);
+            };
+
+            addField('username', user);
+            addField('userpassword', pass);
+            addField('fontFamily', "'NerdFontsSymbols Nerd Font', courier-new, courier, monospace");
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        };
+
         const formattedResponse = computed(() => {
             const r = apiResponse.value;
             if (!r) return '';
@@ -502,7 +601,7 @@ createApp({
             domainInfo, domainInfoLoading, activeUser, isSslExpiring,
             isAuthenticated, isLoading, loginError, login, logout, fetchDomains, selectDomain,
             groupedApis, currentEndpoint, openApi, formData, executeRequest, apiLoading, apiResponse,
-            getMethodClass, formattedResponse,
+            getMethodClass, formattedResponse, showConfig, openVscode, openWebSsh
         };
     }
 }).mount('#app');
