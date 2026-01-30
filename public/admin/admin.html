@@ -29,11 +29,12 @@
         
         .method-badge { font-size: 0.7rem; width: 50px; display: inline-block; text-align: center; margin-right: 5px; }
         
-        /* Modal/Console */
-        pre.console-output { background: #1e1e1e; color: #00ff9d; padding: 15px; border-radius: 6px; max-height: 400px; overflow: auto; font-size: 0.85rem; }
+        /* Info Cards */
+        .info-label { font-size: 0.75rem; text-transform: uppercase; color: #6c757d; font-weight: 600; letter-spacing: 0.5px; }
+        .info-value { font-size: 0.95rem; font-weight: 500; color: #212529; }
         
-        /* Loading Overlay */
-        .loading-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 10; }
+        /* Console */
+        pre.console-output { background: #1e1e1e; color: #00ff9d; padding: 15px; border-radius: 6px; max-height: 400px; overflow: auto; font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -101,20 +102,78 @@
                     <span class="text-truncate">{{ d }}</span>
                 </div>
             </div>
-            
-            <div class="mt-3 pt-3 border-top small text-muted">
-                <div v-if="selectedDomain">
-                    Active Context:<br>
-                    <strong class="text-dark">{{ selectedDomain }}</strong>
-                </div>
-                <div v-else>
-                    Select a domain to auto-fill API forms.
-                </div>
-            </div>
         </div>
 
         <div class="main-content">
             
+            <div v-if="selectedDomain" class="card shadow-sm mb-4 border-0">
+                <div class="card-body position-relative">
+                    <div v-if="domainInfoLoading" class="text-center py-4 text-muted">
+                        <span class="spinner-border spinner-border-sm me-2"></span> Loading domain details...
+                    </div>
+                    
+                    <div v-else-if="domainInfo">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h4 class="mb-1 d-flex align-items-center">
+                                    {{ selectedDomain }}
+                                    <a :href="domainInfo.URL" target="_blank" class="btn btn-link btn-sm ms-2 text-decoration-none"><i class="bi bi-box-arrow-up-right"></i></a>
+                                </h4>
+                                <span class="badge bg-light text-dark border">{{ domainInfo.Type }}</span>
+                                <span class="badge bg-light text-dark border ms-1">{{ domainInfo.Plan }}</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary fs-6">{{ activeUser }}</span>
+                                <div class="small text-muted mt-1">Username</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3 col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <div class="info-label">IP Address</div>
+                                    <div class="info-value font-monospace">{{ domainInfo['IP address']?.split(' ')[0] }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <div class="info-label">PHP Version</div>
+                                    <div class="info-value">{{ domainInfo['PHP version'] }} ({{ domainInfo['PHP execution mode'] }})</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <div class="info-label">Bandwidth</div>
+                                    <div class="info-value">{{ domainInfo['Bandwidth usage'] }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <div class="info-label">SSL Expiry</div>
+                                    <div class="info-value" :class="isSslExpiring(domainInfo['SSL cert expiry']) ? 'text-danger' : 'text-success'">
+                                        {{ domainInfo['SSL cert expiry']?.split(' ')[0] }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <details>
+                            <summary class="btn btn-sm btn-outline-secondary mb-2">Show Full Configuration</summary>
+                            <div class="table-responsive border rounded bg-white" style="max-height: 300px; overflow:auto;">
+                                <table class="table table-sm table-striped mb-0 small">
+                                    <tbody>
+                                        <tr v-for="(val, key) in domainInfo" :key="key">
+                                            <td class="fw-bold text-muted w-25">{{ key }}</td>
+                                            <td class="font-monospace text-break">{{ val }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+
             <div v-if="currentEndpoint" class="card shadow-sm mb-4 border-primary">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <div>
@@ -170,7 +229,7 @@
                         <div class="col-md-7">
                             <h6 class="small fw-bold text-uppercase text-muted mb-2">Response</h6>
                             <div class="position-relative h-100">
-                                <pre class="console-output h-100 m-0" v-if="apiResponse">{{ apiResponse }}</pre>
+                                <pre class="console-output h-100 m-0" v-if="apiResponse">{{ formattedResponse }}</pre>
                                 <div v-else class="text-center text-muted py-5 small bg-light rounded h-100 d-flex align-items-center justify-content-center">
                                     Waiting for execution...
                                 </div>
@@ -184,7 +243,7 @@
                 <h5 class="text-secondary border-bottom pb-2 mb-3">{{ group }}</h5>
                 <div class="row g-3">
                     <div v-for="api in apis" :key="api.id" class="col-md-6 col-lg-4 col-xl-3">
-                        <div class="card api-card" @click="openApi(api)">
+                        <div class="card api-card" @click="api && openApi(api)">
                             <div class="card-body p-3">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="badge method-badge" :class="getMethodClass(api.method)">{{ api.method }}</span>
@@ -204,9 +263,8 @@
 <script>
 const { createApp, ref, reactive, computed, onMounted } = Vue;
 
-// --- API DEFINITION (From your JSON) ---
 const apiDef = [
-    { method: 'GET', path: '/logman/get', tags: ['Logman'], summary: 'Get logs for user', params: [ {name: 'user', required: true, schema: {type: 'string'}}, {name: 'type', required: true, schema: {type: 'string', enum: ['access','error','php','proxfix','passenger']}}, {name: 'sub', required: false, schema: {type: 'string'}}, {name: 'n', required: false, schema: {type: 'integer', default: 100}} ] },
+    { method: 'GET', path: '/logman/get', tags: ['Logman'], summary: 'Get logs for user', params: [ {name: 'dom', required: true, schema: {type: 'string'}}, {name: 'user', required: true, schema: {type: 'string'}}, {name: 'type', required: true, schema: {type: 'string', enum: ['access','error','php','proxfix','passenger']}}, {name: 'sub', required: false, schema: {type: 'string'}}, {name: 'n', required: false, schema: {type: 'integer', default: 100}} ] },
     { method: 'POST', path: '/named/resync', tags: ['Named'], summary: 'Resync zone', params: [{name: 'zone', required: true, schema: {type: 'string'}}] },
     { method: 'GET', path: '/named/show', tags: ['Named'], summary: 'Show zone', params: [{name: 'zone', required: true, schema: {type: 'string'}}] },
     { method: 'POST', path: '/named/modify', tags: ['Named'], summary: 'Modify zone', params: [{name: 'zone', required: true, schema: {type: 'string'}}], hasBody: true, bodyType: 'array' },
@@ -220,7 +278,7 @@ const apiDef = [
     { method: 'POST', path: '/redis/add', tags: ['Redis'], summary: 'Add Redis DB', params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'name', required: true, schema: {type: 'string'}}] },
     { method: 'POST', path: '/redis/del', tags: ['Redis'], summary: 'Delete Redis DB', params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'name', required: true, schema: {type: 'string'}}] },
     { method: 'POST', path: '/runner', tags: ['Runner'], summary: 'Run Config', params: [{name: 'domain', required: true, schema: {type: 'string'}}, {name: 'sandbox', required: false, schema: {type: 'integer', enum: [0, 1]}}], hasBody: true, bodyType: 'object' },
-    { method: 'POST', path: '/runner/cmd', tags: ['Runner'], summary: 'Run Shell Cmd', params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'cmd', required: true, schema: {type: 'string'}}] },
+    { method: 'POST', path: '/runner/cmd', tags: ['Runner'], summary: 'Run Shell Cmd', hasBody: false, params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'cmd', required: true, schema: {type: 'string'}}] },
     { method: 'GET', path: '/status/about', tags: ['Status'], summary: 'About Info', params: [] },
     { method: 'GET', path: '/status/ping', tags: ['Status'], summary: 'Ping Daemon', params: [] },
     { method: 'GET', path: '/status/ip', tags: ['Status'], summary: 'Get Requester IP', params: [] },
@@ -246,6 +304,11 @@ createApp({
         const domains = ref([]);
         const domainFilter = ref('');
         const selectedDomain = ref('');
+        
+        // Domain Details State
+        const domainInfo = ref(null);
+        const domainInfoLoading = ref(false);
+        const activeUser = ref('');
         
         const isAuthenticated = ref(false);
         const isLoading = ref(false);
@@ -274,31 +337,26 @@ createApp({
             return groups;
         });
 
-        // Helpers
         const getMethodClass = (m) => ({ 'GET': 'bg-primary', 'POST': 'bg-success', 'PUT': 'bg-warning', 'DELETE': 'bg-danger' }[m] || 'bg-secondary');
         const getBaseUrl = () => auth.url.replace(/\/$/, '');
+        const isSslExpiring = (dateStr) => {
+            if(!dateStr) return false;
+            return new Date(dateStr) < new Date(new Date().setMonth(new Date().getMonth() + 1));
+        };
 
         // AUTH & INIT
         const login = async () => {
             isLoading.value = true;
             loginError.value = '';
-            
             try {
-                // We use 'list-all-domains' as the verification ping because the user specifically requested domain listing
                 const res = await axios.get(`${getBaseUrl()}/virtualmin/list-all-domains`, {
                     headers: { 'Authorization': `Bearer ${auth.token}` }
                 });
-
-                // If success
                 localStorage.setItem('dc_token', auth.token);
                 localStorage.setItem('dc_url', auth.url);
-                
-                domains.value = res.data; // Expecting array of strings
+                domains.value = res.data;
                 isAuthenticated.value = true;
-                
-                // Fire off system info requests in background
                 fetchSystemInfo();
-
             } catch (e) {
                 console.error(e);
                 loginError.value = "Connection failed. Check URL or Token.";
@@ -320,7 +378,6 @@ createApp({
         const fetchSystemInfo = () => {
             const h = { 'Authorization': `Bearer ${auth.token}` };
             const base = getBaseUrl();
-            
             axios.get(`${base}/status/ip`, {headers:h}).then(r => sysInfo.ip = r.data.ip).catch(()=>{});
             axios.get(`${base}/status/about`, {headers:h}).then(r => sysInfo.version = r.data.version).catch(()=>{});
             axios.get(`${base}/status/check`, {headers:h}).then(r => sysInfo.status = 'OK').catch(()=> sysInfo.status = 'ERR');
@@ -330,15 +387,36 @@ createApp({
             isAuthenticated.value = false;
             domains.value = [];
             currentEndpoint.value = null;
-            sysInfo.ip = '';
+            selectedDomain.value = '';
+            domainInfo.value = null;
         };
 
-        // DOMAIN SELECTION
-        const selectDomain = (d) => {
+        // DOMAIN LOGIC
+        const selectDomain = async (d) => {
             selectedDomain.value = d;
-            // If an API form is currently open, try to update its 'domain' field
+            domainInfoLoading.value = true;
+            domainInfo.value = null;
+            activeUser.value = '';
+
+            try {
+                const res = await axios.get(`${getBaseUrl()}/virtualmin/list-domains`, {
+                    headers: { 'Authorization': `Bearer ${auth.token}` },
+                    params: { domain: d }
+                });
+                // API returns { "domain.com": { ... } }
+                if(res.data && res.data[d]) {
+                    domainInfo.value = res.data[d];
+                    if(domainInfo.value.Username) activeUser.value = domainInfo.value.Username;
+                }
+            } catch (e) {
+                console.error("Failed to load domain details");
+            } finally {
+                domainInfoLoading.value = false;
+            }
+            
             if (currentEndpoint.value) {
                 if (formData.query.hasOwnProperty('domain')) formData.query.domain = d;
+                if (formData.query.hasOwnProperty('user') && activeUser.value) formData.query.user = activeUser.value;
             }
         };
 
@@ -352,13 +430,14 @@ createApp({
 
             // Auto-fill Logic
             api.params.forEach(p => {
-                if (p.name === 'domain' && selectedDomain.value) {
+                if ((p.name === 'domain' || p.name === 'dom' || p.name === 'zone') && selectedDomain.value) {
                     formData.query[p.name] = selectedDomain.value;
+                } else if (p.name === 'user' && activeUser.value) {
+                    formData.query[p.name] = activeUser.value;
                 } else if (p.schema.default !== undefined) {
                     formData.query[p.name] = p.schema.default;
                 }
             });
-            // Jump to top of form
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
@@ -387,7 +466,7 @@ createApp({
                 const res = await axios({
                     method: ep.method,
                     url: getBaseUrl() + ep.path,
-                    headers: { 'Authorization': `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${auth.token}`, 'Content-Type': ep.hasBody ? 'application/json' : undefined },
                     params: formData.query,
                     data: data
                 });
@@ -400,16 +479,30 @@ createApp({
             }
         };
 
-        // Auto-login check if credentials exist
-        onMounted(() => {
-            if(auth.token) login();
+        const formattedResponse = computed(() => {
+            const r = apiResponse.value;
+            if (!r) return '';
+            
+            // Check if response matches the Shell/Runner output signature
+            if (typeof r === 'object' && 'code' in r && 'stdout' in r) {
+                let out = r.stdout || '';
+                if (r.stderr) out += r.stderr; // Append stderr
+                out += `\n\n[Process exited with code ${r.code}]`;
+                return out;
+            }
+            
+            // Fallback: Pretty print JSON for other endpoints
+            return typeof r === 'object' ? JSON.stringify(r, null, 2) : r;
         });
+
+        onMounted(() => { if(auth.token) login(); });
 
         return {
             auth, sysInfo, domains, filteredDomains, domainFilter, selectedDomain,
+            domainInfo, domainInfoLoading, activeUser, isSslExpiring,
             isAuthenticated, isLoading, loginError, login, logout, fetchDomains, selectDomain,
             groupedApis, currentEndpoint, openApi, formData, executeRequest, apiLoading, apiResponse,
-            getMethodClass
+            getMethodClass, formattedResponse,
         };
     }
 }).mount('#app');
