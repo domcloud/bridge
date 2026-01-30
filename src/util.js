@@ -29,7 +29,7 @@ let isThisDebian = false;
 export const isDebian = () => isThisDebian
 
 export const initUtils = () => {
-    isThisDebian = existsSync('/etc/lsb-release');
+    isThisDebian = existsSync('/etc/debian_version');
     tokenSecret = `Bearer ${process.env.SECRET}`;
     allowIps = process.env.ALLOW_IP?.split(',').reduce((a, b) => {
         a[b] = true;
