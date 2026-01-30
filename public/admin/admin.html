@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOM Cloud Panel</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <style>
+        :root { --sidebar-width: 280px; }
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        
+        /* Layout */
+        .sidebar { width: var(--sidebar-width); height: calc(100vh - 56px); position: fixed; top: 56px; left: 0; overflow-y: auto; background: white; border-right: 1px solid #dee2e6; z-index: 100; }
+        .main-content { margin-left: var(--sidebar-width); margin-top: 56px; padding: 20px; }
+        .navbar { z-index: 1000; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+        /* Components */
+        .domain-item { cursor: pointer; border-radius: 4px; padding: 8px 12px; transition: all 0.2s; }
+        .domain-item:hover { background-color: #e9ecef; }
+        .domain-item.active { background-color: #e7f1ff; color: #0d6efd; font-weight: 600; border-left: 3px solid #0d6efd; }
+        
+        .api-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; height: 100%; border: 1px solid #e0e0e0; }
+        .api-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-color: #0d6efd; }
+        
+        .method-badge { font-size: 0.7rem; width: 50px; display: inline-block; text-align: center; margin-right: 5px; }
+        
+        /* Modal/Console */
+        pre.console-output { background: #1e1e1e; color: #00ff9d; padding: 15px; border-radius: 6px; max-height: 400px; overflow: auto; font-size: 0.85rem; }
+        
+        /* Loading Overlay */
+        .loading-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 10; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+
+    <div v-if="!isAuthenticated" class="container d-flex justify-content-center align-items-center vh-100">
+        <div class="card shadow p-4" style="width: 400px;">
+            <div class="text-center mb-4">
+                <h3 class="fw-bold">DOM Cloud Panel</h3>
+                <p class="text-muted small">Server Management Bridge</p>
+            </div>
+            <form @submit.prevent="login">
+                <div class="mb-3">
+                    <label class="form-label">Host URL</label>
+                    <input type="text" v-model="auth.url" class="form-control" placeholder="https://api.yourserver.com">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Bearer Token</label>
+                    <input type="password" v-model="auth.token" class="form-control" placeholder="Paste token here..." required>
+                </div>
+                <div v-if="loginError" class="alert alert-danger py-2 small">{{ loginError }}</div>
+                <button type="submit" class="btn btn-primary w-100" :disabled="isLoading">
+                    <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                    Connect & Load Domains
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div v-else>
+        
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top px-3">
+            <a class="navbar-brand fw-bold" href="#">DOM Cloud</a>
+            <div class="vr mx-2 text-white opacity-25"></div>
+            
+            <div class="navbar-text text-light small d-none d-md-block">
+                <span v-if="sysInfo.version" class="me-3"><i class="bi bi-tag-fill me-1"></i>v{{ sysInfo.version }}</span>
+                <span v-if="sysInfo.ip" class="me-3"><i class="bi bi-hdd-network-fill me-1"></i>{{ sysInfo.ip }}</span>
+                <span v-if="sysInfo.status" class="badge" :class="sysInfo.status === 'OK' ? 'bg-success' : 'bg-danger'">{{ sysInfo.status }}</span>
+            </div>
+
+            <div class="ms-auto d-flex align-items-center">
+                <button @click="logout" class="btn btn-sm btn-outline-light">Logout</button>
+            </div>
+        </nav>
+
+        <div class="sidebar d-flex flex-column p-3">
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-1 mb-3 text-muted text-uppercase small fw-bold">
+                <span>Domains</span>
+                <button @click="fetchDomains" class="btn btn-link btn-sm p-0 text-muted" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+            </h6>
+            
+            <input type="text" v-model="domainFilter" class="form-control form-control-sm mb-3" placeholder="Filter domains...">
+
+            <div class="flex-grow-1 overflow-auto">
+                <div v-if="filteredDomains.length === 0" class="text-center text-muted small mt-5">
+                    No domains found.
+                </div>
+                <div v-for="d in filteredDomains" :key="d" 
+                     @click="selectDomain(d)" 
+                     class="domain-item d-flex align-items-center mb-1"
+                     :class="{ active: selectedDomain === d }">
+                    <i class="bi bi-globe2 me-2"></i>
+                    <span class="text-truncate">{{ d }}</span>
+                </div>
+            </div>
+            
+            <div class="mt-3 pt-3 border-top small text-muted">
+                <div v-if="selectedDomain">
+                    Active Context:<br>
+                    <strong class="text-dark">{{ selectedDomain }}</strong>
+                </div>
+                <div v-else>
+                    Select a domain to auto-fill API forms.
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            
+            <div v-if="currentEndpoint" class="card shadow-sm mb-4 border-primary">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge method-badge" :class="getMethodClass(currentEndpoint.method)">{{ currentEndpoint.method }}</span>
+                        <strong class="h6 mb-0">{{ currentEndpoint.path }}</strong>
+                    </div>
+                    <button @click="currentEndpoint = null" class="btn-close"></button>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">{{ currentEndpoint.summary }}</p>
+                    
+                    <div class="row">
+                        <div class="col-md-5 border-end">
+                            <form @submit.prevent="executeRequest">
+                                <div v-if="currentEndpoint.params && currentEndpoint.params.length > 0">
+                                    <h6 class="small fw-bold text-uppercase text-muted mb-2">Query Parameters</h6>
+                                    <div v-for="param in currentEndpoint.params" :key="param.name" class="mb-2">
+                                        <label class="form-label small mb-1">{{ param.name }} <span v-if="param.required" class="text-danger">*</span></label>
+                                        
+                                        <select v-if="param.schema.enum" v-model="formData.query[param.name]" class="form-select form-select-sm">
+                                            <option v-for="opt in param.schema.enum" :value="opt">{{ opt }}</option>
+                                        </select>
+                                        <input v-else :type="param.schema.type === 'integer' ? 'number' : 'text'" 
+                                               v-model="formData.query[param.name]" 
+                                               class="form-control form-control-sm">
+                                    </div>
+                                </div>
+
+                                <div v-if="currentEndpoint.hasBody" class="mt-3">
+                                    <h6 class="small fw-bold text-uppercase text-muted mb-2">Request Body</h6>
+                                    
+                                    <div v-if="currentEndpoint.bodyType === 'object' && currentEndpoint.bodyProperties">
+                                        <div v-for="(prop, propName) in currentEndpoint.bodyProperties" :key="propName" class="mb-2">
+                                            <label class="form-label small mb-1">{{ propName }}</label>
+                                            <select v-if="prop.enum" v-model="formData.body[propName]" class="form-select form-select-sm">
+                                                <option v-for="opt in prop.enum" :value="opt">{{ opt }}</option>
+                                            </select>
+                                            <input v-else type="text" v-model="formData.body[propName]" class="form-control form-control-sm">
+                                        </div>
+                                    </div>
+                                    <div v-else>
+                                        <textarea v-model="formData.rawBody" class="form-control form-control-sm font-monospace" rows="5" placeholder="Raw JSON..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100" :disabled="apiLoading">
+                                        <span v-if="apiLoading" class="spinner-border spinner-border-sm me-1"></span> Execute
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-7">
+                            <h6 class="small fw-bold text-uppercase text-muted mb-2">Response</h6>
+                            <div class="position-relative h-100">
+                                <pre class="console-output h-100 m-0" v-if="apiResponse">{{ apiResponse }}</pre>
+                                <div v-else class="text-center text-muted py-5 small bg-light rounded h-100 d-flex align-items-center justify-content-center">
+                                    Waiting for execution...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-for="(apis, group) in groupedApis" :key="group" class="mb-4">
+                <h5 class="text-secondary border-bottom pb-2 mb-3">{{ group }}</h5>
+                <div class="row g-3">
+                    <div v-for="api in apis" :key="api.id" class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="card api-card" @click="openApi(api)">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="badge method-badge" :class="getMethodClass(api.method)">{{ api.method }}</span>
+                                </div>
+                                <h6 class="card-title text-truncate mb-1" :title="api.path">{{ api.shortPath }}</h6>
+                                <p class="card-text text-muted small mb-0 text-truncate">{{ api.summary }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+// --- API DEFINITION (From your JSON) ---
+const apiDef = [
+    { method: 'GET', path: '/logman/get', tags: ['Logman'], summary: 'Get logs for user', params: [ {name: 'user', required: true, schema: {type: 'string'}}, {name: 'type', required: true, schema: {type: 'string', enum: ['access','error','php','proxfix','passenger']}}, {name: 'sub', required: false, schema: {type: 'string'}}, {name: 'n', required: false, schema: {type: 'integer', default: 100}} ] },
+    { method: 'POST', path: '/named/resync', tags: ['Named'], summary: 'Resync zone', params: [{name: 'zone', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/named/show', tags: ['Named'], summary: 'Show zone', params: [{name: 'zone', required: true, schema: {type: 'string'}}] },
+    { method: 'POST', path: '/named/modify', tags: ['Named'], summary: 'Modify zone', params: [{name: 'zone', required: true, schema: {type: 'string'}}], hasBody: true, bodyType: 'array' },
+    { method: 'GET', path: '/nftables/show', tags: ['Nftables'], summary: 'Show rules', params: [{name: 'user', required: false, schema: {type: 'string'}}] },
+    { method: 'POST', path: '/nftables/add', tags: ['Nftables'], summary: 'Add firewall rule', hasBody: true, bodyType: 'object', bodyProperties: { user: { description: 'Username'} }, bodyRequired: ['user'] },
+    { method: 'POST', path: '/nftables/del', tags: ['Nftables'], summary: 'Remove firewall rule', hasBody: true, bodyType: 'object', bodyProperties: { user: { description: 'Username'} }, bodyRequired: ['user'] },
+    { method: 'GET', path: '/nginx', tags: ['Nginx'], summary: 'Get Nginx Config', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+    { method: 'POST', path: '/nginx', tags: ['Nginx'], summary: 'Set Nginx Config', params: [{name: 'domain', required: true, schema: {type: 'string'}}], hasBody: true, bodyType: 'object', bodyProperties: {} }, 
+    { method: 'POST', path: '/nginx/ssl', tags: ['Nginx'], summary: 'Set SSL Config', params: [{name: 'domain', required: true, schema: {type: 'string'}}], hasBody: true, bodyType: 'object', bodyProperties: { ssl: { enum: ['on','off','always']}, http: { enum: ['1','3']} }, bodyRequired: ['ssl'] },
+    { method: 'GET', path: '/redis/list', tags: ['Redis'], summary: 'List Redis DBs', params: [{name: 'user', required: true, schema: {type: 'string'}}] },
+    { method: 'POST', path: '/redis/add', tags: ['Redis'], summary: 'Add Redis DB', params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'name', required: true, schema: {type: 'string'}}] },
+    { method: 'POST', path: '/redis/del', tags: ['Redis'], summary: 'Delete Redis DB', params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'name', required: true, schema: {type: 'string'}}] },
+    { method: 'POST', path: '/runner', tags: ['Runner'], summary: 'Run Config', params: [{name: 'domain', required: true, schema: {type: 'string'}}, {name: 'sandbox', required: false, schema: {type: 'integer', enum: [0, 1]}}], hasBody: true, bodyType: 'object' },
+    { method: 'POST', path: '/runner/cmd', tags: ['Runner'], summary: 'Run Shell Cmd', params: [{name: 'user', required: true, schema: {type: 'string'}}, {name: 'cmd', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/status/about', tags: ['Status'], summary: 'About Info', params: [] },
+    { method: 'GET', path: '/status/ping', tags: ['Status'], summary: 'Ping Daemon', params: [] },
+    { method: 'GET', path: '/status/ip', tags: ['Status'], summary: 'Get Requester IP', params: [] },
+    { method: 'GET', path: '/status/check', tags: ['Status'], summary: 'Check Status', params: [] },
+    { method: 'GET', path: '/status/test', tags: ['Status'], summary: 'Test Config', params: [] },
+    { method: 'GET', path: '/virtualmin/create-link', tags: ['Virtualmin'], summary: 'Create Login Link', params: [{name: 'user', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-domains', tags: ['Virtualmin'], summary: 'List Specific Domains', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-subdomains', tags: ['Virtualmin'], summary: 'List Subdomains', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-all-domains', tags: ['Virtualmin'], summary: 'List All Domains', params: [] },
+    { method: 'GET', path: '/virtualmin/list-bandwidth', tags: ['Virtualmin'], summary: 'Bandwidth Info', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-databases', tags: ['Virtualmin'], summary: 'List Databases', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+    { method: 'GET', path: '/virtualmin/list-users', tags: ['Virtualmin'], summary: 'List Users', params: [{name: 'domain', required: true, schema: {type: 'string'}}] },
+];
+
+createApp({
+    setup() {
+        const auth = reactive({
+            token: localStorage.getItem('dc_token') || '',
+            url: localStorage.getItem('dc_url') || window.location.origin
+        });
+        
+        const sysInfo = reactive({ ip: '', version: '', status: '' });
+        const domains = ref([]);
+        const domainFilter = ref('');
+        const selectedDomain = ref('');
+        
+        const isAuthenticated = ref(false);
+        const isLoading = ref(false);
+        const loginError = ref('');
+
+        const currentEndpoint = ref(null);
+        const apiLoading = ref(false);
+        const apiResponse = ref(null);
+        const formData = reactive({ query: {}, body: {}, rawBody: '' });
+
+        // Computed
+        const filteredDomains = computed(() => {
+            if(!domainFilter.value) return domains.value;
+            return domains.value.filter(d => d.toLowerCase().includes(domainFilter.value.toLowerCase()));
+        });
+
+        const groupedApis = computed(() => {
+            const groups = {};
+            apiDef.forEach(api => {
+                const tag = api.tags[0] || 'Misc';
+                if (!groups[tag]) groups[tag] = [];
+                api.id = Math.random().toString(36).substr(2, 9);
+                api.shortPath = api.path.split('/').pop();
+                groups[tag].push(api);
+            });
+            return groups;
+        });
+
+        // Helpers
+        const getMethodClass = (m) => ({ 'GET': 'bg-primary', 'POST': 'bg-success', 'PUT': 'bg-warning', 'DELETE': 'bg-danger' }[m] || 'bg-secondary');
+        const getBaseUrl = () => auth.url.replace(/\/$/, '');
+
+        // AUTH & INIT
+        const login = async () => {
+            isLoading.value = true;
+            loginError.value = '';
+            
+            try {
+                // We use 'list-all-domains' as the verification ping because the user specifically requested domain listing
+                const res = await axios.get(`${getBaseUrl()}/virtualmin/list-all-domains`, {
+                    headers: { 'Authorization': `Bearer ${auth.token}` }
+                });
+
+                // If success
+                localStorage.setItem('dc_token', auth.token);
+                localStorage.setItem('dc_url', auth.url);
+                
+                domains.value = res.data; // Expecting array of strings
+                isAuthenticated.value = true;
+                
+                // Fire off system info requests in background
+                fetchSystemInfo();
+
+            } catch (e) {
+                console.error(e);
+                loginError.value = "Connection failed. Check URL or Token.";
+                if(e.response && e.response.status === 401) loginError.value = "Unauthorized: Invalid Token.";
+            } finally {
+                isLoading.value = false;
+            }
+        };
+
+        const fetchDomains = async () => {
+            try {
+                const res = await axios.get(`${getBaseUrl()}/virtualmin/list-all-domains`, {
+                    headers: { 'Authorization': `Bearer ${auth.token}` }
+                });
+                domains.value = res.data;
+            } catch(e) { console.error("Failed to refresh domains"); }
+        };
+
+        const fetchSystemInfo = () => {
+            const h = { 'Authorization': `Bearer ${auth.token}` };
+            const base = getBaseUrl();
+            
+            axios.get(`${base}/status/ip`, {headers:h}).then(r => sysInfo.ip = r.data.ip).catch(()=>{});
+            axios.get(`${base}/status/about`, {headers:h}).then(r => sysInfo.version = r.data.version).catch(()=>{});
+            axios.get(`${base}/status/check`, {headers:h}).then(r => sysInfo.status = 'OK').catch(()=> sysInfo.status = 'ERR');
+        };
+
+        const logout = () => {
+            isAuthenticated.value = false;
+            domains.value = [];
+            currentEndpoint.value = null;
+            sysInfo.ip = '';
+        };
+
+        // DOMAIN SELECTION
+        const selectDomain = (d) => {
+            selectedDomain.value = d;
+            // If an API form is currently open, try to update its 'domain' field
+            if (currentEndpoint.value) {
+                if (formData.query.hasOwnProperty('domain')) formData.query.domain = d;
+            }
+        };
+
+        // API EXECUTION
+        const openApi = (api) => {
+            currentEndpoint.value = api;
+            apiResponse.value = null;
+            formData.query = {};
+            formData.body = {};
+            formData.rawBody = '';
+
+            // Auto-fill Logic
+            api.params.forEach(p => {
+                if (p.name === 'domain' && selectedDomain.value) {
+                    formData.query[p.name] = selectedDomain.value;
+                } else if (p.schema.default !== undefined) {
+                    formData.query[p.name] = p.schema.default;
+                }
+            });
+            // Jump to top of form
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        const executeRequest = async () => {
+            apiLoading.value = true;
+            apiResponse.value = null;
+
+            try {
+                const ep = currentEndpoint.value;
+                let data = null;
+
+                if (ep.hasBody) {
+                    if (ep.bodyType === 'array' || !ep.bodyProperties || Object.keys(ep.bodyProperties).length === 0) {
+                        try {
+                            data = formData.rawBody ? JSON.parse(formData.rawBody) : {};
+                        } catch(e) {
+                            alert("Invalid JSON Body");
+                            apiLoading.value = false;
+                            return;
+                        }
+                    } else {
+                        data = { ...formData.body };
+                    }
+                }
+
+                const res = await axios({
+                    method: ep.method,
+                    url: getBaseUrl() + ep.path,
+                    headers: { 'Authorization': `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
+                    params: formData.query,
+                    data: data
+                });
+
+                apiResponse.value = res.data;
+            } catch (e) {
+                apiResponse.value = e.response ? e.response.data : e.message;
+            } finally {
+                apiLoading.value = false;
+            }
+        };
+
+        // Auto-login check if credentials exist
+        onMounted(() => {
+            if(auth.token) login();
+        });
+
+        return {
+            auth, sysInfo, domains, filteredDomains, domainFilter, selectedDomain,
+            isAuthenticated, isLoading, loginError, login, logout, fetchDomains, selectDomain,
+            groupedApis, currentEndpoint, openApi, formData, executeRequest, apiLoading, apiResponse,
+            getMethodClass
+        };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
