@@ -35,10 +35,6 @@ if (existsSync(LOGINLINGERDIR)) {
 
 ignoreUsers.root = true;
 
-if (opts.test) {
-    console.log('Ignoring users: ' + Object.keys(ignoreUsers).join(','));
-}
-
 // process and filter output
 const splitTest = /^([\w.-]+\+?) +(\d+) +(\d+) +(\d+) +(\d+) (.+)$/;
 const lists = psOutput
