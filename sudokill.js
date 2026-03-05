@@ -64,7 +64,7 @@ if (opts.test) {
 // 2. User is NOT root/ignored/logged in AND process exceeds MAX_MEM_KB
 let candidates = lists.filter(x => {
     const isProtected = (x.command[0] == ' ' || x.uid <= 1001 || ignoreUsers[x.user]);
-    
+
     if (isProtected) return false;
 
     const isTooOld = x.etimes >= 10800;
@@ -78,9 +78,15 @@ if (opts.test) {
 } else {
     for (let x of candidates) {
         try {
-            execSync(`pkill -KILL -P ${x.pid}`);
+            try {
+                execSync(`pkill -KILL -P ${x.pid}`);
+            } catch (pkillError) {
+                if (pkillError.status !== 1) throw pkillError;
+            }
+
             execSync(`kill -9 ${x.pid}`);
         } catch (e) {
+            console.error(`Failed to kill ${x.pid}: ${e.message}`);
         }
     }
 }
