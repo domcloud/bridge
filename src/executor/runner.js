@@ -469,7 +469,7 @@ export default async function runConfig(payload) {
                     await virtExec("fix-domain-permissions", {
                         domain,
                         'subservers': true,
-                    }); 
+                    });
                     await writeLog((await spawnSudoUtil("SHELL_SUDO", [user,
                         "chmod", "-R", "750", domaindata['Home directory']
                     ])).stdout);
@@ -506,7 +506,7 @@ export default async function runConfig(payload) {
                     break;
                 case 'docker':
                     if (value === '' || value === 'on') {
-                        await writeLog("$> Enabling docker features");
+                        await writeLog("$> Enabling docker + systemd features");
                         await writeLog(await dockerExec.enableDocker(domaindata['Username']));
                         await sshExec(`mkdir -p ~/.config/docker  ~/.config/systemd/user/docker.service.d`, false);
                         await sshExec(`[[ -z $DOCKER_HOST ]] && echo "export DOCKER_HOST=unix:///run/user/\\$(id -u)/docker.sock" >>  ~/.bashrc`);
@@ -527,11 +527,23 @@ export default async function runConfig(payload) {
                         await writeLog("Can't perform " + key + " feature because it is denied");
                         break;
                     } else if (value === 'off') {
-                        await writeLog("$> Disabling docker features");
+                        await writeLog("$> Disabling docker + systemd features");
                         await sshExec(`dockerd-rootless-setuptool.sh uninstall --skip-iptables`);
                         await sshExec(`sed -i '/DOCKER_HOST=/d' ~/.bashrc`);
                         await sshExec(`rm -rf ~/.config/docker`);
                         await sshExec(`rootlesskit rm -rf ~/.local/share/docker`);
+                        await writeLog(await dockerExec.disableDocker(domaindata['Username']));
+                    }
+                    break;
+                case 'systemd':
+                    if (value === '' || value === 'on') {
+                        await writeLog("$> Enabling systemd features");
+                        await writeLog(await dockerExec.enableDocker(domaindata['Username']));
+                    } else if (sandbox) {
+                        await writeLog("Can't perform " + key + " feature because it is denied");
+                        break;
+                    } else if (value === 'off') {
+                        await writeLog("$> Disabling systemd features");
                         await writeLog(await dockerExec.disableDocker(domaindata['Username']));
                     }
                     break;

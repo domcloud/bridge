@@ -41,7 +41,9 @@ class DockerExecutor {
         "--add-subgids", "100000-165535", user]);
       await spawnSudoUtil("SHELL_SUDO", ["root",
         "loginctl", "enable-linger", user]);
-      return "Updated for docker";
+      await spawnSudoUtil("SHELL_SUDO", ["root",
+        "gpasswd", "--add", user, "nolimit"]);
+      return "Updated for docker/systemd";
     });
   }
   /**
@@ -57,7 +59,9 @@ class DockerExecutor {
         "--del-subgids", "100000-165535", user]);
       await spawnSudoUtil("SHELL_SUDO", ["root",
         "loginctl", "disable-linger", user]);
-      return "Updated for docker";
+      await spawnSudoUtil("SHELL_SUDO", ["root",
+        "gpasswd", "--remove", user, "nolimit"]);
+      return "Updated for docker/systemd";
     });
   }
   /**
