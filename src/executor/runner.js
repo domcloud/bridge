@@ -161,6 +161,7 @@ export default async function runConfig(payload) {
      */
     let ssh;
     let sshExec;
+    let sshExecInit = async () => { };
     let cb = null;
     if (process.env.NODE_ENV === 'development') {
         sshExec = async (cmd) => {
@@ -221,17 +222,23 @@ export default async function runConfig(payload) {
                 ssh.stdin.write(cmd);
             })
         }
-        await sshExec(``, false); // drop initial packet
-        await sshExec([
-            // enforce ps1 header
-            isDebian() ? " PS1='\\u@\\h:\\W\\$ '" : " PS1='[\\u@\\h \\W]\\$ '",
-            // unset history file
-            " unset HISTFILE TERM",
-            // early exit on error
-            " set -e",
-            // when do *, also match .*
-            " shopt -s dotglob",
-        ].join(';'), false); // drop initial packet
+        sshExecInit = async function () {
+            if (sshPs1Header) {
+                return;
+            }
+
+            await sshExec(``, false); // drop initial packet
+            await sshExec([
+                // enforce ps1 header
+                isDebian() ? " PS1='\\u@\\h:\\W\\$ '" : " PS1='[\\u@\\h \\W]\\$ '",
+                // unset history file
+                " unset HISTFILE TERM",
+                // early exit on error
+                " set -e",
+                // when do *, also match .*
+                " shopt -s dotglob",
+            ].join(';'), false); // drop initial packet
+        }
         payload.sender = async (s) => {
             if (!ssh) return;
             if (s == "!ABORT!") {
@@ -326,7 +333,11 @@ export default async function runConfig(payload) {
                         await writeLog("Can't perform " + key + " feature because it is denied");
                         break;
                     }
-                    await sshExec(`mkdir -p '${domaindata['Home directory']}'`);
+                    try {
+                        await sshExecInit();
+                        await sshExec(`mkdir -p '${domaindata['Home directory']}'`);
+                    } catch (error) {
+                    }
                     await writeLog("$> virtualmin disable-domain");
                     await virtExec("disable-domain", value, {
                         domain,
@@ -505,6 +516,7 @@ export default async function runConfig(payload) {
                     ])).stdout);
                     break;
                 case 'docker':
+                    await sshExecInit();
                     if (value === '' || value === 'on') {
                         await writeLog("$> Enabling docker + systemd features");
                         await writeLog(await dockerExec.enableDocker(domaindata['Username']));
@@ -548,6 +560,7 @@ export default async function runConfig(payload) {
                     }
                     break;
                 default:
+                    await sshExecInit();
                     await runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec)
             }
         }
@@ -561,6 +574,7 @@ export default async function runConfig(payload) {
             if (cb) cb('', 124);
         }, maxExecutionTime).unref();
 
+        await sshExecInit();
         await sshExec(`export CI=true CONTINUOUS_INTEGRATION=true BUILDKIT_PROGRESS=plain PIP_PROGRESS_BAR=off`, false);
         const passwds = [
             ` USERNAME='${domaindata['Username']}'`,
