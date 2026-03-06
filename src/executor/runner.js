@@ -559,6 +559,11 @@ export default async function runConfig(payload) {
                         await writeLog(await dockerExec.disableDocker(domaindata['Username']));
                     }
                     break;
+                case 'restart':
+                    await writeLog("$> Killing all processes");
+                    await spawnSudoUtil("SHELL_SUDO", ["root",
+                        "pkill", "-9", '-u', user]);
+                    break;
                 default:
                     await sshExecInit();
                     await runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec)

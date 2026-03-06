@@ -10,10 +10,6 @@ import { countOf, getJavaVersion, getPythonVersion, getRubyVersion, isDebian, nt
 export async function runConfigCodeFeatures(key, value, writeLog, domaindata, sshExec) {
     let arg;
     switch (key) {
-        case 'restart':
-            await writeLog("$> Restarting processes");
-            await sshExec(`restart`);
-            break;
         case 'yum':
         case 'dnf':
             await writeLog("$> Setting up environment for yum installation");
