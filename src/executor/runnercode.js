@@ -233,9 +233,11 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
                 await writeLog("$> Removing Neovim config");
                 await sshExec(`rm -rf ~/.config/nvim ~/.local/state/nvim ~/.local/share/nvim`);
             } else {
-                await writeLog("$> Installing Neovim LazyVim config");
-                await sshExec(`git clone https://github.com/LazyVim/starter ~/.config/nvim`);
-                await sshExec(`rm -rf ~/.config/nvim/.git`);
+                await writeLog("$> Installing Neovim Kickstarter config");
+                await sshExec(`git clone https://github.com/nvim-lua/kickstart.nvim ~/.config/nvim`);
+                await sshExec(`sed -i "s/vim.g.have_nerd_font = false/vim.g.have_nerd_font = true/g" ~/.config/nvim/init.lua`);
+                await sshExec(`sed -i "s/-- require 'kickstart./require 'kickstart./g" ~/.config/nvim/init.lua`);
+                await writeLog("$> nvim init done! Watch tutorial here: https://www.youtube.com/watch?v=m8C0Cq9Uv9o");
             }
             break;
         default:
