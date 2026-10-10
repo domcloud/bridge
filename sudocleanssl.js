@@ -3,7 +3,12 @@
 // stop renewing failed SSL certs if found
 
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const cmdListCertsRenewals = 'virtualmin list-domains --name-only --with-feature letsencrypt_renew';
 const askDomainDetailPrefix = 'virtualmin list-domains --simple-multiline --domain ';
@@ -11,6 +16,21 @@ const test = (process.env.NODE_ENV || '').toLowerCase() == "test";
 
 if (test) {
     console.log("Running in test mode");
+}
+
+const wildcardJsonPath = path.join(__dirname, '.tmp', 'wildcardssl.json');
+
+/**
+ * @type {string[]}
+ */
+let wildcardDomains = [];
+if (existsSync(wildcardJsonPath)) {
+    try {
+        const wildcardData = JSON.parse(readFileSync(wildcardJsonPath, 'utf-8'));
+        wildcardDomains = Object.keys(wildcardData);
+    } catch (e) {
+        console.error(`Warning: Failed to parse ${wildcardJsonPath}`, e.message);
+    }
 }
 
 /**
@@ -41,15 +61,28 @@ for (const domain of listCertsRenewals) {
     }
     const domainDetail = cmd(askDomainDetailPrefix + domain);
     
-    // We now reliably use the exact Unix timestamp Virtualmin provides
-    const expiryTimeStr = domainDetail.match(/SSL cert expiry time: (\d+)/);
     const domainFileStr = domainDetail.match(/File: (.+)/);
+    if (!domainFileStr) continue;
+    const domainFile = domainFileStr[1];
+
+    const matchedWildcard = wildcardDomains.find(wd => domain.endsWith('.' + wd));
+
+    if (matchedWildcard) {
+        if (test) {
+            console.log(`TEST: Will disable renewal for ${domain} (matches wildcard .${matchedWildcard})`);
+            continue;
+        }
+        console.log(`Disabling renewal for ${domain} (matches wildcard .${matchedWildcard})`);
+        disableRenewal(domain, domainFile);
+        continue;
+    }
+    
+    const expiryTimeStr = domainDetail.match(/SSL cert expiry time: (\d+)/);
     const sharedWithStr = domainDetail.match(/SSL shared with: (.+)/);
     
     if (expiryTimeStr && domainFileStr) {
         // Multiply by 1000 because Node uses milliseconds, but Virtualmin outputs seconds
         const expiryUnix = parseInt(expiryTimeStr[1], 10) * 1000; 
-        const domainFile = domainFileStr[1];
         
         // Calculate days remaining. If expired, this becomes a negative number.
         const deltaExp = Math.trunc((expiryUnix - Date.now()) / (3600000 * 24));
