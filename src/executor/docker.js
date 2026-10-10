@@ -110,6 +110,8 @@ class DockerExecutor {
      * @type {number[]}
      */
     var exposedPorts = [];
+    var portMetadata = []; // Track metadata for the new portman logic
+
     // rewrite all ips
     for (const [name, service] of Object.entries(services)) {
       if (typeof service !== 'object' || !service.ports) continue;
@@ -164,7 +166,14 @@ class DockerExecutor {
             ports.push([uid, candidate + ""]);
             portsChanged = true;
           }
-          exposedPorts.push(parseInt(conf.published));
+          let port = parseInt(conf.published);
+          exposedPorts.push(port);
+          
+          portMetadata.push({
+            port,
+            domain,
+            service: name
+          });
         }
         service.ports[i] = `${conf.published}:${conf.target}/tcp`;
       }
@@ -214,8 +223,9 @@ class DockerExecutor {
     } else {
       nginxStatus = "Done unchanged";
     }
+    
     if (portsChanged) {
-      await portmanExec.writePorts(uid, exposedPorts.filter(x => x < 30000));
+      await portmanExec.writePorts(uid, portMetadata.filter(x => x.port < 30000));
     }
     return [services, nginxStatus];
   }
