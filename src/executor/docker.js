@@ -36,17 +36,34 @@ class DockerExecutor {
       return "Done unchanged";
     }
     return await executeLock('docker', async () => {
+      const uid = parseInt(await getUid(user), 10);
+
+      const subIdStart = uid * 65536;
+      const subIdCount = 65536;
+      const subIdRange = `${subIdStart}-${subIdStart + subIdCount - 1}`;
+      
       await spawnSudoUtil("SHELL_SUDO", ["root",
-        "usermod", "--add-subuids", "100000-165535",
-        "--add-subgids", "100000-165535", user]);
+        "usermod", "--add-subuids", subIdRange,
+        "--add-subgids", subIdRange, user]);
       await spawnSudoUtil("SHELL_SUDO", ["root",
         "loginctl", "enable-linger", user]);
       await spawnSudoUtil("SHELL_SUDO", ["root",
         "gpasswd", "--add", user, "nolimit"]);
+
+      await spawnSudoUtil("SHELL_SUDO", ["root", 
+        "mkdir", "-p", `/etc/systemd/system/user-${uid}.slice.d`, `/etc/systemd/system/user@${uid}.service.d`]);
+      await spawnSudoUtil("SHELL_SUDO", ["root", 
+        "ln", "-sf", "/etc/systemd/system/shared-nolimit-slice.conf", `/etc/systemd/system/user-${uid}.slice.d/99-nolimit.conf`]);
+      await spawnSudoUtil("SHELL_SUDO", ["root", 
+        "ln", "-sf", "/etc/systemd/system/shared-nolimit-service.conf", `/etc/systemd/system/user@${uid}.service.d/99-nolimit.conf`]);
+      
+      await spawnSudoUtil("SHELL_SUDO", ["root", "systemctl", "daemon-reload"]);
+        
       return "Updated for docker/systemd";
     });
   }
   /**
+   * 
    * @param {string} user
    */
   async disableDocker(user) {
@@ -54,13 +71,23 @@ class DockerExecutor {
       return "Done unchanged";
     }
     return await executeLock('docker', async () => {
+      const uid = parseInt(await getUid(user), 10);
+      
+      const subIdStart = uid * 65536;
+      const subIdCount = 65536;
+      const subIdRange = `${subIdStart}-${subIdStart + subIdCount - 1}`;
+      
       await spawnSudoUtil("SHELL_SUDO", ["root",
-        "usermod", "--del-subuids", "100000-165535",
-        "--del-subgids", "100000-165535", user]);
+        "usermod", "--del-subuids", subIdRange,
+        "--del-subgids", subIdRange, user]);
       await spawnSudoUtil("SHELL_SUDO", ["root",
         "loginctl", "disable-linger", user]);
       await spawnSudoUtil("SHELL_SUDO", ["root",
         "gpasswd", "--remove", user, "nolimit"]);
+        
+      await spawnSudoUtil("SHELL_SUDO", ["root", 
+        "rm", "-f", `/etc/systemd/system/user-${uid}.slice.d/99-nolimit.conf`, `/etc/systemd/system/user@${uid}.service.d/99-nolimit.conf`]);
+      await spawnSudoUtil("SHELL_SUDO", ["root", "systemctl", "daemon-reload"]);
       return "Updated for docker/systemd";
     });
   }
