@@ -53,26 +53,6 @@ export const initUtils = () => {
     updateWildcardData();
 }
 
-export const initDeployd = function () {
-    if (existsSync("./deployd/deployd")) {
-        executeLock('deployd', () => {
-            console.log("running deployd")
-            const x = spawn("./deployd/deployd", [], {
-                env: {
-                    SECRET: process.env.SECRET,
-                    SOCKET_PATH: process.env.SOCKET_PATH || '',
-                },
-                cwd: process.cwd(),
-                stdio: 'pipe',
-            })
-            return new Promise((resolve, reject) => {
-                x.on('close', resolve)
-                x.on('error', reject)
-            })
-        })
-    }
-}
-
 async function updateWildcardData() {
     sslWildcardsMap = {};
     var cachepath = path.join(process.cwd(), '/.tmp/wildcardssl.json');

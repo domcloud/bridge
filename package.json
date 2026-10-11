@@ -1,6 +1,6 @@
 {
   "name": "domcloud-bridge",
-  "version": "1.4.260617",
+  "version": "1.4.261011",
   "description": "Deployment runner for DOM Cloud",
   "main": "app.js",
   "engines": {
@@ -27,6 +27,7 @@
     "fast-xml-parser": "^5.3.2",
     "graceful-fs": "^4.2.11",
     "nginx-conf": "^2.1.0",
+    "peercred": "^1.1.2",
     "retry": "^0.13.1",
     "shelljs": "^0.10.0",
     "swagger-ui-express": "^5.0.1",

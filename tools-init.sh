@@ -66,18 +66,6 @@ else
     cd ../..
 fi
 
-if ! command -v go &> /dev/null; then
-    curl -sS https://webinstall.dev/golang@stable | WEBI__GO_ESSENTIALS=true bash
-    . ~/.config/envman/PATH.env
-fi
-
-if [ -d "./deployd" ]; then
-    cd deployd
-    go build
-    chmod +x bin
-    cd ..
-fi
-
 npm i
 chmod +x sudoutil.js sudokill.js sudocleanssl.js
 echo Done! don\'t forget add sudoutil.js to sudoers
