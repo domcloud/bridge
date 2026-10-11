@@ -768,16 +768,24 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "cmd",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                    "cmd": {
+                      "type": "string",
+                      "example": "whoami"
+                    }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Command output",
