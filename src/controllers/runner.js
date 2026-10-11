@@ -1,5 +1,6 @@
 import {
     checkGet,
+    checkPost,
     getUname,
     normalizeShellOutput,
     spawnSudoUtil,
@@ -271,9 +272,9 @@ export default function () {
             }, res);
         }
     }
-    router.post('/cmd', checkGet(['user', 'cmd']), function (req, res, next) {
-        const user = req.query.user.toString()
-        const cmd = req.query.cmd.toString()
+    router.post('/cmd', checkGet(['user']), checkPost(['cmd']), function (req, res, next) {
+        const user = req.query.user?.toString()
+        const cmd = req.body.cmd.toString();
         const exc = spawnSudoUtil('SHELL_SUDO', [user, "bash", "-c", cmd]);
         exc.then((x) => res.send(x)).catch((err) => next(err))
     });
