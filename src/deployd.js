@@ -12,12 +12,17 @@ export const initDeployd = function () {
         return;
     }
 
-    if (existsSync(socketFile)) {
-        unlinkSync(socketFile);
-    }
-    const socketDir = dirname(socketFile);
-    if (!existsSync(socketDir)) {
-        mkdirSync(socketDir);
+    try {
+
+        if (existsSync(socketFile)) {
+            unlinkSync(socketFile);
+        }
+        const socketDir = dirname(socketFile);
+        if (!existsSync(socketDir)) {
+            mkdirSync(socketDir);
+        }
+    } catch(e) {
+        console.error("error checking for deployd: " + e?.message);
     }
 
     const server = http.createServer((req, res) => {
