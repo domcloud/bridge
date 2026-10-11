@@ -37,7 +37,7 @@ export default function () {
         if (getAuth(req)) {
             const arch = os.machine();
             const cpu = os.cpus().length;
-            const mem = os.totalmem() / 1024 / 1024 / 1024;
+            const mem = Math.ceil(os.totalmem() / (1024 * 1024 * 1024));
             res.json({ ip: req.ip, arch, cpu, mem, granted: true })
         } else {
             res.json({ ip: req.ip })
