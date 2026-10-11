@@ -53,9 +53,9 @@ class DockerExecutor {
       await spawnSudoUtil("SHELL_SUDO", ["root", 
         "mkdir", "-p", `/etc/systemd/system/user-${uid}.slice.d`, `/etc/systemd/system/user@${uid}.service.d`]);
       await spawnSudoUtil("SHELL_SUDO", ["root", 
-        "ln", "-sf", "/etc/systemd/system/shared-nolimit-slice.conf", `/etc/systemd/system/user-${uid}.slice.d/99-nolimit.conf`]);
+        "ln", "-sf", "/etc/systemd/system/nolimit-slice.conf", `/etc/systemd/system/user-${uid}.slice.d/99-nolimit.conf`]);
       await spawnSudoUtil("SHELL_SUDO", ["root", 
-        "ln", "-sf", "/etc/systemd/system/shared-nolimit-service.conf", `/etc/systemd/system/user@${uid}.service.d/99-nolimit.conf`]);
+        "ln", "-sf", "/etc/systemd/system/nolimit-service.conf", `/etc/systemd/system/user@${uid}.service.d/99-nolimit.conf`]);
       
       await spawnSudoUtil("SHELL_SUDO", ["root", "systemctl", "daemon-reload"]);
         
