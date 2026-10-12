@@ -253,8 +253,9 @@ export default async function runConfig(payload) {
 set -E
 error_hook() {
     local exit_code=$?
-    echo "❌ Error: Command failed on line $1" >&2
-    echo "💥 Failed Line: $BASH_COMMAND" >&2
+    echo "❌ Error $exit_code: failed at line $1:" >&2
+    echo "❌ $BASH_COMMAND" >&2
+    ${debug ? '' : `echo "❌ Add 'debug: true' to see more.`}
     exit "$exit_code"
 }
 trap 'error_hook $LINENO' ERR
