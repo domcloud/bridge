@@ -196,14 +196,11 @@ export default async function runConfig(payload) {
                 cb('', code || undefined);
             }
         });
-        /** @type {string|undefined} */
-        let sshPs1Header = undefined;
+        /** @type {string|null} */
+        let sshPs1Header = null;
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise(function (resolve, reject) {
                 if (!ssh) return reject("shell has terminated already");
-                if (!sshPs1Header) {
-                    return; // unreachable
-                }
                 cmd = cmd.trimEnd() + "\n";
                 const context = {
                     lastChunkIncomplete: false,

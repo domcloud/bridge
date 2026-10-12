@@ -251,7 +251,7 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
  * @param {string} chunk
  * @param {{ skipLineLen: number; 
  *   lastChunkIncomplete: boolean; 
- *   sshPs1Header: string; write: boolean; 
+ *   sshPs1Header: string | null; write: boolean; 
  *   writer: (s: string) => Promise<void>; 
  *   debug: boolean; }} ctx
  */
