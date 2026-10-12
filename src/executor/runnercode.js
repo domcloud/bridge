@@ -34,17 +34,19 @@ export async function runConfigCodeFeatures(key, value, writeLog, domaindata, ss
             } else {
                 const parg = getPythonVersion(value);
                 await writeLog("$> Changing Python engine to " + parg.version);
-                await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash); source ~/.config/envman/PATH.env");
+                // comment this out
+                await sshExec("command -v pyenv &> /dev/null || (curl -sS https://webinstall.dev/pyenv | bash && sed -i '/pyenv virtualenv-init/d' ~/.bashrc)");
+                await sshExec(`source ~/.config/envman/PATH.env`, false);
                 if (parg.binary) {
-                    await sshExec(`mkdir -p ~/.pyenv/versions/${parg.version}`);
-                    await sshExec(`curl -sSL "${parg.binary}" | tar --zstd -axf - -C ~/tmp`);
-                    await sshExec(`mv ~/tmp/python/install/* ~/.pyenv/versions/${parg.version} || true ; rm -rf ~/tmp/python`);
-                    await sshExec(`echo "export LD_LIBRARY_PATH=\\$HOME/.pyenv/versions/${parg.version}:\\$LD_LIBRARY_PATH" >> ~/.bashrc`) // fix venv
+                    await sshExec(`rm -rf ~/.pyenv/versions/${parg.version}`, false);
+                    await sshExec(`mkdir -p ~/.pyenv/versions/${parg.version}`, false);
+                    await sshExec(`curl -sSL "${parg.binary}" | tar --zstd -axf - --strip-components=2 -C ~/.pyenv/versions/${parg.version}`);
+                    await sshExec(`echo "export LD_LIBRARY_PATH=\\$HOME/.pyenv/versions/${parg.version}:\\$LD_LIBRARY_PATH" >> ~/.bashrc`);
                 } else if (parg.version !== "system") {
                     await sshExec(`pyenv install ${parg.version} -s`);
                 }
                 await sshExec(`pyenv global ${parg.version.replace(":latest", "")}`);
-                await sshExec(`source ~/.bashrc || true`, false)
+                await sshExec(`source ~/.bashrc`, false);
                 await sshExec("python --version");
             }
             break;
