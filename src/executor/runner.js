@@ -59,7 +59,7 @@ export default async function runConfig(payload) {
         await writer(s + "\n");
     }
     const debug = !!config.debug;
-    const virtExec = (program, ...opts) => {
+    const virtExec = (/** @type {string} */ program, /** @type {any[]} */ ...opts) => {
         const corePromise = () => new Promise((resolve, reject) => {
             var args = virtualminExec.formatExec(program, ...opts);
             if (debug) {
@@ -157,32 +157,43 @@ export default async function runConfig(payload) {
         return;
     }
     /**
-     * @type {import('child_process').ChildProcessWithoutNullStreams}
+     * @type {import('child_process').ChildProcessWithoutNullStreams | null}
      */
-    let ssh;
+    let ssh = null;
+    /**
+     * @type {(cmd: string, write?: boolean) => Promise<any>}
+     */
     let sshExec;
     let sshExecInit = async () => { };
+    /**
+     * @type {((chunk: string, code: number | undefined) => Promise<void | RegExpMatchArray | null>) | null}
+     */
     let cb = null;
     if (process.env.NODE_ENV === 'development') {
-        sshExec = async (cmd) => {
+        sshExec = async (/** @type {string} */ cmd, /** @type {any} */ write) => {
             await writeLog(cmd);
         }
     } else {
         ssh = spawnSudoUtilAsync('SHELL_INTERACTIVE', [domaindata['Username']]);
         ssh.stdout.on('data', function (chunk) {
             if (cb) {
-                cb(chunk.toString())
+                cb(chunk.toString(), undefined)
             }
         });
-        ssh.stderr.on('data', function (chunk) {
+        ssh.stderr.on('data', function (/** @type {string} */ chunk) {
             if (cb) {
-                cb(chunk.toString().split('\n').map(x => '! ' + x).join('\n'))
+                cb(chunk.toString().split('\n').map(x => '! ' + x).join('\n'), undefined)
             }
         })
         ssh.on('close', async function (code) {
-            ssh = null;
+            if (ssh) {
+                ssh = null;
+                if (debug) {
+                    writeLog('$> ssh went hangup');
+                }
+            }
             if (cb) {
-                cb('', code);
+                cb('', code || undefined);
             }
         });
         /** @type {string|undefined} */
@@ -190,6 +201,9 @@ export default async function runConfig(payload) {
         sshExec = ( /** @type {string} */ cmd, write = true) => {
             return new Promise(function (resolve, reject) {
                 if (!ssh) return reject("shell has terminated already");
+                if (!sshPs1Header) {
+                    return; // unreachable
+                }
                 cmd = cmd.trimEnd() + "\n";
                 const context = {
                     lastChunkIncomplete: false,
@@ -199,20 +213,20 @@ export default async function runConfig(payload) {
                     debug,
                     write,
                 };
-                cb = async (/** @type {string} */ chunk, /** @type {number} */ code) => {
+                cb = async (chunk, code) => {
                     if (!ssh) {
                         if (code) {
                             await writeLog("Exit status: " + (code) + "\n")
                             return reject(`shell has terminated.`);
                         } else {
-                            return resolve();
+                            return resolve(undefined);
                         }
                     }
                     let match = await handleSshOutput(chunk, context);
                     if (match) {
                         sshPs1Header = context.sshPs1Header;
                         cb = null;
-                        resolve();
+                        resolve(undefined);
                     }
                     return match;
                 };
@@ -251,6 +265,9 @@ export default async function runConfig(payload) {
         }
     }
     try {
+        /**
+         * @type {boolean|undefined}
+         */
         let firewallStatusCache = undefined;
         /**
          * 
@@ -614,7 +631,9 @@ export default async function runConfig(payload) {
         throw err;
     } finally {
         if (ssh) {
-            ssh.stdin.write('exit\n');
+            const oldssh = ssh;
+            ssh = null; // prevent logging
+            oldssh.stdin.write('exit\n');
         }
     }
 }

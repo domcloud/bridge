@@ -152,15 +152,17 @@ export async function runConfigInBackground(payload) {
         await runConfig(payload);
     } catch (error) {
         console.log('!> ', error);
-        if (error.stdout !== undefined) {
+        if (!error) {
+            await writeAsync(write, '$> Error occured\n');
+        } else if (typeof error === 'string') {
+            await writeAsync(write, `$> Error occured: ${error}\n`);
+        } else if (error.stdout !== undefined) {
             await writeAsync(write, `$> Error occured with exit code ${error.code || 'unknown'}\n`);
             await writeAsync(write, error.stdout + '\n');
             await writeAsync(write, error.stderr + '\n');
         } else if (error.message) {
             await writeAsync(write, `$> Error occured: ${error.message}\n`);
             await writeAsync(write, ('' + error.stack).split('\n').map(x => `$>   ${x}`).join('\n') + '\n');
-        } else if (typeof error === 'string') {
-            await writeAsync(write, `$> Error occured: ${error}\n`);
         } else {
             await writeAsync(write, '$> Error occured\n');
             await writeAsync(write, JSON.stringify(error, Object.getOwnPropertyNames(error)) + '\n');
