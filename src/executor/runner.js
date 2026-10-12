@@ -255,7 +255,7 @@ error_hook() {
     local exit_code=$?
     echo "❌ Error $exit_code: failed at line $1:" >&2
     echo "❌ $BASH_COMMAND" >&2
-    ${debug ? '' : `echo "❌ Add 'debug: true' to see more.`}
+    ${debug ? '' : `echo "❌ Add 'debug: true' to see more." >&2`}
     exit "$exit_code"
 }
 trap 'error_hook $LINENO' ERR
