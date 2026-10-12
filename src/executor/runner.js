@@ -249,22 +249,12 @@ export default async function runConfig(payload) {
                 // when do *, also match .*
                 " shopt -s dotglob",
             ].join(';'), false); // drop initial packet
-            await sshExec(`
-set -E
-error_hook() {
-    local exit_code=$?
-    echo "❌ Error $exit_code: failed at line $1:" >&2
-    echo "❌ $BASH_COMMAND" >&2
-    ${debug ? '' : `echo "❌ Add 'debug: true' to see more." >&2`}
-    exit "$exit_code"
-}
-trap 'error_hook $LINENO' ERR
-`, false);
+            await sshExec(`set -E; error_hook() { local ec=$?; echo "❌ Error $ec: failed at line $1" >&2; echo "❌ $BASH_COMMAND" >&2; ${debug ? '' : `echo "$> Add 'debug: true' to see more." >&2;`} exit "$ec"; }; trap 'error_hook $LINENO' ERR`, false);
         }
         payload.sender = async (s) => {
             if (!ssh) return;
             if (s == "!ABORT!") {
-                await writeLog(`\n$> Execution aborted by user, exiting SSH session gracefully.`);
+                await writeLog(`\n$ > Execution aborted by user, exiting SSH session gracefully.`);
                 await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
                 ssh = null;
             } else {
@@ -360,7 +350,7 @@ trap 'error_hook $LINENO' ERR
                     }
                     try {
                         await sshExecInit();
-                        await sshExec(`mkdir -p '${domaindata['Home directory']}'`);
+                        await sshExec(`mkdir - p '${domaindata['Home directory']}'`);
                     } catch (error) {
                     }
                     await writeLog("$> virtualmin disable-domain");
@@ -545,8 +535,8 @@ trap 'error_hook $LINENO' ERR
                     if (value === '' || value === 'on') {
                         await writeLog("$> Enabling docker + systemd features");
                         await writeLog(await dockerExec.enableDocker(domaindata['Username']));
-                        await sshExec(`mkdir -p ~/.config/docker  ~/.config/systemd/user/docker.service.d`, false);
-                        await sshExec(`[[ -z $DOCKER_HOST ]] && echo "export DOCKER_HOST=unix:///run/user/\\$(id -u)/docker.sock" >>  ~/.bashrc`);
+                        await sshExec(`mkdir - p ~/.config/docker  ~/.config/systemd / user / docker.service.d`, false);
+                        await sshExec(`[[-z $DOCKER_HOST]] && echo "export DOCKER_HOST=unix:///run/user/\\$(id -u)/docker.sock" >> ~/.bashrc`);
                         await sshExec(`printf '{\\n\\t${[
                             `"exec-opts": ["native.cgroupdriver=cgroupfs"]`,
                             `"host-gateway-ip": "10.0.2.2"`,
