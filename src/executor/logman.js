@@ -77,8 +77,8 @@ class LogmanExecutor {
             pe = process.env.NODE_ENV === 'development' ?
                 { code: 0, stdout: await readFile(name ? './test/passenger-status' : './test/passenger-status-multi', { encoding: 'utf-8' }), stderr: '' } :
                 await spawnSudoUtil("SHELL_SUDO", name ? [user,
-                    "passenger-status", name, "--show=xml"] : [user,
-                    "passenger-status", "--show=xml"]);
+                    "/usr/local/bin/passenger-status", name, "--show=xml"] : [user,
+                    "/usr/local/bin/passenger-status", "--show=xml"]);
         } catch (error) {
             // non zero exit code
             if (typeof error.stdout === 'string') {
