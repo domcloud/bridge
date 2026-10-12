@@ -245,10 +245,20 @@ export default async function runConfig(payload) {
                 // unset history file
                 " unset HISTFILE TERM",
                 // early exit on error
-                " set -e",
+                " set -e -o pipefail",
                 // when do *, also match .*
                 " shopt -s dotglob",
             ].join(';'), false); // drop initial packet
+            await sshExec(`
+set -E
+error_hook() {
+    local exit_code=$?
+    echo "❌ Error: Command failed on line $1" >&2
+    echo "💥 Failed Line: $BASH_COMMAND" >&2
+    exit "$exit_code"
+}
+trap 'error_hook $LINENO' ERR
+`, false);
         }
         payload.sender = async (s) => {
             if (!ssh) return;
