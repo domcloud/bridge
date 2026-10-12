@@ -351,7 +351,7 @@ export default async function runConfig(payload) {
                     }
                     try {
                         await sshExecInit();
-                        await sshExec(`mkdir - p '${domaindata['Home directory']}'`);
+                        await sshExec(`mkdir -p '${domaindata['Home directory']}'`);
                     } catch (error) {
                     }
                     await writeLog("$> virtualmin disable-domain");
@@ -536,8 +536,8 @@ export default async function runConfig(payload) {
                     if (value === '' || value === 'on') {
                         await writeLog("$> Enabling docker + systemd features");
                         await writeLog(await dockerExec.enableDocker(domaindata['Username']));
-                        await sshExec(`mkdir - p ~/.config/docker  ~/.config/systemd / user / docker.service.d`, false);
-                        await sshExec(`[[-z $DOCKER_HOST]] && echo "export DOCKER_HOST=unix:///run/user/\\$(id -u)/docker.sock" >> ~/.bashrc`);
+                        await sshExec(`mkdir -p ~/.config/docker  ~/.config/systemd/user/docker.service.d`, false);
+                        await sshExec(`[[ -z $DOCKER_HOST ]] && echo "export DOCKER_HOST=unix:///run/user/\\$(id -u)/docker.sock" >>  ~/.bashrc`);
                         await sshExec(`printf '{\\n\\t${[
                             `"exec-opts": ["native.cgroupdriver=cgroupfs"]`,
                             `"host-gateway-ip": "10.0.2.2"`,
