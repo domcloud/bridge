@@ -128,8 +128,7 @@ export default function () {
         }
         let spawn = await spawnSudoUtil('FILE_READ', [webminStat]);
         res.setHeader('content-type', 'application/json');
-        res.setHeader('Transfer-Encoding', 'chunked');
-        res.end(spawn.stdout);
+        res.end(spawn.stdout.split('\n')[0]);
     });
     router.get('/ports', async function (req, res, next) {
         add_cors(res);
