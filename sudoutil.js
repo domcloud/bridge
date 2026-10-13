@@ -173,6 +173,7 @@ switch (cli.args.shift()) {
         arg = cli.args.shift();
         var n = parseInt(cli.args.shift());
         printText(exec(`grep -w "\\(^App\\|process\\) \\(${arg}\\)" "${env.PASSENGERLOG_PATH}"`).tail({ '-n': n }).stdout);
+        break;
     case 'FILE_GET':
         fixOwner(env.FILE_TMP);
         arg = cli.args.shift();
@@ -184,6 +185,7 @@ switch (cli.args.shift()) {
         exit(fileGet.status);
     case 'FILE_READ':
         printText(cat(cli.args[0]).toString());
+        break;
     case 'FILE_SET':
         arg = cli.args.shift();
         var fileSet = spawnSync(env.BASH_SUDO, ['-u', arg, '-i', 'tee', cli.args[0]], {
@@ -249,6 +251,7 @@ switch (cli.args.shift()) {
     case 'REDIS_GETUSER':
         arg = cli.args.shift();
         printText(cat(env.REDIS_ACLMAP).grep('^' + arg + ':').toString());
+        break;
     case 'REDIS_GET':
         fixOwner(env.REDIS_ACLTMP);
         arg = cli.args.shift();
@@ -260,6 +263,7 @@ switch (cli.args.shift()) {
     case 'PORTS_LIST':
         arg = cli.args.shift();
         printText(cat(env.PORTS_PATH).toString());
+        break;
     case 'PORTS_GET':
         fixOwner(env.PORTS_TMP);
         arg = cli.args.shift();
@@ -430,6 +434,7 @@ switch (cli.args.shift()) {
             storagefull,
             timestamp: Date.now(),
         });
+        break;
     case 'SHELL_TEST':
         var nginx = exec(`${env.NGINX_BIN} -t`, { silent: true });
         var fpmlist = getFpmList();
@@ -479,6 +484,7 @@ switch (cli.args.shift()) {
             },
             timestamp: Date.now(),
         });
+        break;
     default:
         console.error(`Unknown Mode`);
         exit(1);
