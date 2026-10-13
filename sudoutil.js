@@ -102,13 +102,15 @@ function getFpmList() {
 }
 
 function printJson(/** @type {any} */ s) {
-    process.stdout.write(JSON.stringify(s));
-    return exit(0);
+    process.stdout.write(JSON.stringify(s), () => {
+        process.exit(0);
+    });
 }
 
 function printText(/** @type {string} */ s) {
-    process.stdout.write(s);
-    return exit(0);
+    process.stdout.write(s, () => {
+        process.exit(0);
+    });
 }
 
 function isDfFull(/** @type {string} */ df, /** @type {number} */ limit) {
