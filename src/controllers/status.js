@@ -127,6 +127,7 @@ export default function () {
             return;
         }
         let spawn = await spawnSudoUtil('FILE_READ', [webminStat]);
+        res.write(spawn.stdout.length + '');
         res.setHeader('content-type', 'application/json');
         res.setHeader('Transfer-Encoding', 'chunked');
         res.end(spawn.stdout);
