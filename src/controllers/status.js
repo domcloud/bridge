@@ -127,7 +127,8 @@ export default function () {
             return;
         }
         let spawn = await spawnSudoUtil('FILE_READ', [webminStat]);
-        res.setHeader('content-type', 'application/json').send(spawn.stdout);
+        res.setHeader('content-type', 'application/json');
+        res.end(spawn.stdout);
     });
     router.get('/ports', async function (req, res, next) {
         add_cors(res);
