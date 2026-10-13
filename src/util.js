@@ -18,6 +18,9 @@ const {
 
 let tokenSecret, allowIps, sudoutil, version, revision;
 // https://packagist.org/php-statistics
+/**
+ * @type {string[]}
+ */
 let phpVersionsList = [];
 /**
  * @type {Record<string, {domain: string, id: string, path: string}>}
@@ -315,21 +318,33 @@ export const spawnSudoUtil = function (
             var child = process.env.NODE_ENV === 'development' ?
                 spawn("node", [sudoutil, mode, ...args], {}) :
                 spawn("sudo", [sudoutil, mode, ...args], {});
-            let stdout = '',
-                stderr = ''; {
-                child.stdout.on('data', data => {
-                    stdout += data
-                });
-                child.stderr.on('data', data => {
-                    stderr += data
-                });
-            }
-            child.on('error', function (err) {
-                stderr += err.message + "\n";
+
+            /**
+             * @type {any[]}, 
+             */
+            let stdoutChunks = [];
+            /**
+            * @type {any[]}, 
+            */
+            let stderrChunks = [];
+
+            child.stdout.on('data', data => {
+                stdoutChunks.push(data);
             });
+            child.stderr.on('data', data => {
+                stderrChunks.push(data);
+            });
+
+            child.on('error', function (err) {
+                stderrChunks.push(Buffer.from(err.message + "\n"));
+            });
+
             child.on('close', (code, signal) => {
+                const stdout = Buffer.concat(stdoutChunks).toString('utf8');
+                const stderr = Buffer.concat(stderrChunks).toString('utf8');
+
                 (code === 0 || code === null ? resolve : reject)({
-                    code: typeof code === 'number' ? code : constants.signals[signal],
+                    code: typeof code === 'number' ? code : constants.signals[signal || 'SIGHUP'],
                     stdout,
                     stderr
                 });
