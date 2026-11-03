@@ -43,6 +43,8 @@ class DockerExecutor {
       const subIdRange = `${subIdStart}-${subIdStart + subIdCount - 1}`;
 
       await spawnSudoUtil("SHELL_SUDO", ["root",
+        "pkill", "-KILL", "-u", user]);
+      await spawnSudoUtil("SHELL_SUDO", ["root",
         "usermod", "--add-subuids", subIdRange,
         "--add-subgids", subIdRange, user]);
       await spawnSudoUtil("SHELL_SUDO", ["root",
@@ -79,6 +81,8 @@ class DockerExecutor {
 
       await spawnSudoUtil("SHELL_SUDO", ["root",
         "loginctl", "disable-linger", user]);
+      await spawnSudoUtil("SHELL_SUDO", ["root",
+        "pkill", "-KILL", "-u", user]);
       await spawnSudoUtil("SHELL_SUDO", ["root",
         "usermod", "--del-subuids", subIdRange,
         "--del-subgids", subIdRange, user]);
