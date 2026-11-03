@@ -87,7 +87,7 @@ class DockerExecutor {
         "usermod", "--del-subuids", subIdRange,
         "--del-subgids", subIdRange, user]);
       await spawnSudoUtil("SHELL_SUDO", ["root",
-        "gpasswd", "--remove", user, "nolimit"]);
+        "gpasswd", "--delete", user, "nolimit"]);
 
       await spawnSudoUtil("SHELL_SUDO", ["root",
         "rm", "-f", `/etc/systemd/system/user-${uid}.slice.d/99-nolimit.conf`, `/etc/systemd/system/user@${uid}.service.d/99-nolimit.conf`]);
