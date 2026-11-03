@@ -50,6 +50,146 @@ export class RunnerPayload {
     }
 }
 
+class SshSessionManager {
+    /**
+     * @param {any} domaindata
+     * @param {any} debug
+     * @param {any} payload
+     * @param {any} writer
+     * @param {any} writeLog
+     */
+    constructor(domaindata, debug, payload, writer, writeLog) {
+        this.domaindata = domaindata;
+        this.debug = debug;
+        this.payload = payload;
+        this.writer = writer;
+        this.writeLog = writeLog;
+
+        /**
+        * @type {import('child_process').ChildProcessWithoutNullStreams | null}
+        */
+        this.ssh = null;
+        /**
+         * @type {(cmd: string, write?: boolean) => Promise<any>}
+         */
+        this.sshExec = async (cmd, write) => { };
+        this.sshExecInit = async () => { };
+        /**
+         * @type {((chunk: string, code: number | undefined) => Promise<void | RegExpMatchArray | null>) | null}
+         */
+        this.cb = null;
+        /**
+         * @type {string|null}
+         */
+        this.sshPs1Header = null;
+    }
+
+    start() {
+        if (process.env.NODE_ENV === 'development') {
+            this.sshExec = async (cmd, write) => {
+                await this.writeLog(cmd);
+            };
+            this.sshExecInit = async () => { };
+        } else {
+            this.sshPs1Header = null;
+            this.cb = null;
+            this.ssh = spawnSudoUtilAsync('SHELL_INTERACTIVE', [this.domaindata['Username']]);
+
+            this.ssh.stdout.on('data', (chunk) => {
+                if (this.cb) this.cb(chunk.toString(), undefined);
+            });
+            this.ssh.stderr.on('data', (chunk) => {
+                if (this.cb) this.cb(chunk.toString().split('\n').map(x => '! ' + x).join('\n'), undefined);
+            });
+            this.ssh.on('close', async (code) => {
+                if (this.ssh) {
+                    this.ssh = null;
+                    if (this.debug) this.writeLog('$> ssh went hangup');
+                }
+                if (this.cb) this.cb('', code || undefined);
+            });
+
+            this.sshExec = (cmd, write = true) => {
+                return new Promise((resolve, reject) => {
+                    if (!this.ssh) return reject("shell has terminated already");
+                    cmd = cmd.trimEnd() + "\n";
+                    const context = {
+                        lastChunkIncomplete: false,
+                        skipLineLen: countOf(cmd, "\n"),
+                        sshPs1Header: this.sshPs1Header,
+                        writer: this.writer,
+                        debug: this.debug,
+                        write,
+                    };
+                    this.cb = async (chunk, code) => {
+                        if (!this.ssh) {
+                            if (code) {
+                                await this.writeLog("Exit status: " + (code) + "\n");
+                                return reject(`shell has terminated.`);
+                            }
+                            return resolve(undefined);
+                        }
+                        let match = await handleSshOutput(chunk, context);
+                        if (match) {
+                            this.sshPs1Header = context.sshPs1Header;
+                            this.cb = null;
+                            resolve(undefined);
+                        }
+                        return match;
+                    };
+                    if (write || this.debug) {
+                        this.writer('$> ' + cmd.trimEnd().replace(/\n/g, '\n$> ') + '\n');
+                    }
+                    this.ssh.stdin.write(cmd);
+                });
+            };
+
+            this.sshExecInit = async () => {
+                if (this.sshPs1Header) return;
+                await this.sshExec(``, false);
+                await this.sshExec([
+                    isDebian() ? " PS1='\\u@\\h:\\W\\$ '" : " PS1='[\\u@\\h \\W]\\$ '",
+                    " unset HISTFILE TERM",
+                    " set -eE -o pipefail",
+                    " shopt -s dotglob",
+                ].join(';'), false);
+                await this.sshExec(`error_hook() { local ec=$?; echo "❌ Error $ec: failed at line $1" >&2; echo "❌ $BASH_COMMAND" >&2; ${this.debug ? '' : `echo "$> Add 'debug: true' to see more." >&2;`} exit "$ec"; }`, false);
+                await this.sshExec(`trap 'error_hook $LINENO' ERR`, false);
+            };
+
+            this.payload.sender = async (s) => {
+                if (!this.ssh) return;
+                if (s == "!ABORT!") {
+                    await this.writeLog(`\n$ > Execution aborted by user, exiting SSH session gracefully.`);
+                    await this.writeLog(`kill ${this.ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [this.ssh.pid + ""])).code);
+                    this.ssh = null;
+                } else {
+                    this.ssh.stdin.write(s);
+                }
+            };
+        }
+    }
+
+    async restart() {
+        if (this.ssh) {
+            const oldssh = this.ssh;
+            this.ssh = null;
+            oldssh.stdin.write('exit\n');
+            await new Promise(r => setTimeout(r, 250));
+        }
+        this.start();
+        await this.sshExecInit();
+    }
+
+    kill() {
+        if (this.ssh) {
+            const oldssh = this.ssh;
+            this.ssh = null;
+            oldssh.stdin.write('exit\n');
+        }
+    }
+}
+
 /**
  * @param {RunnerPayload} payload
  */
@@ -156,120 +296,21 @@ export default async function runConfig(payload) {
         await writeLog("\n$> Server is not exist. Finishing execution");
         return;
     }
-    /**
-     * @type {import('child_process').ChildProcessWithoutNullStreams | null}
-     */
-    let ssh = null;
-    /**
-     * @type {(cmd: string, write?: boolean) => Promise<any>}
-     */
-    let sshExec;
-    let sshExecInit = async () => { };
-    /**
-     * @type {((chunk: string, code: number | undefined) => Promise<void | RegExpMatchArray | null>) | null}
-     */
-    let cb = null;
-    if (process.env.NODE_ENV === 'development') {
-        sshExec = async (/** @type {string} */ cmd, /** @type {any} */ write) => {
-            await writeLog(cmd);
-        }
-    } else {
-        ssh = spawnSudoUtilAsync('SHELL_INTERACTIVE', [domaindata['Username']]);
-        ssh.stdout.on('data', function (chunk) {
-            if (cb) {
-                cb(chunk.toString(), undefined)
-            }
-        });
-        ssh.stderr.on('data', function (/** @type {string} */ chunk) {
-            if (cb) {
-                cb(chunk.toString().split('\n').map(x => '! ' + x).join('\n'), undefined)
-            }
-        })
-        ssh.on('close', async function (code) {
-            if (ssh) {
-                ssh = null;
-                if (debug) {
-                    writeLog('$> ssh went hangup');
-                }
-            }
-            if (cb) {
-                cb('', code || undefined);
-            }
-        });
-        /** @type {string|null} */
-        let sshPs1Header = null;
-        sshExec = ( /** @type {string} */ cmd, write = true) => {
-            return new Promise(function (resolve, reject) {
-                if (!ssh) return reject("shell has terminated already");
-                cmd = cmd.trimEnd() + "\n";
-                const context = {
-                    lastChunkIncomplete: false,
-                    skipLineLen: countOf(cmd, "\n"),
-                    sshPs1Header,
-                    writer,
-                    debug,
-                    write,
-                };
-                cb = async (chunk, code) => {
-                    if (!ssh) {
-                        if (code) {
-                            await writeLog("Exit status: " + (code) + "\n")
-                            return reject(`shell has terminated.`);
-                        } else {
-                            return resolve(undefined);
-                        }
-                    }
-                    let match = await handleSshOutput(chunk, context);
-                    if (match) {
-                        sshPs1Header = context.sshPs1Header;
-                        cb = null;
-                        resolve(undefined);
-                    }
-                    return match;
-                };
-                if (write || debug) {
-                    writer('$> ' + cmd.trimEnd().replace(/\n/g, '\n$> ') + '\n');
-                }
-                ssh.stdin.write(cmd);
-            })
-        }
-        sshExecInit = async function () {
-            if (sshPs1Header) {
-                return;
-            }
 
-            await sshExec(``, false); // drop initial packet
-            await sshExec([
-                // enforce ps1 header
-                isDebian() ? " PS1='\\u@\\h:\\W\\$ '" : " PS1='[\\u@\\h \\W]\\$ '",
-                // unset history file
-                " unset HISTFILE TERM",
-                // early exit on error
-                " set -eE -o pipefail",
-                // when do *, also match .*
-                " shopt -s dotglob",
-            ].join(';'), false); // drop initial packet
-            await sshExec(`error_hook() { local ec=$?; echo "❌ Error $ec: failed at line $1" >&2; echo "❌ $BASH_COMMAND" >&2; ${debug ? '' : `echo "$> Add 'debug: true' to see more." >&2;`} exit "$ec"; }`, false);
-            await sshExec(`trap 'error_hook $LINENO' ERR`, false);
-        }
-        payload.sender = async (s) => {
-            if (!ssh) return;
-            if (s == "!ABORT!") {
-                await writeLog(`\n$ > Execution aborted by user, exiting SSH session gracefully.`);
-                await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
-                ssh = null;
-            } else {
-                ssh.stdin.write(s);
-            }
-        }
-    }
+    const sshSession = new SshSessionManager(domaindata, debug, payload, writer, writeLog);
+    sshSession.start();
+
+    // Proxy bindings to keep the rest of your runConfig code exactly the same
+    const sshExec = (...args) => sshSession.sshExec(...args);
+    const sshExecInit = (...args) => sshSession.sshExecInit(...args);
+    const restartSsh = () => sshSession.restart();
+
     try {
         /**
          * @type {boolean|undefined}
          */
         let firewallStatusCache = undefined;
         /**
-         * 
          * @returns {Promise<boolean>}
          */
         let firewallStatus = async () => {
@@ -551,6 +592,7 @@ export default async function runConfig(payload) {
                         await sshExec(`dockerd-rootless-setuptool.sh install --skip-iptables`);
                         await sshExec(`[[ -z $DOCKER_HOST ]] || (systemctl daemon-reload --user; systemctl restart docker --user)`);
                         await sshExec(`export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`, false);
+                        await restartSsh();
                     } else if (sandbox) {
                         await writeLog("Can't perform " + key + " feature because it is denied");
                         break;
@@ -561,18 +603,21 @@ export default async function runConfig(payload) {
                         await sshExec(`rm -rf ~/.config/docker`);
                         await sshExec(`rootlesskit rm -rf ~/.local/share/docker`);
                         await writeLog(await dockerExec.disableDocker(domaindata['Username']));
+                        await restartSsh();
                     }
                     break;
                 case 'systemd':
                     if (value === '' || value === 'on') {
                         await writeLog("$> Enabling systemd features");
                         await writeLog(await dockerExec.enableDocker(domaindata['Username']));
+                        await restartSsh();
                     } else if (sandbox) {
                         await writeLog("Can't perform " + key + " feature because it is denied");
                         break;
                     } else if (value === 'off') {
                         await writeLog("$> Disabling systemd features");
                         await writeLog(await dockerExec.disableDocker(domaindata['Username']));
+                        await restartSsh();
                     }
                     break;
                 case 'restart':
@@ -587,12 +632,12 @@ export default async function runConfig(payload) {
         }
 
         setTimeout(async () => {
-            if (ssh == null) return;
+            if (!sshSession.ssh) return;
             // SSH prone to wait indefinitely, so we need to set a timeout
             await writeLog(`\n$> Execution took more than ${maxExecutionTime / 1000}s, exiting SSH session gracefully.`);
-            await writeLog(`kill ${ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [ssh.pid + ""])).code);
-            ssh = null;
-            if (cb) cb('', 124);
+            await writeLog(`kill ${sshSession.ssh.pid}: Exit code ` + (await spawnSudoUtil('SHELL_KILL', [sshSession.ssh.pid + ""])).code);
+            sshSession.ssh = null;
+            if (sshSession.cb) sshSession.cb('', 124);
         }, maxExecutionTime).unref();
 
         await sshExecInit();
@@ -625,14 +670,10 @@ export default async function runConfig(payload) {
                 }
             }
         }
-        if (!ssh) throw "shell has terminated already";
+        if (!sshSession.ssh) throw "shell has terminated already";
     } catch (err) {
         throw err;
     } finally {
-        if (ssh) {
-            const oldssh = ssh;
-            ssh = null; // prevent logging
-            oldssh.stdin.write('exit\n');
-        }
+        sshSession.kill();
     }
 }
